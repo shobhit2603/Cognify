@@ -1,11 +1,11 @@
 import app from './src/app.js';
 import envConfig from './src/config/env.config.js';
-import DatabaseConfig from './src/config/db.config.js';
+import { connectDatabase } from './src/config/db.config.js';
 
 const startServer = async () => {
   try {
     // Connect to MongoDB
-    await DatabaseConfig.connect();
+    await connectDatabase();
 
     // Start Express server
     app.listen(envConfig.PORT, () => {
