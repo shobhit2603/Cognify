@@ -84,6 +84,8 @@ router.post("/login", validate(loginSchema), authController.login);
  *   post:
  *     summary: Refresh access token
  *     tags: [Auth]
+ *     security:
+ *       - refreshTokenAuth: []
  *     responses:
  *       200:
  *         description: Token refreshed successfully
@@ -130,7 +132,7 @@ router.get("/me", requireAuth, authController.getMe);
  *     description: >
  *       **Note:** This endpoint initiates an OAuth redirect flow and cannot be tested directly via Swagger UI's "Try it out" button due to CORS restrictions on Google's login page.
  *
- *       To test this endpoint, open `http://localhost:5000/api/v1/auth/google` directly in your browser.
+ *       To test this endpoint, open `/api/v1/auth/google` directly in your browser.
  *     tags: [Auth]
  *     responses:
  *       302:

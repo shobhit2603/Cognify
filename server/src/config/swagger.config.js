@@ -16,8 +16,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${envConfig.PORT}`,
-        description: 'Development Server',
+        url: '/',
+        description: 'Current Server',
       },
     ],
     components: {
@@ -31,6 +31,11 @@ const swaggerOptions = {
           type: 'apiKey',
           in: 'cookie',
           name: 'accessToken',
+        },
+        refreshTokenAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'refreshToken',
         },
       },
     },
