@@ -4,7 +4,7 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { StatusCodes } from "http-status-codes";
 import envConfig from "./config/env.config.js";
-import ApiResponse from "./utils/ApiResponse.js";
+import ApiResponse from "./utils/apiResponse.util.js";
 import errorHandler from "./middlewares/error.middleware.js";
 import passport from "passport";
 import { configurePassport } from "./config/passport.config.js";

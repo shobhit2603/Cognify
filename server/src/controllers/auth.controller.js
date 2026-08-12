@@ -1,27 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import * as authService from "../services/auth.service.js";
-import ApiResponse from "../utils/ApiResponse.js";
-
-const setCookies = (res, accessToken, refreshToken) => {
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 15 * 60 * 1000, // 15 minutes
-  });
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
-};
-
-const clearCookies = (res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
-};
+import ApiResponse from "../utils/apiResponse.util.js";
+import { setCookies, clearCookies } from "../utils/cookie.util.js";
 
 export const register = async (req, res, next) => {
   try {
@@ -32,9 +12,6 @@ export const register = async (req, res, next) => {
       .status(StatusCodes.CREATED)
       .json(ApiResponse(StatusCodes.CREATED, "User registered successfully", { user }));
   } catch (error) {
-    if (error.message === "Email is already registered") {
-      return res.status(StatusCodes.CONFLICT).json(ApiResponse(StatusCodes.CONFLICT, error.message));
-    }
     next(error);
   }
 };
@@ -53,9 +30,6 @@ export const login = async (req, res, next) => {
       .status(StatusCodes.OK)
       .json(ApiResponse(StatusCodes.OK, "Login successful", { user }));
   } catch (error) {
-    if (error.message === "Invalid email or password") {
-      return res.status(StatusCodes.UNAUTHORIZED).json(ApiResponse(StatusCodes.UNAUTHORIZED, error.message));
-    }
     next(error);
   }
 };
@@ -79,7 +53,7 @@ export const refresh = async (req, res, next) => {
       .json(ApiResponse(StatusCodes.OK, "Tokens refreshed", { user }));
   } catch (error) {
     clearCookies(res);
-    return res.status(StatusCodes.UNAUTHORIZED).json(ApiResponse(StatusCodes.UNAUTHORIZED, error.message));
+    next(error);
   }
 };
 

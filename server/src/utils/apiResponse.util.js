@@ -1,22 +1,10 @@
-// Success response
-export const sendSuccess = (res, statusCode, message, data = {}) => {
-  return res.status(statusCode).json({
-    success: true,
+const ApiResponse = (statusCode, message = "Success", data = null) => {
+  return {
+    statusCode,
+    success: statusCode < 400,
     message,
     data,
-  });
+  };
 };
 
-// Error response
-export const sendError = (res, statusCode, message, errors = null) => {
-  const response = {
-    success: false,
-    message,
-  };
-  
-  if (errors) {
-    response.errors = errors;
-  }
-  
-  return res.status(statusCode).json(response);
-};
+export default ApiResponse;

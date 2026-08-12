@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { StatusCodes } from "http-status-codes";
-import ApiResponse from "../utils/ApiResponse.js";
+import ApiResponse from "../utils/apiResponse.util.js";
 import envConfig from "../config/env.config.js";
 import { User } from "../models/user.model.js";
 

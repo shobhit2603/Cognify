@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes";
-import ApiResponse from "../utils/ApiResponse.js";
+import ApiResponse from "../utils/apiResponse.util.js";
 
 export const validate = (schema) => (req, res, next) => {
   try {
