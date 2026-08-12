@@ -11,6 +11,8 @@ import { configurePassport } from "./config/passport.config.js";
 
 // Routes imports
 import authRoutes from "./routes/auth.routes.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger.config.js";
 
 const app = express();
 
@@ -61,6 +63,12 @@ if (envConfig.NODE_ENV === "development") {
 
 // v1 routes
 app.use("/api/v1/auth", authRoutes);
+
+// ─── API Documentation ───────────────────────────────────
+
+if (envConfig.NODE_ENV === "development") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 // ─── Health Check ────────────────────────────────────────
 
