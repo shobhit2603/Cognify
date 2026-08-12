@@ -1,15 +1,10 @@
-class ApiResponse {
-  /**
-   * @param {number} statusCode - HTTP status code
-   * @param {string} message - Success message
-   * @param {*} data - Response payload
-   */
-  constructor(statusCode, message = "Success", data = null) {
-    this.statusCode = statusCode;
-    this.success = statusCode < 400;
-    this.message = message;
-    this.data = data;
-  }
-}
+const ApiResponse = (statusCode, message = "Success", data = null) => {
+  return {
+    statusCode,
+    success: statusCode < 400,
+    message,
+    data,
+  };
+};
 
 export default ApiResponse;

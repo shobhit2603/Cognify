@@ -6,8 +6,17 @@ import { StatusCodes } from "http-status-codes";
 import envConfig from "./config/env.config.js";
 import ApiResponse from "./utils/ApiResponse.js";
 import errorHandler from "./middlewares/error.middleware.js";
+import passport from "passport";
+import { configurePassport } from "./config/passport.config.js";
+
+// Routes imports
+import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
+
+// Initialize Passport
+configurePassport();
+app.use(passport.initialize());
 
 // ─── Global Middlewares ──────────────────────────────────
 
@@ -51,13 +60,13 @@ if (envConfig.NODE_ENV === "development") {
 // ─── API Versioning ──────────────────────────────────────
 
 // v1 routes
-
+app.use("/api/v1/auth", authRoutes);
 
 // ─── Health Check ────────────────────────────────────────
 
 app.get("/api/v1/health", (_req, res) => {
   res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, "Server is running healthy ", {
+    ApiResponse(StatusCodes.OK, "Server is running healthy ", {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     }),
@@ -69,7 +78,7 @@ app.get("/api/v1/health", (_req, res) => {
 app.use((_req, res) => {
   res
     .status(StatusCodes.NOT_FOUND)
-    .json(new ApiResponse(StatusCodes.NOT_FOUND, "Route not found"));
+    .json(ApiResponse(StatusCodes.NOT_FOUND, "Route not found"));
 });
 
 // ─── Global Error Handler ────────────────────────────────
