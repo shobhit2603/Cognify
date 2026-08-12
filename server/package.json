@@ -1,5 +1,5 @@
 {
-  "name": "synthra-ai-server",
+  "name": "cognify-server",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
@@ -9,7 +9,7 @@
     "dev": "nodemon -L server.js"
   },
   "keywords": [],
-  "author": "Shobhit",
+  "author": "Cognify",
   "license": "ISC",
   "type": "module",
   "dependencies": {

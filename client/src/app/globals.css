@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: "Cabinet";
+  src:
+    url("../../public/fonts/CabinetGrotesk-Variable.woff2") format("woff2"),
+    url("../../public/fonts/CabinetGrotesk-Variable.woff") format("woff"),
+    url("../../public/fonts/CabinetGrotesk-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src:
+    url("../../public/fonts/Satoshi-Variable.woff2") format("woff2"),
+    url("../../public/fonts/Satoshi-Variable.woff") format("woff"),
+    url("../../public/fonts/Satoshi-Variable.ttf") format("truetype");
+  font-weight: 300 900;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Satoshi-Italic";
+  src:
+    url("../../public/fonts/Satoshi-VariableItalic.woff2") format("woff2"),
+    url("../../public/fonts/Satoshi-VariableItalic.woff") format("woff"),
+    url("../../public/fonts/Satoshi-VariableItalic.ttf") format("truetype");
+  font-weight: 300 900;
+  font-display: swap;
+  font-style: italic;
+}
