@@ -1,5 +1,5 @@
 import envConfig from "../config/env.config.js";
-import ApiError from "../utils/ApiError.js";
+import ApiError from "../utils/apiError.util.js";
 import { StatusCodes } from "http-status-codes";
 
 const errorHandler = (err, req, res, next) => {
