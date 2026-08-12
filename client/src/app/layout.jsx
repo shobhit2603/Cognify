@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Synthra AI",
+  title: "Cognify",
   description: "AI-powered workspace",
 };
 
