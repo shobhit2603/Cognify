@@ -14,7 +14,7 @@ export const requireAuth = async (req, res, next) => {
         .json(ApiResponse(StatusCodes.UNAUTHORIZED, "Authentication required"));
     }
 
-    const decoded = jwt.verify(token, envConfig.JWT_SECRET || "default_jwt_secret");
+    const decoded = jwt.verify(token, envConfig.JWT_SECRET);
 
     const user = await User.findById(decoded.userId);
     if (!user) {

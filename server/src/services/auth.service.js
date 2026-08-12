@@ -24,13 +24,13 @@ export const register = async (userData) => {
 export const createTokensAndSession = async (user, userAgent, ipAddress) => {
   const accessToken = jwt.sign(
     { userId: user._id, role: user.role },
-    envConfig.JWT_SECRET || "default_jwt_secret",
+    envConfig.JWT_SECRET,
     { expiresIn: envConfig.ACCESS_TOKEN_EXPIRY }
   );
 
   const refreshToken = jwt.sign(
     { userId: user._id },
-    envConfig.REFRESH_TOKEN_SECRET || "default_refresh_secret",
+    envConfig.REFRESH_TOKEN_SECRET,
     { expiresIn: envConfig.REFRESH_TOKEN_EXPIRY }
   );
 
@@ -74,7 +74,7 @@ export const refreshTokens = async (refreshToken, userAgent, ipAddress) => {
 
   let decoded;
   try {
-    decoded = jwt.verify(refreshToken, envConfig.REFRESH_TOKEN_SECRET || "default_refresh_secret");
+    decoded = jwt.verify(refreshToken, envConfig.REFRESH_TOKEN_SECRET);
   } catch (error) {
     throw ApiError(StatusCodes.UNAUTHORIZED, "Invalid refresh token");
   }
