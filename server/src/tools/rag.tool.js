@@ -16,9 +16,12 @@ const pinecone = new PineconeClient({
 
 export async function ragSearch({ query, chatId }) {
   try {
-    console.log("========================================================");
-    console.log("using rag tool with query =>", query, "for chat =>", chatId);
-    console.log("========================================================");
+    if (!chatId) throw new Error("chatId is required for RAG search.");
+    const normalizedChatId = String(chatId);
+    const reqId = uuidv4();
+    
+    console.log(`[RAG Tool] Request ${reqId} started.`);
+    const startTime = Date.now();
 
     const index = pinecone.Index("cognify-rag"); // Assuming 'cognify-rag' is your target index name
     const vector = await embeddings.embedQuery(query);
@@ -27,17 +30,12 @@ export async function ragSearch({ query, chatId }) {
       vector,
       topK: 4,
       includeMetadata: true,
+      filter: { chatId: { $eq: normalizedChatId } }
     };
-    
-    if (chatId) {
-      queryOptions.filter = { chatId: { $eq: chatId } };
-    }
 
     const queryResult = await index.query(queryOptions);
 
-    console.log("========================================================");
-    console.log(`rag tool found ${queryResult.matches?.length || 0} matches.`);
-    console.log("========================================================");
+    console.log(`[RAG Tool] Request ${reqId} completed. Found ${queryResult.matches?.length || 0} matches in ${Date.now() - startTime}ms.`);
 
     if (queryResult.matches && queryResult.matches.length > 0) {
       const resultText = queryResult.matches.map((match) => {
@@ -55,9 +53,12 @@ export async function ragSearch({ query, chatId }) {
 
 export async function ingestPDF(pdfPath, chatId) {
   try {
-    console.log("========================================================");
-    console.log("ingesting pdf =>", pdfPath, "for chat =>", chatId);
-    console.log("========================================================");
+    if (!chatId) throw new Error("chatId is required for document ingestion.");
+    const normalizedChatId = String(chatId);
+    const reqId = uuidv4();
+
+    console.log(`[Ingest PDF] Request ${reqId} started.`);
+    const startTime = Date.now();
 
     // 1. Load the PDF
     const loader = new PDFLoader(pdfPath, {
@@ -87,7 +88,7 @@ export async function ingestPDF(pdfPath, chatId) {
       metadata: {
         text: docs[index].pageContent,
         page: docs[index].metadata?.loc?.pageNumber || 1,
-        ...(chatId ? { chatId } : {}),
+        chatId: normalizedChatId,
       },
     }));
 
@@ -100,12 +101,10 @@ export async function ingestPDF(pdfPath, chatId) {
       console.log(`Upserting batch of size ${batch.length}`);
       // using records array directly for modern pinecone SDK
       await index.upsert(batch);
-      console.log(`Upserted batch ${Math.floor(i / batchSize) + 1}`);
+      console.log(`[Ingest PDF] Upserted batch ${Math.floor(i / batchSize) + 1}`);
     }
 
-    console.log("========================================================");
-    console.log("ingest complete.");
-    console.log("========================================================");
+    console.log(`[Ingest PDF] Request ${reqId} completed. Ingested ${records.length} chunks in ${Date.now() - startTime}ms.`);
 
     return { success: true, chunksIngested: records.length };
   } catch (error) {

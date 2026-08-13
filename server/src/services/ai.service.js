@@ -1,6 +1,6 @@
 import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { defaultMistralModel } from "../providers/mistral.provider.js";
@@ -23,6 +23,11 @@ If the answer is not found in the retrieved document context, state clearly that
 
 export async function* getAIResponse({ content, history = [], systemPrompt = null, chatId = null }) {
   try {
+    if (!chatId) {
+      throw new Error("chatId is required for AI context scoping.");
+    }
+    const normalizedChatId = String(chatId);
+
     if (!content && (!history || history.length === 0)) {
       throw new Error("Content or conversation history is required.");
     }
@@ -33,6 +38,7 @@ export async function* getAIResponse({ content, history = [], systemPrompt = nul
     // 2. Format Conversation History into LangChain Message objects
     const formattedHistory = history.map((msg) => {
       const role = msg.role === "ai" ? "assistant" : msg.role;
+      if (role === "system") return new SystemMessage(msg.content);
       return role === "assistant"
         ? new AIMessage(msg.content)
         : new HumanMessage(msg.content);
@@ -40,7 +46,7 @@ export async function* getAIResponse({ content, history = [], systemPrompt = nul
 
     // 3. Create dynamic tool to inject chatId
     const dynamic_rag_tool = tool(
-      async ({ query }) => ragSearch({ query, chatId }),
+      async ({ query }) => ragSearch({ query, chatId: normalizedChatId }),
       {
         name: "rag_tool",
         description:
