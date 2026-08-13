@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import envConfig from "../config/env.config.js"; // just to ensure environment runs
+import { jest } from "@jest/globals";
+
+jest.setTimeout(30000);
 
 let mongoServer;
 

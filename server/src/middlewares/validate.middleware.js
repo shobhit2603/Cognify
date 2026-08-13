@@ -8,6 +8,6 @@ export const validate = (schema) => (req, res, next) => {
   } catch (error) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Validation Error", error.errors));
+      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Validation Error", error.issues));
   }
 };

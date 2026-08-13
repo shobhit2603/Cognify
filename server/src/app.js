@@ -12,6 +12,8 @@ import { configurePassport } from "./config/passport.config.js";
 
 // Routes imports
 import authRoutes from "./routes/auth.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
+import messageRoutes from "./routes/message.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.config.js";
 
@@ -67,6 +69,8 @@ if (envConfig.NODE_ENV === "development") {
 
 // v1 routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/chats", chatRoutes);
+app.use("/api/v1/messages", messageRoutes);
 
 // ─── API Documentation ───────────────────────────────────
 
