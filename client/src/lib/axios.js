@@ -5,11 +5,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1
 
 export const axiosInstance = axios.create({
   baseURL: API_URL,
+  timeout: 15000,
   withCredentials: true, // Important for sending cookies automatically
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+let refreshPromise = null;
 
 // Response interceptor to handle 401 and token refresh
 axiosInstance.interceptors.response.use(
@@ -28,11 +31,15 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      if (!refreshPromise) {
+        refreshPromise = axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true })
+          .finally(() => {
+            refreshPromise = null;
+          });
+      }
+
       try {
-        // Attempt to refresh the token via HttpOnly cookie
-        await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
-        
-        // If successful, retry the original request
+        await refreshPromise;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         // If refresh fails, it means the session is completely expired.

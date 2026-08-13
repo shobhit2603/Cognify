@@ -35,7 +35,7 @@ export const useAuth = () => {
       // Upon successful login, the server sets the HttpOnly cookie.
       // We manually set the query data so we don't have to fetch /me immediately again (if login returns user data)
       if (data?.data?.user) {
-         queryClient.setQueryData(['user'], { success: true, data: data.data.user });
+         queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
       } else {
          // Alternatively, invalidate the query to force a refetch
          queryClient.invalidateQueries({ queryKey: ['user'] });
@@ -73,7 +73,7 @@ export const useAuth = () => {
   });
 
   return {
-    user: userResponse?.data || userResponse?.data?.user || null, // depending on the exact backend response structure
+    user: userResponse?.data?.user || null,
     isAuthenticated,
     isInitialized,
     isLoadingUser,
