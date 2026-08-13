@@ -27,3 +27,7 @@ export const updateMessage = async (id, updateData) => {
 export const deleteMessage = async (id) => {
   return Message.findByIdAndDelete(id).lean();
 };
+
+export const deleteMessagesByChatId = async (chatId) => {
+  return Message.deleteMany({ chatId }).lean();
+};

@@ -1,4 +1,7 @@
-import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
+import { ChatMistralAI } from "@langchain/mistralai";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const { createToolCallingAgent, AgentExecutor } = require("@langchain/classic/agents");
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { tool } from "@langchain/core/tools";

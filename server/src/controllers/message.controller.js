@@ -1,6 +1,9 @@
 import { StatusCodes } from "http-status-codes";
 import * as messageService from "../services/message.service.js";
+import * as chatService from "../services/chat.service.js";
+import * as aiService from "../services/ai.service.js";
 import ApiResponse from "../utils/apiResponse.util.js";
+import { paginationSchema } from "../validations/pagination.validation.js";
 
 export const addMessage = async (req, res, next) => {
   try {
@@ -10,12 +13,48 @@ export const addMessage = async (req, res, next) => {
 
     const message = await messageService.addMessage(chatId, userId, role, content);
 
-    // TODO: If role is 'user', here we might trigger the AI Service (implemented by teammate) 
-    // to generate and append the assistant's response.
+    let assistantMessage = null;
+
+    if (role === "user") {
+      // Get history for AI and check if it's the first message
+      const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+      
+      // Update Title if it's the first user message
+      if (messages.length <= 2) { 
+        const chat = await chatService.getChatById(chatId, userId);
+        if (chat.title === "New Chat" || chat.title === "New Conversation") {
+          const { chatTitle } = await aiService.getTitle({ message: content });
+          if (chatTitle) {
+            await chatService.updateChat(chatId, userId, { title: chatTitle });
+          }
+        }
+      }
+
+      // Format history for AI
+      const history = messages.map(m => ({
+        role: m.role === "assistant" ? "ai" : m.role,
+        content: m.content
+      }));
+
+      // Generate AI Response
+      let fullResponse = "";
+      const events = aiService.getAIResponse({ content, history, chatId });
+      for await (const chunk of events) {
+        fullResponse += chunk.content;
+      }
+
+      // Save assistant message
+      if (fullResponse) {
+        assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+      }
+    }
 
     res
       .status(StatusCodes.CREATED)
-      .json(ApiResponse(StatusCodes.CREATED, "Message added successfully", { message }));
+      .json(ApiResponse(StatusCodes.CREATED, "Message added successfully", { 
+        message, 
+        ...(assistantMessage && { assistantMessage })
+      }));
   } catch (error) {
     next(error);
   }
@@ -25,8 +64,7 @@ export const getMessages = async (req, res, next) => {
   try {
     const chatId = req.params.chatId;
     const userId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    const { page, limit } = paginationSchema.parse(req.query);
 
     const result = await messageService.getMessages(chatId, userId, page, limit);
 

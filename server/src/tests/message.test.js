@@ -1,6 +1,15 @@
-import request from "supertest";
-import app from "../app.js";
+import { jest } from "@jest/globals";
 
+jest.unstable_mockModule("../services/ai.service.js", () => ({
+  getTitle: jest.fn().mockResolvedValue({ chatTitle: "Mocked Title" }),
+  getAIResponse: async function* () {
+    yield { content: "Mocked AI response chunk 1" };
+    yield { content: "Mocked AI response chunk 2" };
+  }
+}));
+
+const { default: request } = await import("supertest");
+const { default: app } = await import("../app.js");
 describe("Message Endpoints", () => {
   const testUser = {
     name: "Message Test User",

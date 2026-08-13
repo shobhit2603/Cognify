@@ -1,6 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import * as chatService from "../services/chat.service.js";
 import ApiResponse from "../utils/apiResponse.util.js";
+import { paginationSchema } from "../validations/pagination.validation.js";
 
 export const createChat = async (req, res, next) => {
   try {
@@ -20,8 +21,7 @@ export const createChat = async (req, res, next) => {
 export const getChats = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const { page, limit } = paginationSchema.parse(req.query);
 
     const result = await chatService.getChats(userId, page, limit);
 
