@@ -2,7 +2,10 @@ import "./globals.css";
 
 export const metadata = {
   title: "Cognify",
-  description: "AI-powered workspace",
+  description: "AI-powered productivity workspace",
+  icons: {
+    icon: "/Cognify-Logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {
