@@ -30,3 +30,6 @@ jobs:
 
     - name: Run tests
       run: npm test
+      env:
+        JWT_SECRET: dummy-jwt-secret-for-testing
+        REFRESH_TOKEN_SECRET: dummy-refresh-secret-for-testing
