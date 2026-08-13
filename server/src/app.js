@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 import { StatusCodes } from "http-status-codes";
 import envConfig from "./config/env.config.js";
 import ApiResponse from "./utils/apiResponse.util.js";
@@ -21,6 +22,9 @@ configurePassport();
 app.use(passport.initialize());
 
 // ─── Global Middlewares ──────────────────────────────────
+
+// Security middleware
+app.use(helmet());
 
 // CORS configuration
 app.use(
