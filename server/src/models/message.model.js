@@ -4,7 +4,7 @@ const messageSchema = new Schema(
   {
     chatId: {
       type: Schema.Types.ObjectId,
-      ref: "Conversation",
+      ref: "Chat",
       required: true,
       index: true,
     },

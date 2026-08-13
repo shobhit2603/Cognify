@@ -12,6 +12,12 @@ const chatSchema = new Schema(
       type: String,
       required: true,
     },
+    messages: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Message",
+      },
+    ],
     pinned: {
       type: Boolean,
       default: false,
@@ -19,7 +25,7 @@ const chatSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export const Conversation = mongoose.model("Conversation", chatSchema);
+export const Chat = mongoose.model("Chat", chatSchema);
