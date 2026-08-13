@@ -25,16 +25,18 @@ export const createTokensAndSession = async (user, userAgent, ipAddress) => {
   const accessToken = jwt.sign(
     { userId: user._id, role: user.role },
     envConfig.JWT_SECRET,
-    { expiresIn: envConfig.ACCESS_TOKEN_EXPIRY }
+    { expiresIn: envConfig.ACCESS_TOKEN_EXPIRY },
   );
 
   const refreshToken = jwt.sign(
     { userId: user._id },
     envConfig.REFRESH_TOKEN_SECRET,
-    { expiresIn: envConfig.REFRESH_TOKEN_EXPIRY }
+    { expiresIn: envConfig.REFRESH_TOKEN_EXPIRY },
   );
 
-  const expiresAt = new Date(Date.now() + envConfig.REFRESH_TOKEN_COOKIE_MAX_AGE);
+  const expiresAt = new Date(
+    Date.now() + envConfig.REFRESH_TOKEN_COOKIE_MAX_AGE,
+  );
 
   await sessionRepository.createSession({
     userId: user._id,
@@ -62,9 +64,13 @@ export const login = async (email, password, userAgent, ipAddress) => {
 };
 
 export const refreshTokens = async (refreshToken, userAgent, ipAddress) => {
-  const session = await sessionRepository.findSessionByRefreshToken(refreshToken);
+  const session =
+    await sessionRepository.findSessionByRefreshToken(refreshToken);
   if (!session || session.isRevoked) {
-    throw ApiError(StatusCodes.UNAUTHORIZED, "Invalid or revoked refresh token");
+    throw ApiError(
+      StatusCodes.UNAUTHORIZED,
+      "Invalid or revoked refresh token",
+    );
   }
 
   if (new Date() > session.expiresAt) {
@@ -99,16 +105,19 @@ export const googleLogin = async (profile, userAgent, ipAddress) => {
 
   if (!user) {
     user = await userRepository.findUserByEmail(profile.emails[0].value);
-    
+
     if (user) {
-      user = await userRepository.updateUser(user._id, { googleId: profile.id, avatar: profile.photos[0].value });
+      user = await userRepository.updateUser(user._id, {
+        googleId: profile.id,
+        avatar: profile.photos[0].value,
+      });
     } else {
       user = await userRepository.createUser({
         name: profile.displayName,
         email: profile.emails[0].value,
         googleId: profile.id,
         avatar: profile.photos[0].value,
-        isEmailVerified: true
+        isEmailVerified: true,
       });
     }
   }

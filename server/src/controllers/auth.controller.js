@@ -10,7 +10,11 @@ export const register = async (req, res, next) => {
 
     res
       .status(StatusCodes.CREATED)
-      .json(ApiResponse(StatusCodes.CREATED, "User registered successfully", { user }));
+      .json(
+        ApiResponse(StatusCodes.CREATED, "User registered successfully", {
+          user,
+        }),
+      );
   } catch (error) {
     next(error);
   }
@@ -22,7 +26,12 @@ export const login = async (req, res, next) => {
     const userAgent = req.headers["user-agent"];
     const ipAddress = req.ip;
 
-    const { accessToken, refreshToken, user } = await authService.login(email, password, userAgent, ipAddress);
+    const { accessToken, refreshToken, user } = await authService.login(
+      email,
+      password,
+      userAgent,
+      ipAddress,
+    );
 
     setCookies(res, accessToken, refreshToken);
 
@@ -41,10 +50,16 @@ export const refresh = async (req, res, next) => {
     const ipAddress = req.ip;
 
     if (!refreshToken) {
-      return res.status(StatusCodes.UNAUTHORIZED).json(ApiResponse(StatusCodes.UNAUTHORIZED, "Refresh token required"));
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json(ApiResponse(StatusCodes.UNAUTHORIZED, "Refresh token required"));
     }
 
-    const { accessToken, refreshToken: newRefreshToken, user } = await authService.refreshTokens(refreshToken, userAgent, ipAddress);
+    const {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user,
+    } = await authService.refreshTokens(refreshToken, userAgent, ipAddress);
 
     setCookies(res, accessToken, newRefreshToken);
 
@@ -88,7 +103,11 @@ export const googleCallback = async (req, res, next) => {
     const userAgent = req.headers["user-agent"];
     const ipAddress = req.ip;
 
-    const { accessToken, refreshToken } = await authService.googleLogin(profile, userAgent, ipAddress);
+    const { accessToken, refreshToken } = await authService.googleLogin(
+      profile,
+      userAgent,
+      ipAddress,
+    );
 
     setCookies(res, accessToken, refreshToken);
 
