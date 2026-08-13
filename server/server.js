@@ -9,7 +9,7 @@ const startServer = async () => {
 
     // Start Express server
     app.listen(envConfig.PORT, () => {
-      console.log(`\n SynthraAI - Server is running`);
+      console.log(`\n Cognify - Server is running`);
       console.log(`   Environment : ${envConfig.NODE_ENV}`);
       console.log(`   Port        : ${envConfig.PORT}`);
       console.log(`   URL         : http://localhost:${envConfig.PORT}`);

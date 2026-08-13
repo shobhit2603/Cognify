@@ -74,7 +74,7 @@ if (envConfig.NODE_ENV === "development") {
 
 app.get("/api/v1/health", (_req, res) => {
   res.status(StatusCodes.OK).json(
-    ApiResponse(StatusCodes.OK, "Server is running healthy ", {
+    ApiResponse(StatusCodes.OK, "Cognify server is running healthy ", {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     }),
