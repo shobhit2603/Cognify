@@ -4,7 +4,7 @@ const messageSchema = new Schema(
   {
     chatId: {
       type: Schema.Types.ObjectId,
-      ref: "Conversation",
+      ref: "chat",
       required: true,
       index: true,
     },
@@ -23,7 +23,7 @@ const messageSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const Message = mongoose.model("Message", messageSchema);
