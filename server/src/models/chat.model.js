@@ -11,8 +11,13 @@ const chatSchema = new Schema(
     title: {
       type: String,
       required: true,
+      default: "New Chat",
     },
     pinned: {
+      type: Boolean,
+      default: false,
+    },
+    isDeleted: {
       type: Boolean,
       default: false,
     },
