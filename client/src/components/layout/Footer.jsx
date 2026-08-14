@@ -12,8 +12,6 @@ const mainLinks = [
 
 const resourceLinks = [
   { label: "Writing", href: "/blog" },
-  { label: "Twitter / X", href: "#" },
-  { label: "LinkedIn", href: "#" },
   { label: "Terms of Service", href: "/terms" },
 ];
 

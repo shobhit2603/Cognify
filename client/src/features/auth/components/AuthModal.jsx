@@ -8,6 +8,11 @@ export default function AuthModal() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // TODO: Implement authentication flow
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -33,7 +38,8 @@ export default function AuthModal() {
       {/* Google Button */}
       <button 
         type="button"
-        className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all py-3.5 rounded-2xl mb-8 group cursor-pointer"
+        disabled
+        className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all py-3.5 rounded-2xl mb-8 group cursor-not-allowed opacity-50"
       >
         <GoogleLogo size={22} weight="bold" className="text-brand-orange group-hover:scale-110 transition-transform" />
         <span className="font-medium">Continue with Google</span>
@@ -46,34 +52,45 @@ export default function AuthModal() {
       </div>
 
       {/* Form */}
-      <form className="flex flex-col gap-4">
+      <form key={isLogin ? 'login' : 'signup'} onSubmit={handleSubmit} className="flex flex-col gap-4">
         {!isLogin && (
           <div className="relative">
-            <input
-              type="text"
-              placeholder="Full name"
+            <label htmlFor="fullName" className="sr-only">Full name</label>
+            <input 
+              id="fullName"
+              name="fullName"
+              type="text" 
+              placeholder="Full name" 
               className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-orange/50 focus:ring-1 focus:ring-brand-orange/50 transition-all"
             />
           </div>
         )}
 
         <div className="relative">
-          <input
-            type="email"
-            placeholder="Email address"
+          <label htmlFor="email" className="sr-only">Email address</label>
+          <input 
+            id="email"
+            name="email"
+            type="email" 
+            placeholder="Email address" 
             className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-orange/50 focus:ring-1 focus:ring-brand-orange/50 transition-all"
           />
         </div>
 
         <div className="relative flex items-center">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
+          <label htmlFor="password" className="sr-only">Password</label>
+          <input 
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"} 
+            placeholder="Password" 
             className="w-full bg-black/50 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-orange/50 focus:ring-1 focus:ring-brand-orange/50 transition-all"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
             className="absolute right-6 text-gray-500 hover:text-white transition-colors cursor-pointer"
           >
             {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -84,7 +101,8 @@ export default function AuthModal() {
           <div className="text-center mt-2">
             <button
               type="button"
-              className="text-gray-500 text-sm hover:text-white underline decoration-white/30 underline-offset-4 transition-colors cursor-pointer"
+              disabled
+              className="text-gray-500 text-sm hover:text-white underline decoration-white/30 underline-offset-4 transition-colors cursor-not-allowed opacity-50"
             >
               Forgot password?
             </button>
@@ -92,7 +110,7 @@ export default function AuthModal() {
         )}
 
         <button 
-          type="button" 
+          type="submit" 
           className="w-full flex items-center justify-center bg-brand-orange hover:bg-[#e05e00] active:scale-[0.98] text-white font-medium transition-all py-4 rounded-2xl mt-4 cursor-pointer"
         >
           {isLogin ? "Sign in" : "Create account"}

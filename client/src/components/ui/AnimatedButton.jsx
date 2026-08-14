@@ -72,12 +72,16 @@ export default function AnimatedButton({
       )}
 
       {/* Dimension Anchor (Invisible spacer keeping exact width & height) */}
-      <span className="invisible flex items-center gap-2 tracking-tight">
+      <span aria-hidden="true" className="invisible flex items-center gap-2 tracking-tight">
         {children}
       </span>
 
+      {/* Screen reader only text */}
+      <span className="sr-only">{children}</span>
+
       {/* Layer 1: Initial Text (Slides out to the top) */}
       <motion.span
+        aria-hidden="true"
         className="absolute inset-0 flex items-center justify-center gap-2 tracking-tight z-10"
         variants={{
           initial: { y: "0%", opacity: 1 },
@@ -93,6 +97,7 @@ export default function AnimatedButton({
 
       {/* Layer 2: Hover Text (Slides in from the bottom) */}
       <motion.span
+        aria-hidden="true"
         className={`absolute inset-0 flex items-center justify-center gap-2 tracking-tight z-10 ${
           currentVariant.textHoverColor ?? ""
         }`}
@@ -112,7 +117,7 @@ export default function AnimatedButton({
 
   if (href) {
     return (
-      <MotionLink href={href} {...commonProps}>
+      <MotionLink href={href} onClick={onClick} {...commonProps}>
         {content}
       </MotionLink>
     );

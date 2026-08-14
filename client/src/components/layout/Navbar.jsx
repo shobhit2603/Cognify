@@ -10,7 +10,6 @@ import AnimatedButton from "../ui/AnimatedButton";
 export default function Navbar() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,9 +25,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
 
   return (
     <>
@@ -85,16 +81,7 @@ export default function Navbar() {
               </AnimatePresence>
             </button>
 
-            <button
-              onClick={toggleTheme}
-              className="hover:text-brand-orange transition-colors cursor-pointer"
-            >
-              {isDarkMode ? (
-                <Moon size={18} weight="fill" />
-              ) : (
-                <Sun size={18} weight="fill" />
-              )}
-            </button>
+
 
             <div className="bg-white/10 px-2.5 py-0.5 rounded-full text-xs font-medium">
               {scrollProgress}%

@@ -6,11 +6,20 @@ import AnimatedButton from "../components/ui/AnimatedButton";
 
 export default function Home() {
   useEffect(() => {
+    // Save original restoration mode
+    const originalRestoration = window.history.scrollRestoration;
     // Prevent browser from restoring previous scroll position on reload to avoid jumping
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
     window.scrollTo(0, 0);
+    
+    // Restore on unmount
+    return () => {
+      if ("scrollRestoration" in window.history && originalRestoration) {
+        window.history.scrollRestoration = originalRestoration;
+      }
+    };
   }, []);
 
   return (
@@ -19,7 +28,7 @@ export default function Home() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="max-w-4xl flex flex-col items-center gap-8"
+        className="max-w-4xl flex flex-col items-center gap-8 w-full"
       >
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/5 border border-black/10 text-sm font-medium">
           <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse"></span>
@@ -35,10 +44,11 @@ export default function Home() {
           Understand documents, craft professional emails, and enhance your notes with an all-in-one AI platform.
         </p>
 
-        <div className="flex items-center gap-4 mt-8">
+        <div className="flex flex-col sm:flex-row items-center gap-4 mt-8 w-full sm:w-auto">
           <AnimatedButton 
             href="/auth"
             variant="primary"
+            className="w-full sm:w-auto"
           >
             <span>Start creating</span>
             <ArrowRight size={20} weight="bold" />
@@ -46,6 +56,7 @@ export default function Home() {
           <AnimatedButton 
             href="#features"
             variant="outline"
+            className="w-full sm:w-auto"
           >
             <span>Explore features</span>
           </AnimatedButton>

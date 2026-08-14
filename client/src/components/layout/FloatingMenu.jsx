@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -19,11 +19,7 @@ const otherItems = [
   { label: "Cookie Policy", href: "/cookies" }
 ];
 
-const socialItems = [
-  { label: "Twitter / X", href: "#" },
-  { label: "LinkedIn", href: "#" },
-  { label: "Instagram", href: "#" }
-];
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -50,6 +46,49 @@ const itemVariants = {
 };
 
 export default function FloatingMenu({ isOpen, onClose }) {
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement;
+      
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") onClose();
+        
+        if (e.key === "Tab" && modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length === 0) return;
+          
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey && document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
+      };
+
+      document.addEventListener("keydown", handleKeyDown);
+      setTimeout(() => {
+        if (modalRef.current) modalRef.current.focus();
+      }, 50);
+
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        if (previousFocusRef.current) {
+          previousFocusRef.current.focus();
+        }
+      };
+    }
+  }, [isOpen, onClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -62,12 +101,17 @@ export default function FloatingMenu({ isOpen, onClose }) {
           onClick={onClose}
         >
           <motion.div
+            ref={modalRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation Menu"
             initial={{ scale: 0.95, y: -20, opacity: 0, transformOrigin: "top center" }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: -20, opacity: 0 }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-4xl bg-brand-white rounded-[2.5rem] shadow-2xl p-10 md:p-14 overflow-y-auto max-h-full border border-white/50 flex flex-col"
+            className="w-full max-w-4xl bg-brand-white rounded-[2.5rem] shadow-2xl p-10 md:p-14 overflow-y-auto max-h-full border border-white/50 flex flex-col focus:outline-none"
           >
             {/* Logo inside Menu */}
             <motion.div 
@@ -128,22 +172,6 @@ export default function FloatingMenu({ isOpen, onClose }) {
                         href={item.href}
                         className="text-lg font-medium text-brand-black hover:text-brand-orange transition-colors"
                         onClick={onClose}
-                      >
-                        {item.label}
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <motion.span variants={itemVariants} className="text-gray-400 text-xs font-medium uppercase tracking-widest">
-                    Social Media
-                  </motion.span>
-                  {socialItems.map((item, idx) => (
-                    <motion.div key={idx} variants={itemVariants}>
-                      <Link 
-                        href={item.href}
-                        className="text-lg font-medium text-brand-black hover:text-brand-orange transition-colors"
                       >
                         {item.label}
                       </Link>
