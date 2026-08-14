@@ -1,6 +1,8 @@
 import "./globals.css";
 import Providers from "./providers";
 import AuthInitializer from "../features/auth/components/AuthInitializer";
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 export const metadata = {
   title: "Cognify",
   description: "AI-powered productivity workspace",
@@ -11,11 +13,13 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={` h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={`h-full antialiased scroll-smooth`}>
+      <body className="min-h-full flex flex-col bg-brand-white text-brand-black selection:bg-brand-orange selection:text-white">
         <Providers>
           <AuthInitializer>
-            {children}
+            <Navbar />
+            <main className="grow pt-24">{children}</main>
+            <Footer />
           </AuthInitializer>
         </Providers>
       </body>
