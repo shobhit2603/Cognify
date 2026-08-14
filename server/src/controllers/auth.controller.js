@@ -6,7 +6,18 @@ import { setCookies, clearCookies } from "../utils/cookie.util.js";
 export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
-    const user = await authService.register({ name, email, password });
+    const userAgent = req.headers["user-agent"];
+    const ipAddress = req.ip;
+
+    const { accessToken, refreshToken, user } = await authService.registerAndLogin({
+      name,
+      email,
+      password,
+      userAgent,
+      ipAddress,
+    });
+
+    setCookies(res, accessToken, refreshToken);
 
     res
       .status(StatusCodes.CREATED)
@@ -111,7 +122,7 @@ export const googleCallback = async (req, res, next) => {
 
     setCookies(res, accessToken, refreshToken);
 
-    res.redirect(process.env.CLIENT_URL || "http://localhost:3000");
+    res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}/dashboard`);
   } catch (error) {
     next(error);
   }

@@ -21,6 +21,21 @@ export const register = async (userData) => {
   return newUser;
 };
 
+/**
+ * Register a new user and immediately create a session (auto-login on sign-up).
+ */
+export const registerAndLogin = async ({ name, email, password, userAgent, ipAddress }) => {
+  const existingUser = await userRepository.findUserByEmail(email);
+  if (existingUser) {
+    throw ApiError(StatusCodes.CONFLICT, "Email is already registered");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newUser = await userRepository.createUser({ name, email, password: hashedPassword });
+
+  return createTokensAndSession(newUser, userAgent, ipAddress);
+};
+
 export const createTokensAndSession = async (user, userAgent, ipAddress) => {
   const accessToken = jwt.sign(
     { userId: user._id, role: user.role },

@@ -2,11 +2,30 @@
 
 import { useAuth } from '../hooks/useAuth';
 
+/**
+ * AuthInitializer
+ *
+ * Mounted at the root layout. Calling useAuth() triggers the /auth/me
+ * query which hydrates both the React Query cache and the Redux auth slice
+ * from the server's HttpOnly cookie.
+ *
+ * We block rendering until the initial auth check completes (isInitialized)
+ * to prevent a flash of unauthenticated content on protected routes.
+ */
 export default function AuthInitializer({ children }) {
-  // Calling useAuth will trigger the 'user' query on mount,
-  // which hits /auth/me to check for an active session cookie.
-  // The hook also handles syncing this server state to Redux.
-  useAuth();
+  const { isInitialized } = useAuth();
+
+  if (!isInitialized) {
+    return (
+      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-brand-white">
+        <div className="flex flex-col items-center gap-4">
+          {/* Spinner */}
+          <div className="w-8 h-8 rounded-full border-2 border-brand-black/10 border-t-brand-black animate-spin" />
+          <span className="text-xs text-gray-400 font-sans tracking-wide">Initializing…</span>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }

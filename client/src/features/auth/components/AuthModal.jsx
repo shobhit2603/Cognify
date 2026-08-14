@@ -2,26 +2,102 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
-import { 
-  Eye, 
-  EyeSlash, 
-  X, 
-  ArrowRight, 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Eye,
+  EyeSlash,
+  X,
+  ArrowRight,
   ShieldCheck,
   EnvelopeSimple,
   LockSimple,
   User,
-  Sparkle
+  WarningCircle,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../hooks/useAuth";
+
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters"),
+});
+
+const registerSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Full name is required")
+    .min(2, "Name must be at least 2 characters")
+    .max(60, "Name must be less than 60 characters"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Must contain at least one number"),
+});
+
+// ─── Field Error Component ─────────────────────────────────────────────────────
+
+function FieldError({ message }) {
+  if (!message) return null;
+  return (
+    <motion.p
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center gap-1.5 text-red-400 text-xs mt-1.5 font-sans"
+    >
+      <WarningCircle size={12} weight="fill" className="shrink-0" />
+      {message}
+    </motion.p>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AuthModal({ isOpen = true, onClose }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ fullName: "", email: "", password: "" });
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const modalRef = useRef(null);
+  const { loginAsync, registerAsync, isLoggingIn, isRegistering } = useAuth();
+
+  const isLoading = isLoggingIn || isRegistering;
+
+  // ─── Form setup ─────────────────────────────────────────────────────────────
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(isLogin ? loginSchema : registerSchema),
+    mode: "onTouched",
+  });
+
+  // Reset form and errors when switching between login/register
+  useEffect(() => {
+    reset();
+    setShowPassword(false);
+  }, [isLogin, reset]);
+
+  // ─── Modal accessibility ─────────────────────────────────────────────────────
 
   const handleClose = useCallback(() => {
     if (onClose) {
@@ -31,49 +107,55 @@ export default function AuthModal({ isOpen = true, onClose }) {
     }
   }, [onClose, router]);
 
-  // Keyboard accessibility
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") handleClose();
     };
-
     if (isOpen) {
       document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
     }
-
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
   }, [isOpen, handleClose]);
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  // ─── Form submission ─────────────────────────────────────────────────────────
+
+  const onSubmit = async (data) => {
+    try {
+      if (isLogin) {
+        await loginAsync({ email: data.email, password: data.password });
+      } else {
+        await registerAsync({ name: data.name, email: data.email, password: data.password });
+      }
+      // Navigation is handled in useAuth's onSuccess callbacks
+    } catch {
+      // Errors are surfaced via toast in the hook; no extra handling needed here
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Connects to authentication API endpoint
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1200);
-  };
+  // ─── Google OAuth ─────────────────────────────────────────────────────────────
 
   const handleGoogleAuth = () => {
-    // Triggers Google OAuth redirect
-    console.log("Initiating Google OAuth");
+    // Redirect the browser to the server-side OAuth initiation endpoint.
+    // The server will handle the Google redirect and set cookies, then
+    // redirect back to /dashboard on success.
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+    window.location.href = `${apiUrl}/auth/google`;
   };
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-brand-black/75 backdrop-blur-xl overflow-y-auto"
           onClick={handleClose}
         >
-          {/* Subtle Ambient Radial Highlight */}
+          {/* Ambient radial glow */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-130 h-130 bg-white/3 rounded-full blur-[140px] pointer-events-none" />
 
           <motion.div
@@ -85,7 +167,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-100 bg-brand-black text-brand-white rounded-3xl p-8 shadow-2xl relative overflow-hidden my-auto"
           >
-            {/* Top Minimal Close Trigger */}
+            {/* Close button */}
             <button
               onClick={handleClose}
               aria-label="Close modal"
@@ -94,7 +176,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
               <X size={16} weight="bold" />
             </button>
 
-            {/* Header / Brand & Context */}
+            {/* Header */}
             <div className="flex flex-col items-center text-center mb-6">
               <div className="relative w-8 h-8 mb-4">
                 <Image
@@ -110,13 +192,13 @@ export default function AuthModal({ isOpen = true, onClose }) {
                 {isLogin ? "Welcome back" : "Create account"}
               </h2>
               <p className="text-sm text-gray-400 mt-1.5 font-sans">
-                {isLogin 
-                  ? "Sign in to continue to Cognify" 
+                {isLogin
+                  ? "Sign in to continue to Cognify"
                   : "Start researching and writing with AI"}
               </p>
             </div>
 
-            {/* Sliding Segmented Tab Pill */}
+            {/* Login / Register tab switcher */}
             <div className="relative flex bg-white/5 p-1 rounded-xl mb-6">
               <button
                 type="button"
@@ -153,11 +235,12 @@ export default function AuthModal({ isOpen = true, onClose }) {
               </button>
             </div>
 
-            {/* Google OAuth (Clean Monotone/Official styling) */}
-            <button 
+            {/* Google OAuth */}
+            <button
               type="button"
               onClick={handleGoogleAuth}
-              className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 text-white transition-colors py-3 rounded-xl group cursor-pointer active:scale-[0.99]"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 text-white transition-colors py-3 rounded-xl group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
@@ -170,15 +253,15 @@ export default function AuthModal({ isOpen = true, onClose }) {
               </span>
             </button>
 
-            {/* Subtle Divider */}
+            {/* Divider */}
             <div className="flex items-center gap-3 my-5">
               <div className="h-px bg-white/10 flex-1" />
               <span className="text-gray-500 text-xs uppercase font-mono tracking-wider">or email</span>
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
-            {/* Form with animated transitions */}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Form */}
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
               <AnimatePresence mode="popLayout" initial={false}>
                 {!isLogin && (
                   <motion.div
@@ -190,57 +273,88 @@ export default function AuthModal({ isOpen = true, onClose }) {
                     className="overflow-hidden"
                   >
                     <div className="relative flex items-center group mt-1">
-                      <User size={18} className="absolute left-1 text-gray-500 group-focus-within:text-brand-orange transition-colors duration-300 pointer-events-none" />
-                      <input 
-                        name="fullName"
+                      <User
+                        size={18}
+                        className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
+                          errors.name ? "text-red-400" : "text-gray-500 group-focus-within:text-brand-orange"
+                        }`}
+                      />
+                      <input
+                        {...register("name")}
                         type="text"
-                        required={!isLogin}
                         placeholder="Full name"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        className="w-full bg-transparent border-b border-white/10 hover:border-white/20 pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-orange transition-all duration-300 font-sans rounded-none"
+                        autoComplete="name"
+                        className={`w-full bg-transparent border-b pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-sans rounded-none ${
+                          errors.name
+                            ? "border-red-400/70 hover:border-red-400"
+                            : "border-white/10 hover:border-white/20 focus:border-brand-orange"
+                        }`}
                       />
                     </div>
+                    <FieldError message={errors.name?.message} />
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="relative flex items-center group">
-                <EnvelopeSimple size={18} className="absolute left-1 text-gray-500 group-focus-within:text-brand-orange transition-colors duration-300 pointer-events-none" />
-                <input 
-                  name="email"
-                  type="email" 
-                  required
-                  placeholder="Email address" 
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full bg-transparent border-b border-white/10 hover:border-white/20 pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-orange transition-all duration-300 font-sans rounded-none"
-                />
+              {/* Email field */}
+              <div>
+                <div className="relative flex items-center group">
+                  <EnvelopeSimple
+                    size={18}
+                    className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
+                      errors.email ? "text-red-400" : "text-gray-500 group-focus-within:text-brand-orange"
+                    }`}
+                  />
+                  <input
+                    {...register("email")}
+                    type="email"
+                    placeholder="Email address"
+                    autoComplete="email"
+                    className={`w-full bg-transparent border-b pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-sans rounded-none ${
+                      errors.email
+                        ? "border-red-400/70 hover:border-red-400"
+                        : "border-white/10 hover:border-white/20 focus:border-brand-orange"
+                    }`}
+                  />
+                </div>
+                <FieldError message={errors.email?.message} />
               </div>
 
-              <div className="relative flex items-center group">
-                <LockSimple size={18} className="absolute left-1 text-gray-500 group-focus-within:text-brand-orange transition-colors duration-300 pointer-events-none" />
-                <input 
-                  name="password"
-                  type={showPassword ? "text" : "password"} 
-                  required
-                  placeholder="Password" 
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full bg-transparent border-b border-white/10 hover:border-white/20 pl-9 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-orange transition-all duration-300 font-sans rounded-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-1 text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer"
-                >
-                  {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
-                </button>
+              {/* Password field */}
+              <div>
+                <div className="relative flex items-center group">
+                  <LockSimple
+                    size={18}
+                    className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
+                      errors.password ? "text-red-400" : "text-gray-500 group-focus-within:text-brand-orange"
+                    }`}
+                  />
+                  <input
+                    {...register("password")}
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    className={`w-full bg-transparent border-b pl-9 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-sans rounded-none ${
+                      errors.password
+                        ? "border-red-400/70 hover:border-red-400"
+                        : "border-white/10 hover:border-white/20 focus:border-brand-orange"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-1 text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer"
+                  >
+                    {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <FieldError message={errors.password?.message} />
               </div>
 
+              {/* Forgot password */}
               {isLogin && (
-                <div className="flex justify-end pt-0.5">
+                <div className="flex justify-end -mt-1">
                   <button
                     type="button"
                     className="text-gray-400 hover:text-brand-orange text-xs transition-colors cursor-pointer font-sans"
@@ -250,28 +364,32 @@ export default function AuthModal({ isOpen = true, onClose }) {
                 </div>
               )}
 
-              <button 
+              {/* Submit button */}
+              <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-200 text-brand-black active:scale-[0.99] font-display font-semibold text-sm transition-all py-3 rounded-xl mt-1 cursor-pointer shadow-sm disabled:opacity-50 group"
+                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-200 text-brand-black active:scale-[0.99] font-display font-semibold text-sm transition-all py-3 rounded-xl mt-1 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group"
               >
                 {isLoading ? (
                   <span className="w-5 h-5 border-2 border-black/20 border-t-brand-black rounded-full animate-spin" />
                 ) : (
                   <>
                     <span>{isLogin ? "Sign In" : "Create Account"}</span>
-                    <ArrowRight size={16} weight="bold" className="group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight
+                      size={16}
+                      weight="bold"
+                      className="group-hover:translate-x-1 transition-transform"
+                    />
                   </>
                 )}
               </button>
             </form>
 
-            {/* Privacy / Encryption Footer Badge */}
+            {/* Security footer */}
             <div className="flex items-center justify-center gap-2 mt-6 text-gray-400 text-xs text-center">
               <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
               <span>Isolated session encryption</span>
             </div>
-
           </motion.div>
         </div>
       )}

@@ -3,73 +3,91 @@ import { authService } from '../services/auth.service';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setAuthenticated, setInitialized, logoutClient } from '../authSlice';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export const useAuth = () => {
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { isAuthenticated, isInitialized } = useAppSelector((state) => state.auth);
 
-  // Query for getting current user
-  const { data: userResponse, isLoading: isLoadingUser, isError: isAuthError } = useQuery({
+  // Query for getting current user — runs on mount to hydrate auth state from cookie
+  const {
+    data: userResponse,
+    isLoading: isLoadingUser,
+    isError: isAuthError,
+  } = useQuery({
     queryKey: ['user'],
     queryFn: authService.getMe,
-    retry: false, // Don't retry on 401s
+    retry: false,      // Don't retry 401s — fail fast
     staleTime: 5 * 60 * 1000,
   });
 
-  // Effect to sync React Query server state with Redux UI state
+  // Sync React Query server state → Redux UI state.
+  // We use `isLoadingUser` as the gate: once it flips to `false` the query has
+  // settled (success *or* error). This prevents the infinite-spinner bug where
+  // the Google OAuth full-page redirect lands us here with a fresh store but
+  // `userResponse` and `isAuthError` are both falsy on the first render.
   useEffect(() => {
-    if (userResponse?.success) {
-      dispatch(setAuthenticated(true));
-      dispatch(setInitialized(true));
-    } else if (isAuthError) {
-      dispatch(setAuthenticated(false));
+    if (!isLoadingUser) {
+      dispatch(setAuthenticated(userResponse?.success === true));
       dispatch(setInitialized(true));
     }
-  }, [userResponse, isAuthError, dispatch]);
+  }, [isLoadingUser, userResponse, dispatch]);
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
-      // Upon successful login, the server sets the HttpOnly cookie.
-      // We manually set the query data so we don't have to fetch /me immediately again (if login returns user data)
       if (data?.data?.user) {
-         queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
+        queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
       } else {
-         // Alternatively, invalidate the query to force a refetch
-         queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: ['user'] });
       }
-      
       dispatch(setAuthenticated(true));
-      toast.success('Successfully logged in');
+      toast.success('Welcome back!');
+      router.push('/dashboard');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Login failed');
-    }
+      toast.error(error.response?.data?.message || 'Login failed. Check your credentials.');
+    },
   });
 
   const registerMutation = useMutation({
     mutationFn: authService.register,
-    onSuccess: () => {
-      toast.success('Registration successful. Please log in.');
+    onSuccess: (data) => {
+      // After registration, auto-login by invalidating the user query
+      // (server may or may not set cookies on register — adjust if needed)
+      if (data?.data?.user) {
+        queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
+        dispatch(setAuthenticated(true));
+        toast.success('Account created! Welcome to Cognify.');
+        router.push('/dashboard');
+      } else {
+        toast.success('Account created! Please sign in.');
+      }
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Registration failed');
-    }
+      toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
+    },
   });
 
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
     onSuccess: () => {
       queryClient.setQueryData(['user'], null);
-      queryClient.clear(); // Clear all cached queries on logout
+      queryClient.clear();
       dispatch(logoutClient());
-      toast.success('Successfully logged out');
+      toast.success('Signed out successfully.');
+      router.push('/');
     },
     onError: () => {
-      toast.error('Logout failed');
-    }
+      // Even if the server call fails, clear local state and redirect
+      dispatch(logoutClient());
+      queryClient.clear();
+      router.push('/');
+      toast.error('Sign out failed, but local session cleared.');
+    },
   });
 
   return {
