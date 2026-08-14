@@ -1,10 +1,10 @@
 import { Chat } from "../models/chat.model.js";
 
-export const createConversation = async (data) => {
+export const createChat = async (data) => {
   return Chat.create(data);
 };
 
-export const findConversationsByUserId = async (
+export const findChatsByUserId = async (
   userId,
   skip = 0,
   limit = 10,
@@ -16,20 +16,20 @@ export const findConversationsByUserId = async (
     .lean();
 };
 
-export const countConversationsByUserId = async (userId) => {
+export const countChatsByUserId = async (userId) => {
   return Chat.countDocuments({ userId });
 };
 
-export const findConversationById = async (id) => {
+export const findChatById = async (id) => {
   return Chat.findOne({ _id: id });
 };
 
-export const updateConversation = async (id, updateData) => {
+export const updateChat = async (id, updateData) => {
   return Chat.findByIdAndUpdate(id, updateData, {
     returnDocument: "after",
   }).lean();
 };
 
-export const softDeleteConversation = async (id) => {
+export const softDeleteChat = async (id) => {
   return Chat.findByIdAndDelete(id).lean();
 };

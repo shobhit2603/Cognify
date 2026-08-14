@@ -6,7 +6,7 @@ export const createChat = async (userId, title) => {
   // TODO: Integrate with AI teammate's model to generate a dynamic title based on the first message.
   const initialTitle = title || "New Chat";
 
-  const conversation = await chatRepository.createConversation({
+  const conversation = await chatRepository.createChat({
     userId,
     title: initialTitle,
   });
@@ -18,8 +18,8 @@ export const getChats = async (userId, page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
   const [chats, total] = await Promise.all([
-    chatRepository.findConversationsByUserId(userId, skip, limit),
-    chatRepository.countConversationsByUserId(userId),
+    chatRepository.findChatsByUserId(userId, skip, limit),
+    chatRepository.countChatsByUserId(userId),
   ]);
 
   return {
@@ -34,7 +34,7 @@ export const getChats = async (userId, page = 1, limit = 10) => {
 };
 
 export const getChatById = async (chatId, userId) => {
-  const chat = await chatRepository.findConversationById(chatId);
+  const chat = await chatRepository.findChatById(chatId);
 
   if (!chat) {
     throw ApiError(404, "Chat not found");
@@ -52,7 +52,7 @@ export const updateChat = async (chatId, userId, updateData) => {
   // Verify ownership first
   await getChatById(chatId, userId);
 
-  const updatedChat = await chatRepository.updateConversation(
+  const updatedChat = await chatRepository.updateChat(
     chatId,
     updateData,
   );
@@ -63,6 +63,6 @@ export const deleteChat = async (chatId, userId) => {
   // Verify ownership first
   await getChatById(chatId, userId);
 
-  await chatRepository.softDeleteConversation(chatId);
+  await chatRepository.softDeleteChat(chatId);
   return true;
 };
