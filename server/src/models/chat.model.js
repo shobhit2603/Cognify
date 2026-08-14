@@ -12,12 +12,6 @@ const chatSchema = new Schema(
       type: String,
       required: true,
     },
-    // messages: [
-    //   {
-    //     type: Schema.Types.ObjectId,
-    //     ref: "Message",
-    //   },
-    // ],
     pinned: {
       type: Boolean,
       default: false,

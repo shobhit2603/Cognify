@@ -1,4 +1,4 @@
-# Cognify AI 🧠
+# Cognify AI
 
 **Cognify** is a production-ready AI-powered SaaS platform and productivity workspace. 
 
