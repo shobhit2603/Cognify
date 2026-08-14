@@ -6,21 +6,6 @@ import * as sessionRepository from "../repositories/session.repository.js";
 import ApiError from "../utils/apiError.util.js";
 import { StatusCodes } from "http-status-codes";
 
-export const register = async (userData) => {
-  const existingUser = await userRepository.findUserByEmail(userData.email);
-  if (existingUser) {
-    throw ApiError(StatusCodes.CONFLICT, "Email is already registered");
-  }
-
-  const hashedPassword = await bcrypt.hash(userData.password, 10);
-  const newUser = await userRepository.createUser({
-    ...userData,
-    password: hashedPassword,
-  });
-
-  return newUser;
-};
-
 /**
  * Register a new user and immediately create a session (auto-login on sign-up).
  */

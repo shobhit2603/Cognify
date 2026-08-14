@@ -18,6 +18,7 @@ import {
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../hooks/useAuth";
+import { API_URL } from "../../../config/env";
 
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
@@ -28,8 +29,7 @@ const loginSchema = z.object({
     .email("Please enter a valid email address"),
   password: z
     .string()
-    .min(1, "Password is required")
-    .min(6, "Password must be at least 6 characters"),
+    .min(1, "Password is required"),
 });
 
 const registerSchema = z.object({
@@ -37,7 +37,7 @@ const registerSchema = z.object({
     .string()
     .min(1, "Full name is required")
     .min(2, "Name must be at least 2 characters")
-    .max(60, "Name must be less than 60 characters"),
+    .max(50, "Name must be less than 50 characters"),
   email: z
     .string()
     .min(1, "Email is required")
@@ -45,9 +45,7 @@ const registerSchema = z.object({
   password: z
     .string()
     .min(1, "Password is required")
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Must contain at least one number"),
+    .min(8, "Password must be at least 8 characters"),
 });
 
 // ─── Field Error Component ─────────────────────────────────────────────────────
@@ -75,6 +73,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
   const { loginAsync, registerAsync, isLoggingIn, isRegistering } = useAuth();
 
   const isLoading = isLoggingIn || isRegistering;
@@ -91,12 +90,6 @@ export default function AuthModal({ isOpen = true, onClose }) {
     mode: "onTouched",
   });
 
-  // Reset form and errors when switching between login/register
-  useEffect(() => {
-    reset();
-    setShowPassword(false);
-  }, [isLogin, reset]);
-
   // ─── Modal accessibility ─────────────────────────────────────────────────────
 
   const handleClose = useCallback(() => {
@@ -108,17 +101,47 @@ export default function AuthModal({ isOpen = true, onClose }) {
   }, [onClose, router]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") handleClose();
-    };
     if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
+      previousFocusRef.current = document.activeElement;
       document.body.style.overflow = "hidden";
+      
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") handleClose();
+        
+        if (e.key === "Tab" && modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length === 0) return;
+          
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey && document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
+      };
+
+      document.addEventListener("keydown", handleKeyDown);
+      
+      // Focus modal container
+      setTimeout(() => {
+        if (modalRef.current) modalRef.current.focus();
+      }, 50);
+
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        document.body.style.overflow = "unset";
+        if (previousFocusRef.current) {
+          previousFocusRef.current.focus();
+        }
+      };
     }
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
-    };
   }, [isOpen, handleClose]);
 
   // ─── Form submission ─────────────────────────────────────────────────────────
@@ -142,8 +165,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
     // Redirect the browser to the server-side OAuth initiation endpoint.
     // The server will handle the Google redirect and set cookies, then
     // redirect back to /dashboard on success.
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
-    window.location.href = `${apiUrl}/auth/google`;
+    window.location.href = `${API_URL}/auth/google`;
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────────
@@ -160,12 +182,16 @@ export default function AuthModal({ isOpen = true, onClose }) {
 
           <motion.div
             ref={modalRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-modal-title"
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-100 bg-brand-black text-brand-white rounded-3xl p-8 shadow-2xl relative overflow-hidden my-auto"
+            className="w-full max-w-100 bg-brand-black text-brand-white rounded-3xl p-8 shadow-2xl relative overflow-hidden my-auto focus:outline-none"
           >
             {/* Close button */}
             <button
@@ -188,7 +214,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                   priority
                 />
               </div>
-              <h2 className="text-2xl font-display font-semibold tracking-tight text-white">
+              <h2 id="auth-modal-title" className="text-2xl font-display font-semibold tracking-tight text-white">
                 {isLogin ? "Welcome back" : "Create account"}
               </h2>
               <p className="text-sm text-gray-400 mt-1.5 font-sans">
@@ -202,7 +228,11 @@ export default function AuthModal({ isOpen = true, onClose }) {
             <div className="relative flex bg-white/5 p-1 rounded-xl mb-6">
               <button
                 type="button"
-                onClick={() => setIsLogin(true)}
+                onClick={() => {
+                  setIsLogin(true);
+                  reset();
+                  setShowPassword(false);
+                }}
                 className={`relative flex-1 py-2 text-sm font-display font-medium transition-colors duration-200 cursor-pointer z-10 ${
                   isLogin ? "text-white" : "text-gray-400 hover:text-gray-200"
                 }`}
@@ -219,7 +249,11 @@ export default function AuthModal({ isOpen = true, onClose }) {
 
               <button
                 type="button"
-                onClick={() => setIsLogin(false)}
+                onClick={() => {
+                  setIsLogin(false);
+                  reset();
+                  setShowPassword(false);
+                }}
                 className={`relative flex-1 py-2 text-sm font-display font-medium transition-colors duration-200 cursor-pointer z-10 ${
                   !isLogin ? "text-white" : "text-gray-400 hover:text-gray-200"
                 }`}

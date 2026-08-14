@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { List, X, SquaresFour } from "@phosphor-icons/react";
+import { List, X, SquaresFour, SignOut } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "motion/react";
 import FloatingMenu from "./FloatingMenu";
 import AnimatedButton from "../ui/AnimatedButton";
@@ -167,6 +167,19 @@ export default function Navbar() {
                     <SquaresFour size={14} weight="bold" />
                     <span>Dashboard</span>
                   </Link>
+                  <button
+                    onClick={() => logout()}
+                    disabled={isLoggingOut}
+                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/50 hover:bg-white/80 text-brand-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Sign out"
+                    title="Sign out"
+                  >
+                    {isLoggingOut ? (
+                      <span className="w-3 h-3 border-2 border-black/20 border-t-brand-black rounded-full animate-spin" />
+                    ) : (
+                      <SignOut size={14} weight="bold" />
+                    )}
+                  </button>
                   {/* Avatar */}
                   <div className="w-8 h-8 rounded-full bg-brand-orange/20 border border-brand-orange/30 flex items-center justify-center shrink-0">
                     <span className="text-xs font-display font-bold text-brand-orange">{initials}</span>

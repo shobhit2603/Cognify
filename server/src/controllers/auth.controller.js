@@ -2,6 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import * as authService from "../services/auth.service.js";
 import ApiResponse from "../utils/apiResponse.util.js";
 import { setCookies, clearCookies } from "../utils/cookie.util.js";
+import envConfig from "../config/env.config.js";
 
 export const register = async (req, res, next) => {
   try {
@@ -122,7 +123,7 @@ export const googleCallback = async (req, res, next) => {
 
     setCookies(res, accessToken, refreshToken);
 
-    res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}/dashboard`);
+    res.redirect(`${envConfig.CLIENT_URL}/dashboard`);
   } catch (error) {
     next(error);
   }

@@ -16,6 +16,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "../../features/auth/hooks/useAuth";
 
 const menuItems = [
   { 
@@ -87,6 +88,7 @@ const itemVariants = {
 export default function FloatingMenu({ isOpen, onClose }) {
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const { isAuthenticated, logout, isLoggingOut, user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -230,24 +232,64 @@ export default function FloatingMenu({ isOpen, onClose }) {
                   className="bg-brand-black text-brand-white rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-brand-orange/20 rounded-full blur-2xl pointer-events-none" />
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-orange text-[10px] font-bold uppercase tracking-wider mb-3">
-                      <span>Ready to Deploy</span>
-                    </div>
-                    <h4 className="text-xl font-display font-bold mb-1">Start in seconds</h4>
-                    <p className="text-xs text-gray-400 leading-relaxed mb-4">
-                      Create an account and test our streaming workspace without setup overhead.
-                    </p>
-                  </div>
+                  
+                  {isAuthenticated ? (
+                    <>
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-wider mb-3">
+                          <ShieldCheck size={12} weight="fill" />
+                          <span>Authenticated</span>
+                        </div>
+                        <h4 className="text-xl font-display font-bold mb-1">Welcome back, {user?.name?.split(' ')[0] || 'User'}</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                          Your workspace is ready. Pick up right where you left off.
+                        </p>
+                      </div>
 
-                  <Link
-                    href="/auth"
-                    onClick={onClose}
-                    className="inline-flex items-center justify-center gap-2 bg-brand-orange hover:bg-white hover:text-brand-black text-white text-xs font-display font-bold py-2.5 px-4 rounded-xl transition-colors duration-200"
-                  >
-                    <span>Get Free Access</span>
-                    <ArrowUpRight size={14} weight="bold" />
-                  </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href="/dashboard"
+                          onClick={onClose}
+                          className="flex-1 inline-flex items-center justify-center gap-2 bg-brand-orange hover:bg-white hover:text-brand-black text-white text-xs font-display font-bold py-2.5 px-4 rounded-xl transition-colors duration-200"
+                        >
+                          <span>Dashboard</span>
+                          <ArrowRight size={14} weight="bold" />
+                        </Link>
+                        
+                        <button
+                          onClick={() => {
+                            logout();
+                            onClose();
+                          }}
+                          disabled={isLoggingOut}
+                          className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-xs font-display font-bold py-2.5 px-4 rounded-xl transition-colors duration-200 cursor-pointer disabled:opacity-50"
+                        >
+                          {isLoggingOut ? "..." : "Sign Out"}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-orange text-[10px] font-bold uppercase tracking-wider mb-3">
+                          <span>Ready to Deploy</span>
+                        </div>
+                        <h4 className="text-xl font-display font-bold mb-1">Start in seconds</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                          Create an account and test our streaming workspace without setup overhead.
+                        </p>
+                      </div>
+
+                      <Link
+                        href="/auth"
+                        onClick={onClose}
+                        className="inline-flex items-center justify-center gap-2 bg-brand-orange hover:bg-white hover:text-brand-black text-white text-xs font-display font-bold py-2.5 px-4 rounded-xl transition-colors duration-200"
+                      >
+                        <span>Get Free Access</span>
+                        <ArrowUpRight size={14} weight="bold" />
+                      </Link>
+                    </>
+                  )}
                 </motion.div>
 
                 {/* Secondary Links */}

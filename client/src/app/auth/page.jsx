@@ -1,20 +1,22 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import AuthModal from '../../features/auth/components/AuthModal';
 
 export default function AuthPage() {
   const { isAuthenticated, isInitialized } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // If user is already authenticated, redirect to dashboard
+  // If user is already authenticated, redirect to dashboard or next path
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
-      router.replace('/dashboard');
+      const nextUrl = searchParams.get('next') || '/dashboard';
+      router.replace(nextUrl);
     }
-  }, [isAuthenticated, isInitialized, router]);
+  }, [isAuthenticated, isInitialized, router, searchParams]);
 
   // Don't render the auth modal until we know the user is not authenticated
   if (!isInitialized || isAuthenticated) {

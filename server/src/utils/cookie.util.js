@@ -12,12 +12,33 @@ import envConfig from "../config/env.config.js";
  * still blocking them on cross-site sub-resource requests (fetch/XHR), which
  * is the correct security posture for HttpOnly auth cookies.
  */
-export const setCookies = (res, accessToken, refreshToken) => {
-  const cookieOptions = {
+const getCookieOptions = (req) => {
+  const isProd = envConfig.NODE_ENV === "production";
+  
+  // Basic lax options
+  const baseOptions = {
     httpOnly: true,
-    secure: envConfig.NODE_ENV === "production",
+    secure: isProd,
     sameSite: "lax",
   };
+
+  // If a request object is passed and origin doesn't match the server's own origin/localhost, 
+  // we might be cross-site. Since the API handles CORS based on ALLOWED_ORIGINS, 
+  // if ALLOWED_ORIGINS does not match the server's domain in production, it's cross-site.
+  // For safety and compatibility with cross-site setups (like frontend on Vercel, backend on Render):
+  if (isProd && process.env.IS_CROSS_SITE === "true") {
+    return {
+      ...baseOptions,
+      secure: true, // none requires secure
+      sameSite: "none",
+    };
+  }
+
+  return baseOptions;
+};
+
+export const setCookies = (res, accessToken, refreshToken, req = null) => {
+  const cookieOptions = getCookieOptions(req);
 
   res.cookie("accessToken", accessToken, {
     ...cookieOptions,
@@ -30,7 +51,8 @@ export const setCookies = (res, accessToken, refreshToken) => {
   });
 };
 
-export const clearCookies = (res) => {
-  res.clearCookie("accessToken", { httpOnly: true, sameSite: "lax" });
-  res.clearCookie("refreshToken", { httpOnly: true, sameSite: "lax" });
+export const clearCookies = (res, req = null) => {
+  const cookieOptions = getCookieOptions(req);
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 };

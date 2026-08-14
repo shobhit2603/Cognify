@@ -31,10 +31,17 @@ export const useAuth = () => {
   // `userResponse` and `isAuthError` are both falsy on the first render.
   useEffect(() => {
     if (!isLoadingUser) {
-      dispatch(setAuthenticated(userResponse?.success === true));
+      if (isAuthError) {
+        // We only mark unauthenticated if we have a real error.
+        // It might be a 401/403 meaning token is bad.
+        // We do not rely solely on userResponse?.success for error states here.
+        dispatch(setAuthenticated(false));
+      } else if (userResponse?.success) {
+        dispatch(setAuthenticated(true));
+      }
       dispatch(setInitialized(true));
     }
-  }, [isLoadingUser, userResponse, dispatch]);
+  }, [isLoadingUser, isAuthError, userResponse, dispatch]);
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -75,8 +82,7 @@ export const useAuth = () => {
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
     onSuccess: () => {
-      queryClient.setQueryData(['user'], null);
-      queryClient.clear();
+      queryClient.clear(); // Complete cache wipe, implies user=null
       dispatch(logoutClient());
       toast.success('Signed out successfully.');
       router.push('/');

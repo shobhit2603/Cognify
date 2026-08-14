@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Next.js Route Protection Middleware
+ * Next.js Route Protection Proxy
  *
  * Runs on the Edge runtime before every matched request.
  * Strategy: cookie presence check.
@@ -17,24 +17,30 @@ import { NextResponse } from 'next/server';
  *   Protected: /dashboard and all sub-routes  → redirect to /auth if no cookie
  *   Auth-only: /auth                          → redirect to /dashboard if cookie present
  */
-export function middleware(request) {
+export function proxy(request) {
   const { pathname } = request.nextUrl;
   const accessToken = request.cookies.get('accessToken')?.value;
+  const refreshToken = request.cookies.get('refreshToken')?.value;
+
+  const isAuthenticated = !!(accessToken || refreshToken);
 
   const isProtectedRoute = pathname.startsWith('/dashboard');
   const isAuthRoute = pathname === '/auth';
 
   // ── Redirect unauthenticated users away from protected routes ──────────────
-  if (isProtectedRoute && !accessToken) {
+  if (isProtectedRoute && !isAuthenticated) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth';
+    url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
 
   // ── Redirect authenticated users away from the auth page ──────────────────
-  if (isAuthRoute && accessToken) {
+  if (isAuthRoute && isAuthenticated) {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    const nextPath = request.nextUrl.searchParams.get('next') || '/dashboard';
+    url.pathname = nextPath;
+    url.search = '';
     return NextResponse.redirect(url);
   }
 
@@ -43,11 +49,10 @@ export function middleware(request) {
 
 export const config = {
   /*
-   * Match all routes except:
-   *   - Next.js internals (_next/static, _next/image, favicon, etc.)
-   *   - Public static files (images, fonts, etc.)
+   * Match only paths that actually need middleware protection/redirection
    */
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|Cognify-Logo.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf)$).*)',
+    '/dashboard/:path*',
+    '/auth/:path*'
   ],
 };

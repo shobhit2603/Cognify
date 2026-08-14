@@ -1,7 +1,5 @@
 import axios from 'axios';
-
-// The base URL can be an environment variable.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+import { API_URL } from '../config/env';
 
 export const axiosInstance = axios.create({
   baseURL: API_URL,
