@@ -1,22 +1,58 @@
 import envConfig from "../config/env.config.js";
 
-export const setCookies = (res, accessToken, refreshToken) => {
-  res.cookie("accessToken", accessToken, {
+/**
+ * sameSite: 'lax' is intentional.
+ *
+ * 'strict' breaks OAuth redirect flows: when Google redirects back to our
+ * server callback and we then redirect to the client, the browser treats that
+ * as a cross-site navigation and refuses to send 'strict' cookies on the very
+ * next request (/auth/me), causing an instant 401.
+ *
+ * 'lax' allows cookies to be sent on top-level navigations (redirects) while
+ * still blocking them on cross-site sub-resource requests (fetch/XHR), which
+ * is the correct security posture for HttpOnly auth cookies.
+ */
+const getCookieOptions = (req) => {
+  const isProd = envConfig.NODE_ENV === "production";
+  
+  // Basic lax options
+  const baseOptions = {
     httpOnly: true,
-    secure: envConfig.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: isProd,
+    sameSite: "lax",
+  };
+
+  // If a request object is passed and origin doesn't match the server's own origin/localhost, 
+  // we might be cross-site. Since the API handles CORS based on ALLOWED_ORIGINS, 
+  // if ALLOWED_ORIGINS does not match the server's domain in production, it's cross-site.
+  // For safety and compatibility with cross-site setups (like frontend on Vercel, backend on Render):
+  if (isProd && process.env.IS_CROSS_SITE === "true") {
+    return {
+      ...baseOptions,
+      secure: true, // none requires secure
+      sameSite: "none",
+    };
+  }
+
+  return baseOptions;
+};
+
+export const setCookies = (res, accessToken, refreshToken, req = null) => {
+  const cookieOptions = getCookieOptions(req);
+
+  res.cookie("accessToken", accessToken, {
+    ...cookieOptions,
     maxAge: envConfig.ACCESS_TOKEN_COOKIE_MAX_AGE,
   });
 
   res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: envConfig.NODE_ENV === "production",
-    sameSite: "strict",
+    ...cookieOptions,
     maxAge: envConfig.REFRESH_TOKEN_COOKIE_MAX_AGE,
   });
 };
 
-export const clearCookies = (res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
+export const clearCookies = (res, req = null) => {
+  const cookieOptions = getCookieOptions(req);
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 };
