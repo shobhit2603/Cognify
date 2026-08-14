@@ -7,27 +7,39 @@ import { paginationSchema } from "../validations/pagination.validation.js";
 
 export const addMessage = async (req, res, next) => {
   try {
-    const chatId = req.params.chatId;
+    let chatId = req.params.chatId;
     const userId = req.user._id;
     const { role, content } = req.body;
+
+    let chat = null;
+
+    // If no chatId is provided, create a new chat
+    if (!chatId) {
+      chat = await chatService.createChat(userId, "New Chat");
+      chatId = chat._id.toString();
+    }
 
     const message = await messageService.addMessage(chatId, userId, role, content);
 
     let assistantMessage = null;
 
     if (role === "user") {
-      // Get history for AI and check if it's the first message
+      // Get history for AI
       const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
       
-      // Update Title if it's the first user message
-      if (messages.length <= 2) { 
-        const chat = await chatService.getChatById(chatId, userId);
-        if (chat.title === "New Chat" || chat.title === "New Conversation") {
-          const { chatTitle } = await aiService.getTitle({ message: content });
-          if (chatTitle) {
-            await chatService.updateChat(chatId, userId, { title: chatTitle });
-          }
-        }
+      if (!chat) {
+        chat = await chatService.getChatById(chatId, userId);
+      }
+
+      // Try to generate and update Title asynchronously if it's still default
+      if (chat.title === "New Chat" || chat.title === "New Conversation") {
+        aiService.getTitle({ message: content })
+          .then(async ({ chatTitle }) => {
+            if (chatTitle && chatTitle !== "New Chat" && chatTitle !== "New Conversation") {
+              await chatService.updateChat(chatId, userId, { title: chatTitle });
+            }
+          })
+          .catch((err) => console.error("Error generating title:", err));
       }
 
       // Format history for AI
@@ -53,7 +65,8 @@ export const addMessage = async (req, res, next) => {
       .status(StatusCodes.CREATED)
       .json(ApiResponse(StatusCodes.CREATED, "Message added successfully", { 
         message, 
-        ...(assistantMessage && { assistantMessage })
+        ...(assistantMessage && { assistantMessage }),
+        ...(chat && { chat }) // Return chat object if a new one was created or fetched
       }));
   } catch (error) {
     next(error);
