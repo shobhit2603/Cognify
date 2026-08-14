@@ -2,7 +2,10 @@ import express from "express";
 import * as messageController from "../controllers/message.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
-import { addMessageSchema, updateMessageSchema } from "../validations/message.validation.js";
+import {
+  addMessageSchema,
+  updateMessageSchema,
+} from "../validations/message.validation.js";
 
 const router = express.Router();
 
@@ -49,7 +52,40 @@ router.use(requireAuth);
  *       201:
  *         description: Message added successfully
  */
-router.post("/:chatId", validate(addMessageSchema), messageController.addMessage);
+router.post(
+  "/:chatId",
+  validate(addMessageSchema),
+  messageController.addMessage,
+);
+
+/**
+ * @swagger
+ * /api/v1/messages:
+ *   post:
+ *     summary: Add a message to start a new chat
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role
+ *               - content
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [user, assistant, system]
+ *               content:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Message added successfully and new chat created
+ */
+router.post("/", validate(addMessageSchema), messageController.addMessage);
 
 /**
  * @swagger
@@ -110,7 +146,11 @@ router.get("/:chatId", messageController.getMessages);
  *       200:
  *         description: Message updated successfully
  */
-router.patch("/:id", validate(updateMessageSchema), messageController.updateMessage);
+router.patch(
+  "/:id",
+  validate(updateMessageSchema),
+  messageController.updateMessage,
+);
 
 /**
  * @swagger
