@@ -1,10 +1,10 @@
 import { Chat } from "../models/chat.model.js";
 
-export const createConversation = async (data) => {
+export const createChat = async (data) => {
   return Chat.create(data);
 };
 
-export const findConversationsByUserId = async (userId, title = "", skip = 0, limit = 10) => {
+export const findChatsByUserId = async (userId, title = "", skip = 0, limit = 10) => {
   const query = { userId, isDeleted: { $ne: true } };
   if (title) {
     query.title = { $regex: title, $options: "i" };
@@ -17,7 +17,7 @@ export const findConversationsByUserId = async (userId, title = "", skip = 0, li
     .lean();
 };
 
-export const countConversationsByUserId = async (userId, title = "") => {
+export const countChatsByUserId = async (userId, title = "") => {
   const query = { userId, isDeleted: { $ne: true } };
   if (title) {
     query.title = { $regex: title, $options: "i" };
@@ -25,16 +25,16 @@ export const countConversationsByUserId = async (userId, title = "") => {
   return Chat.countDocuments(query);
 };
 
-export const findConversationById = async (id) => {
+export const findChatById = async (id) => {
   return Chat.findOne({ _id: id, isDeleted: { $ne: true } });
 };
 
-export const updateConversation = async (id, updateData) => {
+export const updateChat = async (id, updateData) => {
   return Chat.findByIdAndUpdate(id, updateData, {
     returnDocument: "after",
   }).lean();
 };
 
-export const softDeleteConversation = async (id) => {
+export const softDeleteChat = async (id) => {
   return Chat.findByIdAndUpdate(id, { isDeleted: true }).lean();
 };

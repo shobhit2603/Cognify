@@ -13,12 +13,6 @@ const chatSchema = new Schema(
       required: true,
       default: "New Chat",
     },
-    // messages: [
-    //   {
-    //     type: Schema.Types.ObjectId,
-    //     ref: "Message",
-    //   },
-    // ],
     pinned: {
       type: Boolean,
       default: false,

@@ -2,11 +2,23 @@ import { StatusCodes } from "http-status-codes";
 import * as authService from "../services/auth.service.js";
 import ApiResponse from "../utils/apiResponse.util.js";
 import { setCookies, clearCookies } from "../utils/cookie.util.js";
+import envConfig from "../config/env.config.js";
 
 export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
-    const user = await authService.register({ name, email, password });
+    const userAgent = req.headers["user-agent"];
+    const ipAddress = req.ip;
+
+    const { accessToken, refreshToken, user } = await authService.registerAndLogin({
+      name,
+      email,
+      password,
+      userAgent,
+      ipAddress,
+    });
+
+    setCookies(res, accessToken, refreshToken);
 
     res
       .status(StatusCodes.CREATED)
@@ -111,7 +123,7 @@ export const googleCallback = async (req, res, next) => {
 
     setCookies(res, accessToken, refreshToken);
 
-    res.redirect(process.env.CLIENT_URL || "http://localhost:3000");
+    res.redirect(`${envConfig.CLIENT_URL}/dashboard`);
   } catch (error) {
     next(error);
   }

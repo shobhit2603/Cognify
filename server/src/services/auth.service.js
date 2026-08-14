@@ -1,24 +1,25 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "crypto";
 import envConfig from "../config/env.config.js";
 import * as userRepository from "../repositories/user.repository.js";
 import * as sessionRepository from "../repositories/session.repository.js";
 import ApiError from "../utils/apiError.util.js";
 import { StatusCodes } from "http-status-codes";
 
-export const register = async (userData) => {
-  const existingUser = await userRepository.findUserByEmail(userData.email);
+/**
+ * Register a new user and immediately create a session (auto-login on sign-up).
+ */
+export const registerAndLogin = async ({ name, email, password, userAgent, ipAddress }) => {
+  const existingUser = await userRepository.findUserByEmail(email);
   if (existingUser) {
     throw ApiError(StatusCodes.CONFLICT, "Email is already registered");
   }
 
-  const hashedPassword = await bcrypt.hash(userData.password, 10);
-  const newUser = await userRepository.createUser({
-    ...userData,
-    password: hashedPassword,
-  });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newUser = await userRepository.createUser({ name, email, password: hashedPassword });
 
-  return newUser;
+  return createTokensAndSession(newUser, userAgent, ipAddress);
 };
 
 export const createTokensAndSession = async (user, userAgent, ipAddress) => {
@@ -29,7 +30,7 @@ export const createTokensAndSession = async (user, userAgent, ipAddress) => {
   );
 
   const refreshToken = jwt.sign(
-    { userId: user._id },
+    { userId: user._id, jti: randomUUID() },
     envConfig.REFRESH_TOKEN_SECRET,
     { expiresIn: envConfig.REFRESH_TOKEN_EXPIRY },
   );
