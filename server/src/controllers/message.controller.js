@@ -5,6 +5,9 @@ import * as aiService from "../services/ai.service.js";
 import ApiResponse from "../utils/apiResponse.util.js";
 import { paginationSchema } from "../validations/pagination.validation.js";
 
+// Deduplication set for async title generation
+const generatingTitles = new Set();
+
 export const addMessage = async (req, res, next) => {
   try {
     let chatId = req.params.chatId;
@@ -32,14 +35,19 @@ export const addMessage = async (req, res, next) => {
       }
 
       // Try to generate and update Title asynchronously if it's still default
-      if (chat.title === "New Chat" || chat.title === "New Conversation") {
-        aiService.getTitle({ message: content })
-          .then(async ({ chatTitle }) => {
-            if (chatTitle && chatTitle !== "New Chat" && chatTitle !== "New Conversation") {
-              await chatService.updateChat(chatId, userId, { title: chatTitle });
-            }
-          })
-          .catch((err) => console.error("Error generating title:", err));
+      // Deduplicate concurrent requests and limit retries to the first 6 messages
+      if ((chat.title === "New Chat" || chat.title === "New Conversation") && messages.length <= 6) {
+        if (!generatingTitles.has(chatId)) {
+          generatingTitles.add(chatId);
+          aiService.getTitle({ message: content })
+            .then(async ({ chatTitle }) => {
+              if (chatTitle && chatTitle !== "New Chat" && chatTitle !== "New Conversation") {
+                await chatService.updateChat(chatId, userId, { title: chatTitle });
+              }
+            })
+            .catch((err) => console.error("Error generating title:", err))
+            .finally(() => generatingTitles.delete(chatId));
+        }
       }
 
       // Format history for AI
