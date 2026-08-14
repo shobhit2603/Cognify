@@ -21,9 +21,9 @@ export const createChat = async (req, res, next) => {
 export const getChats = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const { page, limit } = paginationSchema.parse(req.query);
+    const { page, limit, search } = paginationSchema.parse(req.query);
 
-    const result = await chatService.getChats(userId, page, limit);
+    const result = await chatService.getChats(userId, search, page, limit);
 
     res
       .status(StatusCodes.OK)

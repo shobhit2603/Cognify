@@ -14,12 +14,12 @@ export const createChat = async (userId, title) => {
   return conversation;
 };
 
-export const getChats = async (userId, page = 1, limit = 10) => {
+export const getChats = async (userId, search = "", page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
   const [chats, total] = await Promise.all([
-    chatRepository.findConversationsByUserId(userId, skip, limit),
-    chatRepository.countConversationsByUserId(userId),
+    chatRepository.findConversationsByUserId(userId, search, skip, limit),
+    chatRepository.countConversationsByUserId(userId, search),
   ]);
 
   return {

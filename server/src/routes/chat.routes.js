@@ -60,6 +60,11 @@ router.post("/", validate(createChatSchema), chatController.createChat);
  *           type: integer
  *           default: 10
  *         description: Number of chats per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Optional title to search for within the user's chats
  *     responses:
  *       200:
  *         description: Chats retrieved successfully
