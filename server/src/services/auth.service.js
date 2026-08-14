@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "crypto";
 import envConfig from "../config/env.config.js";
 import * as userRepository from "../repositories/user.repository.js";
 import * as sessionRepository from "../repositories/session.repository.js";
@@ -29,7 +30,7 @@ export const createTokensAndSession = async (user, userAgent, ipAddress) => {
   );
 
   const refreshToken = jwt.sign(
-    { userId: user._id },
+    { userId: user._id, jti: randomUUID() },
     envConfig.REFRESH_TOKEN_SECRET,
     { expiresIn: envConfig.REFRESH_TOKEN_EXPIRY },
   );
