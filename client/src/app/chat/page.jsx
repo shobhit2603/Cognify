@@ -53,6 +53,10 @@ export default function ChatPage() {
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
 
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const isUserScrolledUpRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
+  const previousMessagesLength = useRef(0);
 
   // Ref that is true whenever a stream is in-flight — prevents the
   // getMessages effect from overwriting optimistic state mid-stream.
@@ -73,32 +77,34 @@ export default function ChatPage() {
     }
   }, [activeChatId]);
 
-
   // ─── Initialize: Fetch Chats ─────────────────────────────────────────────────
 
   useEffect(() => {
     if (!user) return;
 
-    chatService.getChats(1, 100).then((data) => {
-      if (!data?.chats) return;
-      setConversations(data.chats);
+    chatService
+      .getChats(1, 100)
+      .then((data) => {
+        if (!data?.chats) return;
+        setConversations(data.chats);
 
-      // After fetching chats, ensure the persisted activeChatId actually
-      // exists in the user's chat list. If not, fall back to the first chat.
-      setActiveChatId((prev) => {
-        // prev is already validated/set by the lazy initializer.
-        // Keep it if it's a real chat that exists in the list.
-        if (prev && data.chats.some((c) => c._id === prev)) return prev;
-        // prev is null — check what localStorage says:
-        // if the sentinel is there the user intentionally navigated to new chat,
-        // so stay there. Only fall back to the first chat on a genuine first visit
-        // (no key stored at all).
-        const stored = localStorage.getItem(ACTIVE_CHAT_KEY);
-        if (stored === NEW_CHAT_SENTINEL || !stored) return null;
-        // stored is a chatId that no longer exists — fall back to first chat.
-        return data.chats.length > 0 ? data.chats[0]._id : null;
-      });
-    }).catch(console.error);
+        // After fetching chats, ensure the persisted activeChatId actually
+        // exists in the user's chat list. If not, fall back to the first chat.
+        setActiveChatId((prev) => {
+          // prev is already validated/set by the lazy initializer.
+          // Keep it if it's a real chat that exists in the list.
+          if (prev && data.chats.some((c) => c._id === prev)) return prev;
+          // prev is null — check what localStorage says:
+          // if the sentinel is there the user intentionally navigated to new chat,
+          // so stay there. Only fall back to the first chat on a genuine first visit
+          // (no key stored at all).
+          const stored = localStorage.getItem(ACTIVE_CHAT_KEY);
+          if (stored === NEW_CHAT_SENTINEL || !stored) return null;
+          // stored is a chatId that no longer exists — fall back to first chat.
+          return data.chats.length > 0 ? data.chats[0]._id : null;
+        });
+      })
+      .catch(console.error);
   }, [user]);
 
   // ─── Fetch Messages on Chat Switch ──────────────────────────────────────────
@@ -111,28 +117,59 @@ export default function ChatPage() {
     }
     if (isStreamingRef.current) return;
 
-    chatService.getMessages(activeChatId, 1, 100).then((data) => {
-      if (!data?.messages) return;
-      // Backend already sorts { createdAt: 1 } — chronological order.
-      // No .reverse() needed.
-      const formatted = data.messages.map((m) => ({
-        id: m._id,
-        role: m.role,
-        content: m.content,
-      }));
-      setMessages(formatted);
-    }).catch(console.error);
+    chatService
+      .getMessages(activeChatId, 1, 100)
+      .then((data) => {
+        if (!data?.messages) return;
+        // Backend already sorts { createdAt: 1 } — chronological order.
+        // No .reverse() needed.
+        const formatted = data.messages.map((m) => ({
+          id: m._id,
+          role: m.role,
+          content: m.content,
+        }));
+        setMessages(formatted);
+      })
+      .catch(console.error);
   }, [activeChatId]);
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────────
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } =
+      scrollContainerRef.current;
+
+    const isScrollingUp = scrollTop < lastScrollTopRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    
+    if (isScrollingUp && !isAtBottom) {
+      isUserScrolledUpRef.current = true;
+    } else if (isAtBottom) {
+      isUserScrolledUpRef.current = false;
+    }
+    
+    lastScrollTopRef.current = scrollTop;
+  }, []);
+
+  const scrollToBottom = useCallback((force = false, smooth = true) => {
+    if (force || !isUserScrolledUpRef.current) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+      });
+    }
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    const isNewMessage = messages.length > previousMessagesLength.current;
+    previousMessagesLength.current = messages.length;
+
+    // Use smooth scrolling if a brand new message was just added,
+    // or if we're not actively generating.
+    // During chunk updates (streaming), use 'auto' to prevent flickering.
+    const useSmooth = isNewMessage || !isGenerating;
+    scrollToBottom(false, useSmooth);
+  }, [messages, isGenerating, scrollToBottom]);
 
   // ─── Cleanup on unmount ──────────────────────────────────────────────────────
 
@@ -190,9 +227,13 @@ export default function ChatPage() {
       const data = await chatService.getChatById(chatId);
       if (!data?.chat) return;
       const newTitle = data.chat.title;
-      if (newTitle && newTitle !== "New Chat" && newTitle !== "New Conversation") {
+      if (
+        newTitle &&
+        newTitle !== "New Chat" &&
+        newTitle !== "New Conversation"
+      ) {
         setConversations((prev) =>
-          prev.map((c) => (c._id === chatId ? { ...c, title: newTitle } : c))
+          prev.map((c) => (c._id === chatId ? { ...c, title: newTitle } : c)),
         );
       }
     } catch (err) {
@@ -203,8 +244,7 @@ export default function ChatPage() {
   // ─── SEND & STREAM ───────────────────────────────────────────────────────────
 
   const handleSend = async (customPrompt) => {
-    const textToSend =
-      typeof customPrompt === "string" ? customPrompt : input;
+    const textToSend = typeof customPrompt === "string" ? customPrompt : input;
     if (!textToSend.trim() || isGenerating) return;
 
     // Capture whether this is a brand-new chat (no chatId yet)
@@ -229,6 +269,7 @@ export default function ChatPage() {
     setIsGenerating(true);
     setStreamingMessageId(assistantId);
     isStreamingRef.current = true;
+    isUserScrolledUpRef.current = false;
 
     // Fresh AbortController per stream
     const controller = new AbortController();
@@ -256,8 +297,8 @@ export default function ChatPage() {
               prev.map((msg) =>
                 msg.id === userMessageId
                   ? { ...msg, id: payload.message._id }
-                  : msg
-              )
+                  : msg,
+              ),
             );
           }
         },
@@ -267,8 +308,8 @@ export default function ChatPage() {
             prev.map((msg) =>
               msg.id === assistantId
                 ? { ...msg, content: msg.content + chunkText }
-                : msg
-            )
+                : msg,
+            ),
           );
         },
 
@@ -279,8 +320,8 @@ export default function ChatPage() {
               prev.map((msg) =>
                 msg.id === assistantId
                   ? { ...msg, id: payload.message._id }
-                  : msg
-              )
+                  : msg,
+              ),
             );
           }
           isStreamingRef.current = false;
@@ -305,15 +346,15 @@ export default function ChatPage() {
                       msg.content ||
                       "Sorry, something went wrong. Please try again.",
                   }
-                : msg
-            )
+                : msg,
+            ),
           );
           isStreamingRef.current = false;
           setStreamingMessageId(null);
           setIsGenerating(false);
         },
       },
-      controller.signal
+      controller.signal,
     );
   };
 
@@ -353,14 +394,14 @@ export default function ChatPage() {
     const chat = conversations.find((c) => c._id === id);
     if (!chat) return;
     setConversations((prev) =>
-      prev.map((c) => (c._id === id ? { ...c, pinned: !c.pinned } : c))
+      prev.map((c) => (c._id === id ? { ...c, pinned: !c.pinned } : c)),
     );
     try {
       await chatService.updateChat(id, { pinned: !chat.pinned });
     } catch (err) {
       console.error(err);
       setConversations((prev) =>
-        prev.map((c) => (c._id === id ? { ...c, pinned: chat.pinned } : c))
+        prev.map((c) => (c._id === id ? { ...c, pinned: chat.pinned } : c)),
       );
     }
   };
@@ -398,7 +439,7 @@ export default function ChatPage() {
     }
     const oldTitle = conversations.find((c) => c._id === id)?.title;
     setConversations((prev) =>
-      prev.map((c) => (c._id === id ? { ...c, title: editTitle.trim() } : c))
+      prev.map((c) => (c._id === id ? { ...c, title: editTitle.trim() } : c)),
     );
     setEditingChatId(null);
     try {
@@ -406,7 +447,7 @@ export default function ChatPage() {
     } catch (err) {
       console.error(err);
       setConversations((prev) =>
-        prev.map((c) => (c._id === id ? { ...c, title: oldTitle } : c))
+        prev.map((c) => (c._id === id ? { ...c, title: oldTitle } : c)),
       );
     }
   };
@@ -419,9 +460,8 @@ export default function ChatPage() {
 
   // ─── Derived / Filtered Lists ─────────────────────────────────────────────────
 
-
   const filteredConversations = conversations.filter((c) =>
-    c.title?.toLowerCase().includes(searchFilter.toLowerCase())
+    c.title?.toLowerCase().includes(searchFilter.toLowerCase()),
   );
   const pinnedConversations = filteredConversations.filter((c) => c.pinned);
   const unpinnedConversations = filteredConversations.filter((c) => !c.pinned);
@@ -431,7 +471,6 @@ export default function ChatPage() {
   return (
     <ProtectedRoute>
       <div className="-mt-24 flex h-screen w-full bg-[#FBFBFA] text-brand-black overflow-hidden relative selection:bg-brand-orange selection:text-white">
-
         {/* SIDEBAR — AnimatePresence drives mount/unmount so exit animation fires */}
         <AnimatePresence initial={false}>
           {isSidebarOpen && (
@@ -468,7 +507,6 @@ export default function ChatPage() {
 
         {/* MAIN CHAT CANVAS */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#FBFBFA] relative">
-
           <ChatHeader
             isSidebarOpen={isSidebarOpen}
             onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -476,9 +514,12 @@ export default function ChatPage() {
           />
 
           {/* Messages Scroll Area */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-10 py-8 pb-40">
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto px-4 sm:px-10 py-8 pb-40"
+          >
             <div className="max-w-3xl mx-auto flex flex-col gap-8">
-
               {messages.length === 0 ? (
                 <ChatEmptyState onSendStarter={handleSend} />
               ) : (
@@ -509,7 +550,6 @@ export default function ChatPage() {
             isListening={isListening}
             onToggleMic={handleToggleMic}
           />
-
         </div>
       </div>
     </ProtectedRoute>
