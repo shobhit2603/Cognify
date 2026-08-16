@@ -52,12 +52,57 @@ router.use(requireAuth);
  *       201:
  *         description: Message added successfully
  */
+
+/**
+ * @swagger
+ * /api/v1/messages/stream/{chatId}:
+ *   post:
+ *     summary: Add a message to a chat and stream response via SSE
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: false
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role
+ *               - content
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [user]
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Stream started
+ */
+router.post(
+  "/stream/:chatId",
+  validate(addMessageSchema),
+  messageController.streamMessage,
+);
+
+router.post(
+  "/stream",
+  validate(addMessageSchema),
+  messageController.streamMessage,
+);
+
 router.post(
   "/:chatId",
   validate(addMessageSchema),
   messageController.addMessage,
 );
-
 /**
  * @swagger
  * /api/v1/messages:

@@ -84,16 +84,29 @@ export async function* getAIResponse({ content, history = [], systemPrompt = nul
       { version: "v2" }
     );
 
-    for await (const event of events) {
-      // Stream only the final model output, ignoring the internal tool-calling thoughts
-      if (
-        event.event === "on_chat_model_stream" &&
-        event.name === "ChatMistralAI"
-      ) {
-        const chunkContent = event.data.chunk.content;
+    // Track whether the agent is currently executing a tool so we can
+    // suppress intermediate model thoughts and only stream the final answer.
+    let inToolCall = false;
 
-        // Ensure we only yield actual text content, not tool invocation chunks
-        if (chunkContent && typeof chunkContent === 'string') {
+    for await (const event of events) {
+      // Mark entry/exit of tool execution phases
+      if (event.event === "on_tool_start") {
+        inToolCall = true;
+        continue;
+      }
+      if (event.event === "on_tool_end") {
+        inToolCall = false;
+        continue;
+      }
+
+      // Stream text chunks from the chat model — both direct responses
+      // and the final synthesis step that follows tool execution.
+      if (event.event === "on_chat_model_stream" && !inToolCall) {
+        const chunkContent = event.data?.chunk?.content;
+
+        // content can be a string (text token) or an array (tool-call delta) —
+        // we only forward plain text strings to avoid leaking internal JSON.
+        if (chunkContent && typeof chunkContent === "string") {
           yield { content: chunkContent };
         }
       }

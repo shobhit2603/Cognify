@@ -18,7 +18,8 @@ export default function AuthInitializer({ children }) {
   const { isInitialized } = useAuth();
   const pathname = usePathname();
 
-  const isProtectedRoute = pathname.startsWith('/dashboard');
+  const isProtectedRoute =
+    pathname.startsWith('/dashboard') || pathname.startsWith('/chat');
 
   if (!isInitialized && isProtectedRoute) {
     return (
