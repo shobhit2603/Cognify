@@ -84,16 +84,29 @@ export async function* getAIResponse({ content, history = [], systemPrompt = nul
       { version: "v2" }
     );
 
-    for await (const event of events) {
-      // Stream only the final model output, ignoring the internal tool-calling thoughts
-      if (
-        event.event === "on_chat_model_stream" &&
-        event.name === "ChatMistralAI"
-      ) {
-        const chunkContent = event.data.chunk.content;
+    // Counter tracking concurrent tool executions. Incremented on on_tool_start,
+    // decremented on on_tool_end and on_tool_error (clamped to ≥ 0).
+    // Text chunks are forwarded only while the counter is exactly zero.
+    let toolCallDepth = 0;
 
-        // Ensure we only yield actual text content, not tool invocation chunks
-        if (chunkContent && typeof chunkContent === 'string') {
+    for await (const event of events) {
+      if (event.event === "on_tool_start") {
+        toolCallDepth += 1;
+        continue;
+      }
+      if (event.event === "on_tool_end" || event.event === "on_tool_error") {
+        toolCallDepth = Math.max(0, toolCallDepth - 1);
+        continue;
+      }
+
+      // Stream text chunks from the chat model — both direct responses
+      // and the final synthesis step that follows tool execution.
+      if (event.event === "on_chat_model_stream" && toolCallDepth === 0) {
+        const chunkContent = event.data?.chunk?.content;
+
+        // content can be a string (text token) or an array (tool-call delta) —
+        // we only forward plain text strings to avoid leaking internal JSON.
+        if (chunkContent && typeof chunkContent === "string") {
           yield { content: chunkContent };
         }
       }

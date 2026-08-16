@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowUpRight, ArrowUp, Sparkle, GlobeHemisphereWest } from "@phosphor-icons/react";
 
@@ -19,8 +20,15 @@ const secondaryLinks = [
   { label: "Changelog", href: "/changelog" }
 ];
 
+const hiddenRoutes = ["/dashboard", "/chat", "/documents", "/resume", "/writing", "/notes"];
+
 export default function Footer() {
   const [activeDot, setActiveDot] = useState(4);
+  const pathname = usePathname();
+
+  // Hide footer on app routes
+  const shouldHide = hiddenRoutes.some(route => pathname?.startsWith(route));
+  if (shouldHide) return null;
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });

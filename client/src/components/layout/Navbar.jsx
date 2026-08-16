@@ -6,6 +6,7 @@ import { List, X, SquaresFour, SignOut } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "motion/react";
 import FloatingMenu from "./FloatingMenu";
 import AnimatedButton from "../ui/AnimatedButton";
+import { usePathname } from "next/navigation";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 
 export default function Navbar() {
@@ -13,6 +14,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { isAuthenticated, user, logout, isLoggingOut } = useAuth();
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,6 +30,8 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  if (pathname?.startsWith("/chat")) return null;
 
   // User initials for avatar
   const initials = user?.name
