@@ -16,6 +16,7 @@ export default function ChatSidebar({
   onSelectChat,
   onStartRename,
   onSaveRename,
+  onCancelRename,
   onTogglePin,
   onDelete
 }) {
@@ -87,6 +88,7 @@ export default function ChatSidebar({
                   onSelect={() => onSelectChat(chat.id)}
                   onStartRename={(e) => onStartRename(chat.id, chat.title, e)}
                   onSaveRename={(e) => onSaveRename(chat.id, e)}
+                  onCancelRename={onCancelRename}
                   onTogglePin={(e) => onTogglePin(chat.id, e)}
                   onDelete={(e) => onDelete(chat.id, e)}
                 />
@@ -112,6 +114,7 @@ export default function ChatSidebar({
                 onSelect={() => onSelectChat(chat.id)}
                 onStartRename={(e) => onStartRename(chat.id, chat.title, e)}
                 onSaveRename={(e) => onSaveRename(chat.id, e)}
+                onCancelRename={onCancelRename}
                 onTogglePin={(e) => onTogglePin(chat.id, e)}
                 onDelete={(e) => onDelete(chat.id, e)}
               />
@@ -145,15 +148,33 @@ function ChatListItem({
   onSelect,
   onStartRename,
   onSaveRename,
+  onCancelRename,
   onTogglePin,
   onDelete
 }) {
   const isEditing = editingChatId === chat.id;
 
+  const handleRowKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect();
+    }
+  };
+
+  const handleDeleteWithConfirm = (e) => {
+    e.stopPropagation();
+    if (window.confirm(`Delete "${chat.title}"? This cannot be undone.`)) {
+      onDelete(e);
+    }
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`group relative flex items-center justify-between p-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all ${
+      onKeyDown={handleRowKeyDown}
+      className={`group relative flex items-center justify-between p-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange/50 ${
         isActive ? "bg-black/[0.07] text-brand-black font-semibold" : "text-gray-600 hover:bg-black/3 hover:text-brand-black"
       }`}
     >
@@ -168,7 +189,7 @@ function ChatListItem({
             onChange={(e) => setEditTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") onSaveRename(e);
-              if (e.key === "Escape") onStartRename(e); // cancel logic can be passed if needed
+              if (e.key === "Escape") onCancelRename?.(e);
             }}
             onClick={(e) => e.stopPropagation()}
             className="bg-white border border-black/20 rounded px-1.5 py-0.5 outline-none w-full text-brand-black"
@@ -178,7 +199,8 @@ function ChatListItem({
         )}
       </div>
 
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      {/* Show on hover OR when the row/any child has keyboard focus */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
         <button
           onClick={onTogglePin}
           className={`p-1 rounded hover:bg-black/10 transition-colors ${chat.isPinned ? "text-brand-orange opacity-100" : "text-gray-400"}`}
@@ -197,7 +219,7 @@ function ChatListItem({
           </button>
         )}
 
-        <button onClick={onDelete} className="p-1 rounded hover:bg-red-100 transition-colors text-gray-400 hover:text-red-500">
+        <button onClick={handleDeleteWithConfirm} className="p-1 rounded hover:bg-red-100 transition-colors text-gray-400 hover:text-red-500">
           <Trash size={13} />
         </button>
       </div>

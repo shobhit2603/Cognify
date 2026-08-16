@@ -4,16 +4,19 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitialized } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    // Only redirect once the auth cookie check has settled.
+    // Redirecting before isInitialized fires a false-negative on every reload.
+    if (isInitialized && !isAuthenticated) {
       router.replace("/auth");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isInitialized, isAuthenticated, router]);
 
-  if (isLoading) {
+  // Show spinner while auth state is still being hydrated from the server cookie
+  if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-white">
         <div className="flex flex-col items-center gap-4">

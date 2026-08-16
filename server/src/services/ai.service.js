@@ -84,24 +84,24 @@ export async function* getAIResponse({ content, history = [], systemPrompt = nul
       { version: "v2" }
     );
 
-    // Track whether the agent is currently executing a tool so we can
-    // suppress intermediate model thoughts and only stream the final answer.
-    let inToolCall = false;
+    // Counter tracking concurrent tool executions. Incremented on on_tool_start,
+    // decremented on on_tool_end and on_tool_error (clamped to ≥ 0).
+    // Text chunks are forwarded only while the counter is exactly zero.
+    let toolCallDepth = 0;
 
     for await (const event of events) {
-      // Mark entry/exit of tool execution phases
       if (event.event === "on_tool_start") {
-        inToolCall = true;
+        toolCallDepth += 1;
         continue;
       }
-      if (event.event === "on_tool_end") {
-        inToolCall = false;
+      if (event.event === "on_tool_end" || event.event === "on_tool_error") {
+        toolCallDepth = Math.max(0, toolCallDepth - 1);
         continue;
       }
 
       // Stream text chunks from the chat model — both direct responses
       // and the final synthesis step that follows tool execution.
-      if (event.event === "on_chat_model_stream" && !inToolCall) {
+      if (event.event === "on_chat_model_stream" && toolCallDepth === 0) {
         const chunkContent = event.data?.chunk?.content;
 
         // content can be a string (text token) or an array (tool-call delta) —

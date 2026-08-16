@@ -133,7 +133,7 @@ export default function ChatInputArea({
                 onSend();
                 if (inputRef.current) inputRef.current.style.height = "auto";
               }}
-              disabled={!input.trim() && attachedFiles.length === 0}
+              disabled={!input.trim()}
               className="w-9 h-9 shrink-0 rounded-xl bg-brand-black hover:bg-brand-orange disabled:bg-black/5 disabled:text-gray-300 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs disabled:cursor-not-allowed mb-0.5"
               title="Send message"
             >

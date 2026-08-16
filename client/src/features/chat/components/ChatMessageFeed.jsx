@@ -60,18 +60,21 @@ export default function ChatMessageFeed({
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        code({ node, inline, className, children, ...props }) {
+                        code({ node, className, children, ...props }) {
                           const match = /language-(\w+)/.exec(className || "");
                           const codeContent = String(children).replace(/\n$/, "");
-                          return !inline && match ? (
+                          // Unique key: message id + language + content length avoids
+                          // collisions between blocks that share the same opening chars.
+                          const blockKey = `${msg.id}-${match?.[1] ?? ""}-${codeContent.length}`;
+                          return match ? (
                             <div className="rounded-xl overflow-hidden my-4 border border-black/15 bg-brand-black shadow-lg">
                               <div className="flex items-center justify-between px-4 py-2.5 bg-white/4 border-b border-white/10 text-gray-400">
                                 <span className="text-xs font-mono font-medium text-gray-300">{match[1]}</span>
                                 <button
-                                  onClick={() => handleCopy(codeContent, `code-${codeContent.slice(0, 8)}`)}
+                                  onClick={() => handleCopy(codeContent, blockKey)}
                                   className="flex items-center gap-1.5 text-xs hover:text-white transition-colors cursor-pointer"
                                 >
-                                  {copiedId === `code-${codeContent.slice(0, 8)}` ? (
+                                  {copiedId === blockKey ? (
                                     <>
                                       <Check size={14} className="text-emerald-400" />
                                       <span className="text-emerald-400 font-sans">Copied</span>

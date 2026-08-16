@@ -100,10 +100,17 @@ export const streamMessage = async (content, chatId, callbacks, signal) => {
       throw new Error(errMsg);
     }
 
+    if (!response.body) {
+      throw new Error("Response body is null — server did not open a readable stream");
+    }
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     // Buffer accumulates partial SSE frames between network chunks
     let buffer = "";
+    // Tracks whether a terminal event (done / error) was received.
+    // If the stream closes without one, we surface an error to the caller.
+    let terminalReceived = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -142,9 +149,11 @@ export const streamMessage = async (content, chatId, callbacks, signal) => {
                 callbacks.onChunk?.(parsed.content);
                 break;
               case "done":
+                terminalReceived = true;
                 callbacks.onDone?.(parsed);
                 break;
               case "error":
+                terminalReceived = true;
                 callbacks.onError?.(new Error(parsed.error || "Stream error"));
                 break;
               default:
@@ -155,6 +164,27 @@ export const streamMessage = async (content, chatId, callbacks, signal) => {
           }
         }
       }
+    }
+
+    // Flush the decoder to handle any multi-byte characters at the boundary,
+    // then process whatever remains in the buffer as a final frame.
+    buffer += decoder.decode(); // flush with no argument
+    if (buffer.trim()) {
+      for (const line of buffer.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const dataStr = line.slice(5).trimStart();
+        if (dataStr === "[DONE]") { terminalReceived = true; continue; }
+        try {
+          const parsed = JSON.parse(dataStr);
+          if (parsed.event === "done") { terminalReceived = true; callbacks.onDone?.(parsed); }
+          else if (parsed.event === "error") { terminalReceived = true; callbacks.onError?.(new Error(parsed.error || "Stream error")); }
+        } catch { /* ignore malformed final frame */ }
+      }
+    }
+
+    // If the stream ended without a terminal event the server closed abruptly.
+    if (!terminalReceived) {
+      callbacks.onError?.(new Error("Stream ended unexpectedly without a done or error event"));
     }
   } catch (error) {
     // AbortError means the user intentionally stopped — don't call onError

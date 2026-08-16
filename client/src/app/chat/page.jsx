@@ -16,6 +16,9 @@ import * as chatService from "../../features/chat/services/chat.service";
 
 // ─── LocalStorage key for persisting the active chat across reloads ────────────
 const ACTIVE_CHAT_KEY = "cognify_active_chat_id";
+// Sentinel stored when the user is intentionally on the "new chat" page.
+// Distinguishes "explicit new chat" from "no preference saved yet" (first visit).
+const NEW_CHAT_SENTINEL = "__new__";
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -24,9 +27,12 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState([]);
   // Lazy initializer reads from localStorage once on first render — no extra render,
   // no effect needed. This is the recommended React pattern for external-store init.
-  const [activeChatId, setActiveChatId] = useState(
-    () => (typeof window !== "undefined" ? localStorage.getItem(ACTIVE_CHAT_KEY) : null)
-  );
+  const [activeChatId, setActiveChatId] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem(ACTIVE_CHAT_KEY);
+    // Sentinel means: user was intentionally on new chat — restore that state.
+    return stored && stored !== NEW_CHAT_SENTINEL ? stored : null;
+  });
   const [messages, setMessages] = useState([]);
 
   // UI & Input State
@@ -57,12 +63,13 @@ export default function ChatPage() {
 
   // ─── Persist activeChatId across reloads ────────────────────────────────────
   // Write-only effect: syncs activeChatId → localStorage whenever it changes.
-  // Reading is handled by the lazy useState initializer above.
+  // null (new chat) is stored as the sentinel so reload stays on new chat.
   useEffect(() => {
     if (activeChatId) {
       localStorage.setItem(ACTIVE_CHAT_KEY, activeChatId);
     } else {
-      localStorage.removeItem(ACTIVE_CHAT_KEY);
+      // Store sentinel instead of removing — removal loses the "new chat" intent.
+      localStorage.setItem(ACTIVE_CHAT_KEY, NEW_CHAT_SENTINEL);
     }
   }, [activeChatId]);
 
@@ -79,7 +86,16 @@ export default function ChatPage() {
       // After fetching chats, ensure the persisted activeChatId actually
       // exists in the user's chat list. If not, fall back to the first chat.
       setActiveChatId((prev) => {
+        // prev is already validated/set by the lazy initializer.
+        // Keep it if it's a real chat that exists in the list.
         if (prev && data.chats.some((c) => c._id === prev)) return prev;
+        // prev is null — check what localStorage says:
+        // if the sentinel is there the user intentionally navigated to new chat,
+        // so stay there. Only fall back to the first chat on a genuine first visit
+        // (no key stored at all).
+        const stored = localStorage.getItem(ACTIVE_CHAT_KEY);
+        if (stored === NEW_CHAT_SENTINEL || !stored) return null;
+        // stored is a chatId that no longer exists — fall back to first chat.
         return data.chats.length > 0 ? data.chats[0]._id : null;
       });
     }).catch(console.error);
@@ -159,10 +175,7 @@ export default function ChatPage() {
   };
 
   const handleToggleMic = () => {
-    setIsListening(!isListening);
-    if (!isListening) {
-      setInput((prev) => (prev ? `${prev} [Listening...]` : ""));
-    }
+    setIsListening((prev) => !prev);
   };
 
   // ─── Chat Title Refresh ──────────────────────────────────────────────────────
@@ -192,8 +205,7 @@ export default function ChatPage() {
   const handleSend = async (customPrompt) => {
     const textToSend =
       typeof customPrompt === "string" ? customPrompt : input;
-    if ((!textToSend.trim() && attachedFiles.length === 0) || isGenerating)
-      return;
+    if (!textToSend.trim() || isGenerating) return;
 
     // Capture whether this is a brand-new chat (no chatId yet)
     const isNewChat = !activeChatId;
@@ -399,7 +411,14 @@ export default function ChatPage() {
     }
   };
 
+  const cancelRenameChat = (e) => {
+    e?.stopPropagation();
+    setEditingChatId(null);
+    setEditTitle("");
+  };
+
   // ─── Derived / Filtered Lists ─────────────────────────────────────────────────
+
 
   const filteredConversations = conversations.filter((c) =>
     c.title?.toLowerCase().includes(searchFilter.toLowerCase())
@@ -440,6 +459,7 @@ export default function ChatPage() {
               onSelectChat={handleSelectChat}
               onStartRename={startRenameChat}
               onSaveRename={saveRenameChat}
+              onCancelRename={cancelRenameChat}
               onTogglePin={togglePinChat}
               onDelete={deleteChatHandler}
             />
