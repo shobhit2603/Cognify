@@ -4,6 +4,7 @@ import * as authController from "../controllers/auth.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { registerSchema, loginSchema } from "../validations/auth.validation.js";
+import { authLimiter } from "../middlewares/rateLimiter.middleware.js";
 
 const router = express.Router();
 
@@ -47,7 +48,7 @@ const router = express.Router();
  *       400:
  *         description: Validation error or User already exists
  */
-router.post("/register", validate(registerSchema), authController.register);
+router.post("/register", authLimiter, validate(registerSchema), authController.register);
 
 /**
  * @swagger
@@ -77,7 +78,7 @@ router.post("/register", validate(registerSchema), authController.register);
  *       401:
  *         description: Invalid credentials
  */
-router.post("/login", validate(loginSchema), authController.login);
+router.post("/login", authLimiter, validate(loginSchema), authController.login);
 /**
  * @swagger
  * /api/v1/auth/refresh:
