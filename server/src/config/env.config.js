@@ -27,6 +27,8 @@ const envConfig = Object.freeze({
   MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+  SMTP_EMAIL: process.env.SMTP_EMAIL,
+  SMTP_APP_PASSWORD: process.env.SMTP_APP_PASSWORD,
 });
 
 export default envConfig;
