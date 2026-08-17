@@ -6,6 +6,7 @@ import {
   addMessageSchema,
   updateMessageSchema,
 } from "../validations/message.validation.js";
+import { aiEndpointLimiter } from "../middlewares/rateLimiter.middleware.js";
 
 const router = express.Router();
 
@@ -88,18 +89,21 @@ router.use(requireAuth);
  */
 router.post(
   "/stream/:chatId",
+  aiEndpointLimiter,
   validate(addMessageSchema),
   messageController.streamMessage,
 );
 
 router.post(
   "/stream",
+  aiEndpointLimiter,
   validate(addMessageSchema),
   messageController.streamMessage,
 );
 
 router.post(
   "/:chatId",
+  aiEndpointLimiter,
   validate(addMessageSchema),
   messageController.addMessage,
 );
@@ -130,7 +134,7 @@ router.post(
  *       201:
  *         description: Message added successfully and new chat created
  */
-router.post("/", validate(addMessageSchema), messageController.addMessage);
+router.post("/", aiEndpointLimiter, validate(addMessageSchema), messageController.addMessage);
 
 /**
  * @swagger
