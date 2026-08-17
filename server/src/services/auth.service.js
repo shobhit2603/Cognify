@@ -6,6 +6,7 @@ import * as userRepository from "../repositories/user.repository.js";
 import * as sessionRepository from "../repositories/session.repository.js";
 import ApiError from "../utils/apiError.util.js";
 import { StatusCodes } from "http-status-codes";
+import { sendEmail } from "../utils/email.util.js";
 
 /**
  * Register a new user and immediately create a session (auto-login on sign-up).
@@ -124,4 +125,68 @@ export const googleLogin = async (profile, userAgent, ipAddress) => {
   }
 
   return createTokensAndSession(user, userAgent, ipAddress);
+};
+
+export const forgotPassword = async (email) => {
+  const user = await userRepository.findUserByEmail(email);
+  if (!user) {
+    // For security, don't reveal that the user doesn't exist. Just return.
+    return;
+  }
+
+  // Generate 6 digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Hash the OTP
+  const hashedOtp = await bcrypt.hash(otp, 10);
+  
+  // Expiry time: 15 minutes from now
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+  await userRepository.updateUser(user._id, {
+    resetPasswordOtp: hashedOtp,
+    resetPasswordOtpExpires: expiresAt,
+  });
+
+  // Send Email
+  await sendEmail({
+    to: user.email,
+    subject: "Cognify - Password Reset OTP",
+    html: `
+      <h2>Password Reset Request</h2>
+      <p>Hello ${user.name},</p>
+      <p>We received a request to reset your password. Here is your 6-digit OTP:</p>
+      <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
+      <p>This OTP is valid for 15 minutes. If you did not request this, please ignore this email.</p>
+    `,
+  });
+};
+
+export const resetPassword = async (email, otp, newPassword) => {
+  const user = await userRepository.findUserByEmail(email);
+  if (!user) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Invalid email or OTP");
+  }
+
+  if (!user.resetPasswordOtp || !user.resetPasswordOtpExpires) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Invalid email or OTP");
+  }
+
+  if (new Date() > user.resetPasswordOtpExpires) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "OTP has expired");
+  }
+
+  const isOtpValid = await bcrypt.compare(otp, user.resetPasswordOtp);
+  if (!isOtpValid) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Invalid email or OTP");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update password and clear OTP fields
+  await userRepository.updateUser(user._id, {
+    password: hashedPassword,
+    resetPasswordOtp: null,
+    resetPasswordOtpExpires: null,
+  });
 };

@@ -128,3 +128,30 @@ export const googleCallback = async (req, res, next) => {
     next(error);
   }
 };
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    await authService.forgotPassword(email);
+    
+    // Always return 200 OK for security reasons (don't reveal if email exists or not)
+    res.status(StatusCodes.OK).json(
+      ApiResponse(StatusCodes.OK, "If that email exists, an OTP has been sent.")
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    await authService.resetPassword(email, otp, newPassword);
+    
+    res.status(StatusCodes.OK).json(
+      ApiResponse(StatusCodes.OK, "Password has been reset successfully.")
+    );
+  } catch (error) {
+    next(error);
+  }
+};
