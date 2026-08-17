@@ -16,6 +16,7 @@ import chatRoutes from "./routes/chat.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.config.js";
+import { globalLimiter } from "./middlewares/rateLimiter.middleware.js";
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.use(passport.initialize());
 
 // Security middleware
 app.use(helmet());
+
+// Apply global rate limiter
+app.use(globalLimiter);
 
 // CORS configuration
 app.use(
