@@ -38,7 +38,7 @@ export default function ChatPage() {
   // UI & Input State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchFilter, setSearchFilter] = useState("");
-  const [input, setInput] = useState("");
+  const [editPromptText, setEditPromptText] = useState("");
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -243,8 +243,8 @@ export default function ChatPage() {
 
   // ─── SEND & STREAM ───────────────────────────────────────────────────────────
 
-  const handleSend = async (customPrompt) => {
-    const textToSend = typeof customPrompt === "string" ? customPrompt : input;
+  const handleSend = async (submittedText) => {
+    const textToSend = typeof submittedText === "string" ? submittedText : "";
     if (!textToSend.trim() || isGenerating) return;
 
     // Capture whether this is a brand-new chat (no chatId yet)
@@ -264,7 +264,7 @@ export default function ChatPage() {
       },
       { id: assistantId, role: "assistant", content: "" },
     ]);
-    setInput("");
+    setEditPromptText("");
     setAttachedFiles([]);
     setIsGenerating(true);
     setStreamingMessageId(assistantId);
@@ -377,7 +377,7 @@ export default function ChatPage() {
     setActiveChatId(null);
     setMessages([]);
     setAttachedFiles([]);
-    setInput("");
+    setEditPromptText("");
   };
 
   const handleSelectChat = (id) => {
@@ -530,7 +530,7 @@ export default function ChatPage() {
                   playingVoiceId={playingVoiceId}
                   handleCopy={handleCopy}
                   handleToggleVoice={handleToggleVoice}
-                  onEditPrompt={(text) => setInput(text)}
+                  onEditPrompt={(text) => setEditPromptText(text)}
                 />
               )}
 
@@ -540,8 +540,7 @@ export default function ChatPage() {
 
           {/* INPUT AREA */}
           <ChatInputArea
-            input={input}
-            setInput={setInput}
+            editPromptText={editPromptText}
             isGenerating={isGenerating}
             onSend={handleSend}
             onStop={handleStop}

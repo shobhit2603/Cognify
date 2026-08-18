@@ -1,9 +1,8 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { PaperPlaneRight, StopCircle, Paperclip, Microphone, FilePdf, X } from "@phosphor-icons/react";
 
 export default function ChatInputArea({
-  input,
-  setInput,
+  editPromptText,
   isGenerating,
   onSend,
   onStop,
@@ -12,13 +11,22 @@ export default function ChatInputArea({
   isListening,
   onToggleMic,
 }) {
+  const [input, setInput] = useState("");
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Sync external edit prompts into local state
+  useEffect(() => {
+    if (editPromptText) {
+      setInput(editPromptText);
+    }
+  }, [editPromptText]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      onSend(input);
+      setInput("");
       if (inputRef.current) inputRef.current.style.height = "auto";
     }
   };
@@ -130,7 +138,8 @@ export default function ChatInputArea({
           ) : (
             <button
               onClick={() => {
-                onSend();
+                onSend(input);
+                setInput("");
                 if (inputRef.current) inputRef.current.style.height = "auto";
               }}
               disabled={!input.trim()}
