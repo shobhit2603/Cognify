@@ -1,9 +1,8 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { PaperPlaneRight, StopCircle, Paperclip, Microphone, FilePdf, X } from "@phosphor-icons/react";
 
 export default function ChatInputArea({
-  input,
-  setInput,
+  editPromptText,
   isGenerating,
   onSend,
   onStop,
@@ -12,14 +11,28 @@ export default function ChatInputArea({
   isListening,
   onToggleMic,
 }) {
+  const [input, setInput] = useState("");
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Sync external edit prompts into local state
+  useEffect(() => {
+    if (editPromptText?.text !== undefined) {
+      setInput(editPromptText.text);
+    }
+  }, [editPromptText]);
+
+  const submitMessage = () => {
+    if (!input.trim() || isGenerating) return;
+    onSend(input);
+    setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
-      if (inputRef.current) inputRef.current.style.height = "auto";
+      submitMessage();
     }
   };
 
@@ -129,10 +142,7 @@ export default function ChatInputArea({
             </button>
           ) : (
             <button
-              onClick={() => {
-                onSend();
-                if (inputRef.current) inputRef.current.style.height = "auto";
-              }}
+              onClick={submitMessage}
               disabled={!input.trim()}
               className="w-9 h-9 shrink-0 rounded-xl bg-brand-black hover:bg-brand-orange disabled:bg-black/5 disabled:text-gray-300 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs disabled:cursor-not-allowed mb-0.5"
               title="Send message"

@@ -71,7 +71,7 @@ export async function* getAIResponse({ content, history = [], systemPrompt = nul
     const dynamicExecutor = new AgentExecutor({
       agent: dynamicAgent,
       tools: dynamicTools,
-      verbose: envConfig.NODE_ENV !== "production",
+      verbose: false, // Disabled to prevent console spam during generation
     });
 
     // 4. Execute the agent and stream events
