@@ -1,20 +1,16 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { AnimatePresence } from "motion/react";
-import ProtectedRoute from "../../components/layout/ProtectedRoute";
-import { useAuth } from "../../features/auth/hooks/useAuth";
 
 // Chat Components
-import ChatSidebar from "../../features/chat/components/ChatSidebar";
-import ChatHeader from "../../features/chat/components/ChatHeader";
-import ChatEmptyState from "../../features/chat/components/ChatEmptyState";
-import ChatMessageFeed from "../../features/chat/components/ChatMessageFeed";
-import ChatInputArea from "../../features/chat/components/ChatInputArea";
+import ChatHeader from "./ChatHeader";
+import ChatEmptyState from "./ChatEmptyState";
+import ChatMessageFeed from "./ChatMessageFeed";
+import ChatInputArea from "./ChatInputArea";
 
 // API Service
-import * as chatService from "../../features/chat/services/chat.service";
+import * as chatService from "../services/chat.service";
 
-import { useChatContext } from "../../features/chat/context/ChatContext";
+import { useChatContext } from "../context/ChatContext";
 import { useRouter } from "next/navigation";
 
 export default function ChatCanvas({ chatId }) {
@@ -157,31 +153,7 @@ export default function ChatCanvas({ chatId }) {
     setIsListening((prev) => !prev);
   };
 
-  // ─── Chat Title Refresh ──────────────────────────────────────────────────────
-  // After a new chat's first response completes, the backend will have
-  // asynchronously generated a title. We poll once after a short delay to
-  // pick it up and update the sidebar.
 
-  const refreshChatTitle = useCallback(async (chatId) => {
-    // Give the server ~2 s to finish title generation
-    await new Promise((r) => setTimeout(r, 2000));
-    try {
-      const data = await chatService.getChatById(chatId);
-      if (!data?.chat) return;
-      const newTitle = data.chat.title;
-      if (
-        newTitle &&
-        newTitle !== "New Chat" &&
-        newTitle !== "New Conversation"
-      ) {
-        setConversations((prev) =>
-          prev.map((c) => (c._id === chatId ? { ...c, title: newTitle } : c)),
-        );
-      }
-    } catch (err) {
-      console.warn("[Title refresh] failed:", err);
-    }
-  }, []);
 
   // ─── SEND & STREAM ───────────────────────────────────────────────────────────
 
