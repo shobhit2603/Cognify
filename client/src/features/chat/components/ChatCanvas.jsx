@@ -52,49 +52,57 @@ export default function ChatCanvas({ chatId }) {
   useEffect(() => {
     let active = true;
 
-    // 1. If we switch away from the currently streaming chat to another chat
-    if (isStreamingRef.current && streamChatIdRef.current !== chatId) {
-      abortControllerRef.current?.abort();
-      isStreamingRef.current = false;
-      setIsGenerating(false);
-      setStreamingMessageId(null);
-    }
+    // Defer state updates to avoid synchronous cascading renders in the effect
+    const timerId = setTimeout(() => {
+      if (!active) return;
 
-    // 2. If navigating to New Chat
-    if (!chatId) {
+      // 1. If we switch away from the currently streaming chat to another chat
+      if (isStreamingRef.current && streamChatIdRef.current !== chatId) {
+        abortControllerRef.current?.abort();
+        isStreamingRef.current = false;
+        setIsGenerating(false);
+        setStreamingMessageId(null);
+      }
+
+      // 2. If navigating to New Chat
+      if (!chatId) {
+        setMessages([]);
+        setAttachedFiles([]);
+        return;
+      }
+
+      // 3. If navigating to the chat that is currently streaming (e.g. the first message just set the URL)
+      if (isStreamingRef.current && streamChatIdRef.current === chatId) {
+        return;
+      }
+
+      // 4. Otherwise, safe to clear and load the new chat history
       setMessages([]);
-      setAttachedFiles([]);
-      return () => { active = false; };
-    }
 
-    // 3. If navigating to the chat that is currently streaming (e.g. the first message just set the URL)
-    if (isStreamingRef.current && streamChatIdRef.current === chatId) {
-      return () => { active = false; };
-    }
+      chatService
+        .getMessages(chatId, 1, 100)
+        .then((data) => {
+          if (!active) return;
+          if (!data?.messages) return;
+          // Backend already sorts { createdAt: 1 } — chronological order.
+          // No .reverse() needed.
+          const formatted = data.messages.map((m) => ({
+            id: m._id,
+            role: m.role,
+            content: m.content,
+          }));
+          setMessages(formatted);
+        })
+        .catch((err) => {
+          if (!active) return;
+          console.error(err);
+        });
+    }, 0);
 
-    // 4. Otherwise, safe to clear and load the new chat history
-    setMessages([]);
-
-    chatService
-      .getMessages(chatId, 1, 100)
-      .then((data) => {
-        if (!active) return;
-        if (!data?.messages) return;
-        // Backend already sorts { createdAt: 1 } — chronological order.
-        // No .reverse() needed.
-        const formatted = data.messages.map((m) => ({
-          id: m._id,
-          role: m.role,
-          content: m.content,
-        }));
-        setMessages(formatted);
-      })
-      .catch((err) => {
-        if (!active) return;
-        console.error(err);
-      });
-
-    return () => { active = false; };
+    return () => { 
+      active = false;
+      clearTimeout(timerId);
+    };
   }, [chatId]);
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────────

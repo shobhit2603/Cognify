@@ -16,11 +16,13 @@ export default function ChatInputArea({
   const inputRef = useRef(null);
 
   // Sync external edit prompts into local state
-  useEffect(() => {
+  const [prevEditPromptText, setPrevEditPromptText] = useState(editPromptText);
+  if (editPromptText !== prevEditPromptText) {
+    setPrevEditPromptText(editPromptText);
     if (editPromptText?.text !== undefined) {
       setInput(editPromptText.text);
     }
-  }, [editPromptText]);
+  }
 
   const submitMessage = () => {
     if (!input.trim() || isGenerating) return;
