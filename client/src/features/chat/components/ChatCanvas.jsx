@@ -44,16 +44,34 @@ export default function ChatCanvas({ chatId }) {
 
   // AbortController ref — a new one is created per stream.
   const abortControllerRef = useRef(null);
+  const streamChatIdRef = useRef(null);
 
   // ─── Fetch Messages on Chat Switch ──────────────────────────────────────────
   // Guard: skip if a stream is active to avoid overwriting optimistic state.
 
   useEffect(() => {
+    // 1. If we switch away from the currently streaming chat to another chat
+    if (isStreamingRef.current && streamChatIdRef.current !== chatId) {
+      abortControllerRef.current?.abort();
+      isStreamingRef.current = false;
+      setIsGenerating(false);
+      setStreamingMessageId(null);
+    }
+
+    // 2. If navigating to New Chat
     if (!chatId) {
-      if (!isStreamingRef.current) setMessages([]);
+      setMessages([]);
+      setAttachedFiles([]);
       return;
     }
-    if (isStreamingRef.current) return;
+
+    // 3. If navigating to the chat that is currently streaming (e.g. the first message just set the URL)
+    if (isStreamingRef.current && streamChatIdRef.current === chatId) {
+      return;
+    }
+
+    // 4. Otherwise, safe to clear and load the new chat history
+    setMessages([]);
 
     chatService
       .getMessages(chatId, 1, 100)
@@ -189,8 +207,9 @@ export default function ChatCanvas({ chatId }) {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    // Track the chatId used for this stream (needed for title refresh)
+    // Track the chatId used for this stream (needed for title refresh and stream cancellation)
     let streamChatId = chatId;
+    streamChatIdRef.current = chatId;
 
     // ── 2. Start SSE stream ──────────────────────────────────────────────────
     await chatService.streamMessage(
@@ -202,8 +221,9 @@ export default function ChatCanvas({ chatId }) {
             // New chat created by backend — sync to state
             const newChatId = payload.chat._id;
             streamChatId = newChatId;
+            streamChatIdRef.current = newChatId;
             setConversations((prev) => [payload.chat, ...prev]);
-            // Redirect to the new chat page
+            // Redirect to the new chat page (useEffect handles not aborting the stream)
             router.push(`/chat/${newChatId}`);
           }
           // Replace optimistic user-message id with real DB _id
