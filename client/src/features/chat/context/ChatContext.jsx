@@ -44,12 +44,60 @@ export function ChatProvider({ children }) {
     }
   }, []);
 
+  const togglePinChat = async (id) => {
+    const chat = conversations.find((c) => c._id === id);
+    if (!chat) return;
+    setConversations((prev) =>
+      prev.map((c) => (c._id === id ? { ...c, pinned: !c.pinned } : c)),
+    );
+    try {
+      await chatService.updateChat(id, { pinned: !chat.pinned });
+    } catch (err) {
+      console.error(err);
+      setConversations((prev) =>
+        prev.map((c) => (c._id === id ? { ...c, pinned: chat.pinned } : c)),
+      );
+    }
+  };
+
+  const deleteChat = async (id, isActive, onDeletedActive) => {
+    try {
+      await chatService.deleteChat(id);
+      const remaining = conversations.filter((c) => c._id !== id);
+      setConversations(remaining);
+      if (isActive && onDeletedActive) {
+        onDeletedActive(remaining);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const saveRenameChat = async (id, newTitle) => {
+    if (!newTitle.trim()) return;
+    const oldTitle = conversations.find((c) => c._id === id)?.title;
+    setConversations((prev) =>
+      prev.map((c) => (c._id === id ? { ...c, title: newTitle.trim() } : c)),
+    );
+    try {
+      await chatService.updateChat(id, { title: newTitle.trim() });
+    } catch (err) {
+      console.error(err);
+      setConversations((prev) =>
+        prev.map((c) => (c._id === id ? { ...c, title: oldTitle } : c)),
+      );
+    }
+  };
+
   const value = {
     conversations,
     setConversations,
     isSidebarOpen,
     setIsSidebarOpen,
-    refreshChatTitle
+    refreshChatTitle,
+    togglePinChat,
+    deleteChat,
+    saveRenameChat
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
