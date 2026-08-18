@@ -13,16 +13,11 @@ import {
   FilePdf, 
   BriefcaseMetal, 
   Graph,
-  CodeBlock,
-  Books,
   CreditCard,
   UsersThree,
-  LinkedinLogo, 
-  XLogo, 
-  GithubLogo,
-  DiscordLogo,
   SignOut,
-  SquaresFour
+  SquaresFour,
+  PenNib
 } from "@phosphor-icons/react";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 
@@ -30,7 +25,7 @@ const capabilities = [
   {
     id: "chat",
     number: "01",
-    label: "AI Neural Chat",
+    label: "AI Chat",
     category: "Reasoning Engine",
     badge: "FAST",
     href: "/chat",
@@ -38,25 +33,25 @@ const capabilities = [
     preview: {
       tag: "CORE CAPABILITY",
       title: "Streaming Context & Multimodal Reasoning",
-      description: "Low-latency inference engine with branching memory trees, code generation, and live canvas support.",
-      stat: "240ms Latency",
-      note: "Supercharged reasoning"
+      description: "Low-latency inference engine with Markdown and code rendering.",
+      stat: "Streaming Responses",
+      note: "Conversational AI"
     }
   },
   {
     id: "documents",
     number: "02",
-    label: "Document Synthesis",
-    category: "Knowledge Graph",
+    label: "Document Analysis",
+    category: "PDF Synthesis",
     badge: null,
     href: "/documents",
     icon: <FilePdf size={24} weight="bold" />,
     preview: {
       tag: "EXTRACTION ENGINE",
-      title: "Vector Document & Deep PDF Extraction",
-      description: "Upload dense research papers, technical specs, or contracts. Extract citations and structured data instantly.",
-      stat: "50MB PDF Limit",
-      note: "Instant OCR parsing"
+      title: "Deep PDF Extraction & Q&A",
+      description: "Upload dense research papers, technical specs, and get instant summaries and Q&A.",
+      stat: "Vector Context Retrieval",
+      note: "Instant parsing"
     }
   },
   {
@@ -70,23 +65,39 @@ const capabilities = [
     preview: {
       tag: "ATS INTELLIGENCE",
       title: "Algorithmic Resume & ATS Optimization",
-      description: "Target job descriptions, parse keyword gaps, and generate executive summaries calibrated for recruiters.",
-      stat: "98% ATS Match",
+      description: "Target job descriptions, parse keyword gaps, and generate executive summaries.",
+      stat: "Detailed ATS Analysis",
       note: "Tuned for recruiters"
     }
   },
   {
-    id: "notes",
+    id: "writing",
     number: "04",
-    label: "Idea Synthesis Graph",
-    category: "Memory & Recall",
+    label: "AI Writing",
+    category: "Content Generation",
+    badge: null,
+    href: "/writing",
+    icon: <PenNib size={24} weight="bold" />,
+    preview: {
+      tag: "CREATION ENGINE",
+      title: "Professional Email & Cover Letter Writer",
+      description: "Generate tailored cover letters based on your resume and write professional emails.",
+      stat: "Custom Tone Control",
+      note: "Professional writing"
+    }
+  },
+  {
+    id: "notes",
+    number: "05",
+    label: "Notes Enhancer",
+    category: "Idea Structuring",
     badge: null,
     href: "/notes",
     icon: <Graph size={24} weight="bold" />,
     preview: {
       tag: "WORKSPACE RECALL",
       title: "Structured Idea Mapping & Auto-Synthesis",
-      description: "Convert rough thoughts and meeting notes into organized blueprints, actionable tasks, and mental graphs.",
+      description: "Convert rough thoughts and meeting notes into organized blueprints and clear learning resources.",
       stat: "Semantic Linking",
       note: "Zero cognitive load"
     }
@@ -94,10 +105,8 @@ const capabilities = [
 ];
 
 const resourceLinks = [
-  { label: "API Reference", href: "/docs", icon: <CodeBlock size={20} /> },
-  { label: "Design Guide", href: "/resources", icon: <Books size={20} /> },
-  { label: "Pricing & Plans", href: "/pricing", icon: <CreditCard size={20} /> },
-  { label: "Community Hub", href: "/community", icon: <UsersThree size={20} /> }
+  { label: "About Us", href: "/about", icon: <UsersThree size={20} /> },
+  { label: "Pricing", href: "/pricing", icon: <CreditCard size={20} /> }
 ];
 
 export default function Navbar() {
@@ -313,7 +322,7 @@ export default function Navbar() {
                         System Capabilities
                       </span>
                       <span className="text-xs font-medium text-white/30">
-                        04 Modules
+                        05 Modules
                       </span>
                     </div>
 
@@ -425,28 +434,9 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  {/* Footer & Social Links */}
+                  {/* Footer */}
                   <div className="flex items-center justify-between px-2 text-sm text-white/40 menu-animate-item">
-                    <span className="font-medium font-mono">Cognify OS v2.4</span>
-                    <div className="flex items-center gap-2">
-                      {[
-                        { icon: <GithubLogo size={18} weight="bold" />, href: "https://github.com", label: "GitHub" },
-                        { icon: <DiscordLogo size={18} weight="bold" />, href: "https://discord.com", label: "Discord" },
-                        { icon: <XLogo size={18} weight="bold" />, href: "https://x.com", label: "X" },
-                        { icon: <LinkedinLogo size={18} weight="bold" />, href: "https://linkedin.com", label: "LinkedIn" }
-                      ].map((s, i) => (
-                        <a
-                          key={i}
-                          href={s.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 hover:text-white transition-all text-white/60"
-                          aria-label={s.label}
-                        >
-                          {s.icon}
-                        </a>
-                      ))}
-                    </div>
+                    <span className="font-medium font-mono">Cognify AI Workspace</span>
                   </div>
 
                 </div>
