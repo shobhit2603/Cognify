@@ -61,15 +61,21 @@ export default function ChatSidebarWrapper() {
     togglePinChat(id);
   };
 
-  const handleDelete = (id, e) => {
+  const handleDelete = async (id, e) => {
     e.stopPropagation();
-    deleteChat(id, id === activeChatId, (remaining) => {
-      if (remaining.length > 0) {
-        router.push(`/chat/${remaining[0]._id}`);
-      } else {
-        router.push("/chat");
+    try {
+      await deleteChat(id);
+      if (id === activeChatId) {
+        const remaining = conversations.filter((c) => c._id !== id);
+        if (remaining.length > 0) {
+          router.push(`/chat/${remaining[0]._id}`);
+        } else {
+          router.push("/chat");
+        }
       }
-    });
+    } catch (err) {
+      console.error("Failed to delete chat", err);
+    }
   };
 
   return (

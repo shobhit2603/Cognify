@@ -22,7 +22,6 @@ import {
   Code
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import AnimatedButton from "../components/ui/AnimatedButton";
 
 // Interactive Demo datasets
 const TOOL_DEMOS = {
@@ -506,10 +505,7 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 z-10 w-full sm:w-auto">
-            <AnimatedButton href="/auth" variant="primary" className="w-full sm:w-auto px-8! py-4! text-base!">
-              <span>Get started for free</span>
-              <ArrowRight size={20} weight="bold" />
-            </AnimatedButton>
+           <button>Get Started</button>
           </div>
         </div>
       </section>
