@@ -13,19 +13,23 @@ export function ChatProvider({ children }) {
   // Initialize conversations
   useEffect(() => {
     let active = true;
-    if (!user?._id) {
-      setConversations([]);
-      return;
-    }
 
-    chatService
-      .getChats(1, 100)
-      .then((data) => {
+    const loadChats = async () => {
+      if (!user?._id) {
+        setConversations([]);
+        return;
+      }
+      try {
+        const data = await chatService.getChats(1, 100);
         if (data?.chats && active) {
           setConversations(data.chats);
         }
-      })
-      .catch(console.error);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadChats();
 
     return () => {
       active = false;
@@ -71,18 +75,13 @@ export function ChatProvider({ children }) {
     }
   }, []);
 
-  const deleteChat = useCallback(async (id, isActive, onDeletedActive) => {
+  const deleteChat = useCallback(async (id) => {
     try {
       await chatService.deleteChat(id);
-      setConversations((prev) => {
-        const remaining = prev.filter((c) => c._id !== id);
-        if (isActive && onDeletedActive) {
-          onDeletedActive(remaining);
-        }
-        return remaining;
-      });
+      setConversations((prev) => prev.filter((c) => c._id !== id));
     } catch (err) {
       console.error(err);
+      throw err;
     }
   }, []);
 

@@ -3,9 +3,10 @@ import Providers from "./providers";
 import AuthInitializer from "../features/auth/components/AuthInitializer";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+
 export const metadata = {
-  title: "Cognify",
-  description: "AI-powered productivity workspace",
+  title: "Cognify ✻ AI Productivity Workspace",
+  description: "Unified AI workspace for documents, code synthesis, ATS resumes, and research.",
   icons: {
     icon: "/Cognify-Logo.png",
   },
