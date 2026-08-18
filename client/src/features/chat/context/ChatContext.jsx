@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import * as chatService from "../services/chat.service";
 
@@ -12,7 +12,8 @@ export function ChatProvider({ children }) {
 
   // Initialize conversations
   useEffect(() => {
-    if (!user) {
+    let active = true;
+    if (!user?._id) {
       setConversations([]);
       return;
     }
@@ -20,65 +21,79 @@ export function ChatProvider({ children }) {
     chatService
       .getChats(1, 100)
       .then((data) => {
-        if (data?.chats) {
+        if (data?.chats && active) {
           setConversations(data.chats);
         }
       })
       .catch(console.error);
-  }, [user]);
+
+    return () => {
+      active = false;
+    };
+  }, [user?._id]);
 
   const refreshChatTitle = useCallback(async (chatId) => {
-    try {
-      await new Promise((r) => setTimeout(r, 2000)); // give server time to gen title
-      const data = await chatService.getChatById(chatId);
-      if (!data?.chat) return;
-      
-      const newTitle = data.chat.title;
-      if (newTitle && newTitle !== "New Chat" && newTitle !== "New Conversation") {
-        setConversations((prev) =>
-          prev.map((c) => (c._id === chatId ? { ...c, title: newTitle } : c))
-        );
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        await new Promise((r) => setTimeout(r, 1500));
+        const data = await chatService.getChatById(chatId);
+        if (!data?.chat) break;
+        
+        const newTitle = data.chat.title;
+        if (newTitle && newTitle !== "New Chat" && newTitle !== "New Conversation") {
+          setConversations((prev) =>
+            prev.map((c) => (c._id === chatId ? { ...c, title: newTitle } : c))
+          );
+          break; // Successfully got the title
+        }
+      } catch (err) {
+        console.warn("[Title refresh] failed:", err);
       }
-    } catch (err) {
-      console.warn("[Title refresh] failed:", err);
+      attempts++;
     }
   }, []);
 
-  const togglePinChat = async (id) => {
-    const chat = conversations.find((c) => c._id === id);
-    if (!chat) return;
-    setConversations((prev) =>
-      prev.map((c) => (c._id === id ? { ...c, pinned: !c.pinned } : c)),
-    );
+  const togglePinChat = useCallback(async (id) => {
+    let oldPinned = false;
+    setConversations((prev) => {
+      const chat = prev.find((c) => c._id === id);
+      if (chat) oldPinned = chat.pinned;
+      return prev.map((c) => (c._id === id ? { ...c, pinned: !c.pinned } : c));
+    });
     try {
-      await chatService.updateChat(id, { pinned: !chat.pinned });
+      await chatService.updateChat(id, { pinned: !oldPinned });
     } catch (err) {
       console.error(err);
       setConversations((prev) =>
-        prev.map((c) => (c._id === id ? { ...c, pinned: chat.pinned } : c)),
+        prev.map((c) => (c._id === id ? { ...c, pinned: oldPinned } : c)),
       );
     }
-  };
+  }, []);
 
-  const deleteChat = async (id, isActive, onDeletedActive) => {
+  const deleteChat = useCallback(async (id, isActive, onDeletedActive) => {
     try {
       await chatService.deleteChat(id);
-      const remaining = conversations.filter((c) => c._id !== id);
-      setConversations(remaining);
-      if (isActive && onDeletedActive) {
-        onDeletedActive(remaining);
-      }
+      setConversations((prev) => {
+        const remaining = prev.filter((c) => c._id !== id);
+        if (isActive && onDeletedActive) {
+          onDeletedActive(remaining);
+        }
+        return remaining;
+      });
     } catch (err) {
       console.error(err);
     }
-  };
+  }, []);
 
-  const saveRenameChat = async (id, newTitle) => {
+  const saveRenameChat = useCallback(async (id, newTitle) => {
     if (!newTitle.trim()) return;
-    const oldTitle = conversations.find((c) => c._id === id)?.title;
-    setConversations((prev) =>
-      prev.map((c) => (c._id === id ? { ...c, title: newTitle.trim() } : c)),
-    );
+    let oldTitle = "";
+    setConversations((prev) => {
+      const chat = prev.find((c) => c._id === id);
+      if (chat) oldTitle = chat.title;
+      return prev.map((c) => (c._id === id ? { ...c, title: newTitle.trim() } : c));
+    });
     try {
       await chatService.updateChat(id, { title: newTitle.trim() });
     } catch (err) {
@@ -87,9 +102,9 @@ export function ChatProvider({ children }) {
         prev.map((c) => (c._id === id ? { ...c, title: oldTitle } : c)),
       );
     }
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     conversations,
     setConversations,
     isSidebarOpen,
@@ -98,7 +113,14 @@ export function ChatProvider({ children }) {
     togglePinChat,
     deleteChat,
     saveRenameChat
-  };
+  }), [
+    conversations,
+    isSidebarOpen,
+    refreshChatTitle,
+    togglePinChat,
+    deleteChat,
+    saveRenameChat
+  ]);
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }

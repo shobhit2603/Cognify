@@ -1,7 +1,5 @@
-"use client";
-import React from "react";
-import ChatCanvas from "../../features/chat/components/ChatCanvas";
-
 export default function NewChatPage() {
+  // Returns null because the Chat UI is fully managed by layout.jsx 
+  // (to prevent component unmounting across dynamic segment transitions).
   return null;
 }

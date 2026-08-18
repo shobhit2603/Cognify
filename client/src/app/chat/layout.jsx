@@ -12,7 +12,7 @@ export default function ChatLayout({ children }) {
         <div className="-mt-24 flex h-screen w-full bg-[#FBFBFA] text-brand-black overflow-hidden relative selection:bg-brand-orange selection:text-white">
           <ChatSidebarWrapper />
           <ChatCanvasWrapper />
-          <div className="hidden">{children}</div>
+          {children}
         </div>
       </ChatProvider>
     </ProtectedRoute>

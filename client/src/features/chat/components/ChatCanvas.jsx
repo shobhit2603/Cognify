@@ -18,7 +18,7 @@ export default function ChatCanvas({ chatId }) {
   const { isSidebarOpen, setIsSidebarOpen, refreshChatTitle, setConversations } = useChatContext();
 
   const [messages, setMessages] = useState([]);
-  const [editPromptText, setEditPromptText] = useState("");
+  const [editPromptText, setEditPromptText] = useState(null);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -50,6 +50,8 @@ export default function ChatCanvas({ chatId }) {
   // Guard: skip if a stream is active to avoid overwriting optimistic state.
 
   useEffect(() => {
+    let active = true;
+
     // 1. If we switch away from the currently streaming chat to another chat
     if (isStreamingRef.current && streamChatIdRef.current !== chatId) {
       abortControllerRef.current?.abort();
@@ -62,12 +64,12 @@ export default function ChatCanvas({ chatId }) {
     if (!chatId) {
       setMessages([]);
       setAttachedFiles([]);
-      return;
+      return () => { active = false; };
     }
 
     // 3. If navigating to the chat that is currently streaming (e.g. the first message just set the URL)
     if (isStreamingRef.current && streamChatIdRef.current === chatId) {
-      return;
+      return () => { active = false; };
     }
 
     // 4. Otherwise, safe to clear and load the new chat history
@@ -76,6 +78,7 @@ export default function ChatCanvas({ chatId }) {
     chatService
       .getMessages(chatId, 1, 100)
       .then((data) => {
+        if (!active) return;
         if (!data?.messages) return;
         // Backend already sorts { createdAt: 1 } — chronological order.
         // No .reverse() needed.
@@ -86,7 +89,12 @@ export default function ChatCanvas({ chatId }) {
         }));
         setMessages(formatted);
       })
-      .catch(console.error);
+      .catch((err) => {
+        if (!active) return;
+        console.error(err);
+      });
+
+    return () => { active = false; };
   }, [chatId]);
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────────
@@ -196,7 +204,7 @@ export default function ChatCanvas({ chatId }) {
       },
       { id: assistantId, role: "assistant", content: "" },
     ]);
-    setEditPromptText("");
+    setEditPromptText(null);
     setAttachedFiles([]);
     setIsGenerating(true);
     setStreamingMessageId(assistantId);
@@ -212,85 +220,100 @@ export default function ChatCanvas({ chatId }) {
     streamChatIdRef.current = chatId;
 
     // ── 2. Start SSE stream ──────────────────────────────────────────────────
-    await chatService.streamMessage(
-      textToSend.trim(),
-      chatId,
-      {
-        onConnected: (payload) => {
-          if (isNewChat && payload.chat) {
-            // New chat created by backend — sync to state
-            const newChatId = payload.chat._id;
-            streamChatId = newChatId;
-            streamChatIdRef.current = newChatId;
-            setConversations((prev) => [payload.chat, ...prev]);
-            // Redirect to the new chat page (useEffect handles not aborting the stream)
-            router.push(`/chat/${newChatId}`);
-          }
-          // Replace optimistic user-message id with real DB _id
-          if (payload.message) {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === userMessageId
-                  ? { ...msg, id: payload.message._id }
-                  : msg,
-              ),
-            );
-          }
-        },
+    try {
+      await chatService.streamMessage(
+        textToSend.trim(),
+        chatId,
+        {
+          onConnected: (payload) => {
+            if (isNewChat && payload.chat) {
+              // New chat created by backend — sync to state
+              const newChatId = payload.chat._id;
+              streamChatId = newChatId;
+              streamChatIdRef.current = newChatId;
+              setConversations((prev) => [payload.chat, ...prev]);
+              // Redirect to the new chat page (useEffect handles not aborting the stream)
+              router.push(`/chat/${newChatId}`);
+            }
+            // Replace optimistic user-message id with real DB _id
+            if (payload.message) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === userMessageId
+                    ? { ...msg, id: payload.message._id }
+                    : msg,
+                ),
+              );
+            }
+          },
 
-        onChunk: (chunkText) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId
-                ? { ...msg, content: msg.content + chunkText }
-                : msg,
-            ),
-          );
-        },
-
-        onDone: (payload) => {
-          // Replace temp assistant id with real DB _id
-          if (payload?.message) {
+          onChunk: (chunkText) => {
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === assistantId
-                  ? { ...msg, id: payload.message._id }
+                  ? { ...msg, content: msg.content + chunkText }
                   : msg,
               ),
             );
-          }
-          isStreamingRef.current = false;
-          setStreamingMessageId(null);
-          setIsGenerating(false);
+          },
 
-          // For new chats: fetch the AI-generated title after a short delay
-          // so the sidebar shows the real title instead of "New Chat"
-          if (isNewChat && streamChatId) {
-            refreshChatTitle(streamChatId);
-          }
-        },
+          onDone: (payload) => {
+            // Replace temp assistant id with real DB _id
+            if (payload?.message) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantId
+                    ? { ...msg, id: payload.message._id }
+                    : msg,
+                ),
+              );
+            }
+            // For new chats: fetch the AI-generated title after a short delay
+            // so the sidebar shows the real title instead of "New Chat"
+            if (isNewChat && streamChatId) {
+              refreshChatTitle(streamChatId);
+            }
+          },
 
-        onError: (err) => {
-          console.error("[Stream] Error:", err);
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId
-                ? {
-                    ...msg,
-                    content:
-                      msg.content ||
-                      "Sorry, something went wrong. Please try again.",
-                  }
-                : msg,
-            ),
-          );
-          isStreamingRef.current = false;
-          setStreamingMessageId(null);
-          setIsGenerating(false);
+          onError: (err) => {
+            console.error("[Stream] Error:", err);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantId
+                  ? {
+                      ...msg,
+                      content:
+                        msg.content ||
+                        "Sorry, something went wrong. Please try again.",
+                    }
+                  : msg,
+              ),
+            );
+          },
         },
-      },
-      controller.signal,
-    );
+        controller.signal,
+      );
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        console.error("[Stream] Promise rejected:", err);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId
+              ? {
+                  ...msg,
+                  content:
+                    msg.content ||
+                    "Sorry, something went wrong. Please try again.",
+                }
+              : msg,
+          ),
+        );
+      }
+    } finally {
+      isStreamingRef.current = false;
+      setStreamingMessageId(null);
+      setIsGenerating(false);
+    }
   };
 
   // ─── Stop Generation ─────────────────────────────────────────────────────────
@@ -342,7 +365,7 @@ export default function ChatCanvas({ chatId }) {
                   playingVoiceId={playingVoiceId}
                   handleCopy={handleCopy}
                   handleToggleVoice={handleToggleVoice}
-                  onEditPrompt={(text) => setEditPromptText(text)}
+                  onEditPrompt={(text) => setEditPromptText({ text, nonce: Date.now() })}
                 />
               )}
 

@@ -17,17 +17,22 @@ export default function ChatInputArea({
 
   // Sync external edit prompts into local state
   useEffect(() => {
-    if (editPromptText) {
-      setInput(editPromptText);
+    if (editPromptText?.text !== undefined) {
+      setInput(editPromptText.text);
     }
   }, [editPromptText]);
+
+  const submitMessage = () => {
+    if (!input.trim() || isGenerating) return;
+    onSend(input);
+    setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend(input);
-      setInput("");
-      if (inputRef.current) inputRef.current.style.height = "auto";
+      submitMessage();
     }
   };
 
@@ -137,11 +142,7 @@ export default function ChatInputArea({
             </button>
           ) : (
             <button
-              onClick={() => {
-                onSend(input);
-                setInput("");
-                if (inputRef.current) inputRef.current.style.height = "auto";
-              }}
+              onClick={submitMessage}
               disabled={!input.trim()}
               className="w-9 h-9 shrink-0 rounded-xl bg-brand-black hover:bg-brand-orange disabled:bg-black/5 disabled:text-gray-300 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs disabled:cursor-not-allowed mb-0.5"
               title="Send message"
