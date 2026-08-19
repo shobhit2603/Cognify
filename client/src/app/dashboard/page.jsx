@@ -24,12 +24,12 @@ const TOOL_MODULES = [
     description: "Low-latency streaming reasoning with full Markdown and code rendering.",
     icon: ChatTeardropDots,
     badge: "MISTRAL",
-    badgeBg: "bg-osmo-lime text-black",
+    badgeBg: "bg-osmo-purple text-white",
     href: "/chat",
     quickAction: "Start AI Thread",
     bgClass: "bg-black text-white",
-    accentColor: "text-osmo-lime",
-    glowColor: "bg-osmo-lime/15"
+    accentColor: "text-osmo-purple",
+    glowColor: "bg-osmo-purple/25"
   },
   {
     id: "documents",
@@ -39,12 +39,12 @@ const TOOL_MODULES = [
     description: "Upload dense multi-page PDFs for instant summaries, key citations, and Q&A.",
     icon: FilePdf,
     badge: "VECTOR RAG",
-    badgeBg: "bg-osmo-purple text-white",
+    badgeBg: "bg-osmo-lime text-black",
     href: "/documents",
     quickAction: "Upload PDF",
     bgClass: "bg-black text-white",
-    accentColor: "text-osmo-purple",
-    glowColor: "bg-osmo-purple/15"
+    accentColor: "text-osmo-lime",
+    glowColor: "bg-osmo-lime/25"
   },
   {
     id: "resume",
@@ -59,7 +59,7 @@ const TOOL_MODULES = [
     quickAction: "Audit Resume",
     bgClass: "bg-black text-white",
     accentColor: "text-[#ffbd2e]",
-    glowColor: "bg-[#ffbd2e]/15"
+    glowColor: "bg-[#ffbd2e]/25"
   },
   {
     id: "writing",
@@ -74,7 +74,7 @@ const TOOL_MODULES = [
     quickAction: "Draft Letter",
     bgClass: "bg-black text-white",
     accentColor: "text-[#ff5f56]",
-    glowColor: "bg-[#ff5f56]/15"
+    glowColor: "bg-[#ff5f56]/25"
   },
   {
     id: "notes",
@@ -84,12 +84,12 @@ const TOOL_MODULES = [
     description: "Convert rough thoughts and brainstorms into structured concept blueprints.",
     icon: Graph,
     badge: "SYNTHESIS",
-    badgeBg: "bg-[#27c93f] text-black",
+    badgeBg: "bg-[#00FFFF] text-black",
     href: "/notes",
     quickAction: "Structure Note",
     bgClass: "bg-black text-white",
-    accentColor: "text-[#27c93f]",
-    glowColor: "bg-[#27c93f]/15"
+    accentColor: "text-[#00FFFF]",
+    glowColor: "bg-[#00FFFF]/15"
   }
 ];
 

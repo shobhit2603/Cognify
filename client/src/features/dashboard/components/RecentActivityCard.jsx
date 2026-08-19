@@ -14,7 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import { getChats } from "../../chat/services/chat.service";
 
-const FALLBACK_ACTIVITIES = [
+export const FALLBACK_ACTIVITIES = [
   {
     id: "f-1",
     title: "Distributed Microservices & Latency Tuning",
@@ -79,7 +79,7 @@ const FALLBACK_ACTIVITIES = [
 
 export default function RecentActivityCard() {
   // Query actual user chats from the API
-  const { data: chatsData } = useQuery({
+  const { data: chatsData, isPending, isError } = useQuery({
     queryKey: ["chats", 1, 20],
     queryFn: () => getChats(1, 20),
     staleTime: 30000,
@@ -88,21 +88,21 @@ export default function RecentActivityCard() {
 
   const apiChats = chatsData?.chats || [];
 
-  const activities = apiChats.length > 0
-    ? apiChats.map((chat) => ({
-        id: chat._id,
-        title: chat.title || "Untitled Conversation",
-        tool: "AI Chat",
-        toolType: "chat",
-        href: `/chat/${chat._id}`,
-        time: new Date(chat.updatedAt || chat.createdAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric"
-        }),
-        badge: "Chat",
-        badgeColor: "bg-osmo-lime text-black"
-      }))
-    : FALLBACK_ACTIVITIES;
+  const activities = apiChats.map((chat) => {
+    const timestamp = chat.updatedAt || chat.createdAt;
+    return {
+      id: chat._id,
+      title: chat.title || "Untitled Conversation",
+      tool: "AI Chat",
+      toolType: "chat",
+      href: `/chat/${chat._id}`,
+      time: timestamp
+        ? new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        : "Recently",
+      badge: "Chat",
+      badgeColor: "bg-osmo-lime text-black"
+    };
+  });
 
   const getToolIcon = (type) => {
     switch (type) {
@@ -126,11 +126,8 @@ export default function RecentActivityCard() {
       {/* Header Bar */}
       <div className="flex items-center justify-between pb-3 border-b border-white/5 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-white/5 rounded-none text-osmo-lime">
-            <ClockCounterClockwise size={20} weight="bold" />
-          </div>
           <div>
-            <h3 className="text-lg sm:text-xl font-display font-black tracking-tight text-white leading-none">
+            <h3 className="text-lg sm:text-3xl font-display font-bold tracking-tight text-white leading-none">
               Recent Activity
             </h3>
             <span className="text-xs font-mono text-white/50 uppercase mt-0.5 block">
@@ -146,7 +143,30 @@ export default function RecentActivityCard() {
 
       {/* Internal Scrollable Activity Stream Container */}
       <div data-lenis-prevent className="my-2.5 flex-1 min-h-0 overflow-y-auto pr-1 space-y-2">
-        {activities.map((act) => (
+        {isPending && (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-white/3">
+                <div className="w-9 h-9 bg-white/10 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-white/10 w-2/3" />
+                  <div className="h-3 bg-white/10 w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {isError && (
+          <div className="p-4 text-center text-[#ff5f56]/70 text-sm font-mono border border-dashed border-[#ff5f56]/20">
+            Failed to load activity
+          </div>
+        )}
+        {!isPending && !isError && activities.length === 0 && (
+          <div className="p-4 text-center text-white/50 text-sm font-mono border border-dashed border-white/10">
+            No recent activity
+          </div>
+        )}
+        {!isPending && !isError && activities.map((act) => (
           <Link
             key={act.id}
             href={act.href}

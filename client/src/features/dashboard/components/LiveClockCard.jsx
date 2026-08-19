@@ -61,11 +61,11 @@ export default function LiveClockCard() {
   return (
     <div className="relative w-full h-full bg-osmo-dark text-white rounded-lg p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between group select-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
       {/* Ambient Radial Glow */}
-      <div className="absolute -top-12 -right-12 w-40 h-40 bg-osmo-lime/15 rounded-full blur-3xl pointer-events-none transition-opacity group-hover:opacity-100 opacity-60" />
+      <div className="absolute -top-12 -right-12 w-40 h-40 bg-osmo-purple/40 rounded-full blur-3xl pointer-events-none transition-opacity group-hover:opacity-100 opacity-60" />
 
       {/* Top Row: Greeting Label & Handwriting Accent */}
       <div className="flex items-center justify-between relative z-10">
-        <span className="text-lg sm:text-sm font-mono font-extrabold uppercase tracking-widest text-osmo-lime">
+        <span className="text-lg sm:text-xl font-mono font-extrabold uppercase tracking-widest text-osmo-lime">
           {getGreeting()}
         </span>
         <span className="text-lg sm:text-xl font-medium text-white/70 font-caveat">
