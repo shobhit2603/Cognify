@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import AuthModal from '../../features/auth/components/AuthModal';
 
-export default function AuthPage() {
+function AuthContent() {
   const { isAuthenticated, isInitialized } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,5 +27,13 @@ export default function AuthPage() {
     <div className="min-h-screen bg-brand-white">
       <AuthModal isOpen={true} />
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-brand-white" />}>
+      <AuthContent />
+    </Suspense>
   );
 }

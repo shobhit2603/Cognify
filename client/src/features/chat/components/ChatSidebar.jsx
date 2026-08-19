@@ -68,7 +68,7 @@ export default function ChatSidebar({
       </div>
 
       {/* Scrollable Conversation History */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-5">
+      <div data-lenis-prevent className="flex-1 overflow-y-auto p-3 space-y-5">
         {/* Pinned Threads */}
         {pinnedConversations.length > 0 && (
           <div>

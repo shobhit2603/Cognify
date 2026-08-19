@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { ArrowUpRight, ArrowUp } from "@phosphor-icons/react";
 import TextRoll from "../ui/TextRoll";
 
@@ -35,9 +36,13 @@ const footerLinks = {
 };
 
 export default function Footer() {
+  const pathname = usePathname();
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  if (pathname?.startsWith("/chat") || pathname?.startsWith("/dashboard")) return null;
 
   return (
     <footer className="w-full bg-osmo-dark text-white mt-10 font-sans border-t border-white/10">
