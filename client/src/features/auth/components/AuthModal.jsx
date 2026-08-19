@@ -174,11 +174,9 @@ export default function AuthModal({ isOpen = true, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-brand-black/75 backdrop-blur-xl overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-osmo-dark/95"
           onClick={handleClose}
         >
-          {/* Ambient radial glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-130 h-130 bg-white/3 rounded-full blur-[140px] pointer-events-none" />
 
           <motion.div
             ref={modalRef}
@@ -191,7 +189,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-100 bg-brand-black text-brand-white rounded-3xl p-8 shadow-2xl relative overflow-hidden my-auto focus:outline-none"
+            className="w-full max-w-100 bg-osmo-dark-surface border border-white/10 text-white rounded-none p-8 shadow-2xl relative overflow-hidden my-auto focus:outline-none"
           >
             {/* Close button */}
             <button
@@ -225,7 +223,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
             </div>
 
             {/* Login / Register tab switcher */}
-            <div className="relative flex bg-white/5 p-1 rounded-xl mb-6">
+            <div className="relative flex bg-white/5 p-1 rounded-none mb-6">
               <button
                 type="button"
                 onClick={() => {
@@ -240,7 +238,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                 {isLogin && (
                   <motion.div
                     layoutId="auth-tab-indicator"
-                    className="absolute inset-0 bg-white/10 rounded-lg shadow-sm"
+                    className="absolute inset-0 bg-white/10 rounded-none shadow-sm"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -261,7 +259,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                 {!isLogin && (
                   <motion.div
                     layoutId="auth-tab-indicator"
-                    className="absolute inset-0 bg-white/10 rounded-lg shadow-sm"
+                    className="absolute inset-0 bg-white/10 rounded-none shadow-sm"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -274,7 +272,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
               type="button"
               onClick={handleGoogleAuth}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 text-white transition-colors py-3 rounded-xl group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 text-white transition-colors py-3 rounded-none group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
@@ -310,7 +308,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                       <User
                         size={18}
                         className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
-                          errors.name ? "text-red-400" : "text-gray-500 group-focus-within:text-brand-orange"
+                          errors.name ? "text-red-400" : "text-gray-500 group-focus-within:text-osmo-lime"
                         }`}
                       />
                       <input
@@ -321,7 +319,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                         className={`w-full bg-transparent border-b pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-sans rounded-none ${
                           errors.name
                             ? "border-red-400/70 hover:border-red-400"
-                            : "border-white/10 hover:border-white/20 focus:border-brand-orange"
+                            : "border-white/10 hover:border-white/20 focus:border-osmo-lime"
                         }`}
                       />
                     </div>
@@ -336,7 +334,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                   <EnvelopeSimple
                     size={18}
                     className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
-                      errors.email ? "text-red-400" : "text-gray-500 group-focus-within:text-brand-orange"
+                      errors.email ? "text-red-400" : "text-gray-500 group-focus-within:text-osmo-lime"
                     }`}
                   />
                   <input
@@ -347,7 +345,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                     className={`w-full bg-transparent border-b pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-sans rounded-none ${
                       errors.email
                         ? "border-red-400/70 hover:border-red-400"
-                        : "border-white/10 hover:border-white/20 focus:border-brand-orange"
+                        : "border-white/10 hover:border-white/20 focus:border-osmo-lime"
                     }`}
                   />
                 </div>
@@ -360,7 +358,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                   <LockSimple
                     size={18}
                     className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
-                      errors.password ? "text-red-400" : "text-gray-500 group-focus-within:text-brand-orange"
+                      errors.password ? "text-red-400" : "text-gray-500 group-focus-within:text-osmo-lime"
                     }`}
                   />
                   <input
@@ -371,7 +369,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                     className={`w-full bg-transparent border-b pl-9 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-sans rounded-none ${
                       errors.password
                         ? "border-red-400/70 hover:border-red-400"
-                        : "border-white/10 hover:border-white/20 focus:border-brand-orange"
+                        : "border-white/10 hover:border-white/20 focus:border-osmo-lime"
                     }`}
                   />
                   <button
@@ -391,7 +389,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                 <div className="flex justify-end -mt-1">
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-brand-orange text-xs transition-colors cursor-pointer font-sans"
+                    className="text-gray-400 hover:text-osmo-lime text-xs transition-colors cursor-pointer font-sans"
                   >
                     Forgot password?
                   </button>
@@ -402,10 +400,10 @@ export default function AuthModal({ isOpen = true, onClose }) {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-200 text-brand-black active:scale-[0.99] font-display font-semibold text-sm transition-all py-3 rounded-xl mt-1 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group"
+                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-200 text-osmo-dark active:scale-[0.99] font-display font-semibold text-sm transition-all py-3 rounded-none mt-1 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group"
               >
                 {isLoading ? (
-                  <span className="w-5 h-5 border-2 border-black/20 border-t-brand-black rounded-full animate-spin" />
+                  <span className="w-5 h-5 border-2 border-black/20 border-t-osmo-dark rounded-full animate-spin" />
                 ) : (
                   <>
                     <span>{isLogin ? "Sign In" : "Create Account"}</span>

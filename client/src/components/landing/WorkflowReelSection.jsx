@@ -66,7 +66,7 @@ export default function WorkflowReelSection() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16 gap-6">
         <div>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-none bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
             <Sparkle size={14} className="text-osmo-purple" weight="fill" />
             <span>Artifact Reel</span>
           </div>
@@ -86,14 +86,14 @@ export default function WorkflowReelSection() {
         {workflowItems.map((item) => (
           <div
             key={item.id}
-            className={`group rounded-3xl p-6 flex flex-col justify-between min-h-90 border shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${item.color}`}
+            className={`group rounded-none p-6 flex flex-col justify-between min-h-90 border transition-all duration-300 hover:-translate-y-2 ${item.color}`}
           >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest opacity-60">
                   {item.module}
                 </span>
-                <span className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-black/15 tracking-wider">
+                <span className="text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-none bg-black/15 tracking-wider">
                   {item.badge}
                 </span>
               </div>
@@ -118,7 +118,7 @@ export default function WorkflowReelSection() {
 
               <Link
                 href="/auth"
-                className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow"
+                className="w-8 h-8 rounded-none bg-white text-black flex items-center justify-center hover:scale-110 transition-transform"
               >
                 <ArrowUpRight size={15} weight="bold" />
               </Link>

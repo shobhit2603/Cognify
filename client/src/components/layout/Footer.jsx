@@ -2,14 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ArrowUpRight,
-  ArrowUp,
-  Sparkle,
-  ShieldCheck,
-  Globe,
-  PaperPlaneRight
-} from "@phosphor-icons/react";
+import { ArrowUpRight, ArrowUp } from "@phosphor-icons/react";
 import TextRoll from "../ui/TextRoll";
 
 const footerLinks = {
@@ -47,155 +40,131 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative w-full bg-[#151515] text-white pt-16 sm:pt-24 pb-12 overflow-hidden border-t border-white/10 mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="w-full bg-osmo-dark text-white mt-10 font-sans border-t border-white/10">
+      <div className="max-w-8xl mx-auto flex flex-col">
         
-        {/* Top Grid: Brand & Newsletter + Link Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 pb-16 border-b border-white/10">
-          
-          {/* Brand Col */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="relative w-8 h-8">
-                <Image
-                  src="/Cognify-Logo.png"
-                  alt="Cognify Logo"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <span className="font-extrabold text-2xl tracking-tighter text-white font-display">
-                COGNIFY<span className="text-osmo-lime">.</span>
-              </span>
-            </div>
-
-            <p className="text-sm text-white/60 leading-relaxed max-w-sm">
-              The unified AI productivity suite engineered for deep cognitive flow. Understand documents, optimize resumes, and craft executive writing in one canvas.
+        {/* Massive CTA Section */}
+        <div className="py-12 sm:py-16 px-6 lg:px-10 border-b border-white/10 flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl sm:text-6xl lg:text-7xl font-display font-black uppercase tracking-tighter text-white leading-[0.9]">
+              Free to start.<br/>
+              <span className="text-osmo-lime">Scale later.</span>
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-white/50 max-w-md leading-relaxed font-medium">
+              Cognify is completely free for individual power-users. Pay only for intensive usage and extended context limits.
             </p>
+          </div>
+          
+          <Link 
+            href="/auth" 
+            className="group flex items-center justify-between gap-4 bg-white text-osmo-dark font-display font-bold uppercase tracking-widest py-4 px-6 sm:px-8 hover:bg-osmo-lime transition-all duration-300 w-full sm:w-auto"
+          >
+            <span>Launch Workspace</span>
+            <ArrowUpRight size={20} weight="bold" className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+          </Link>
+        </div>
 
-            {/* Live System Status Pill */}
-            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono">
-              <span className="w-2 h-2 rounded-full bg-osmo-lime animate-pulse" />
-              <span className="text-white/80">All Systems Operational</span>
-              <span className="text-white/30">•</span>
-              <span className="text-osmo-lime">Mistral AI Online</span>
-            </div>
+        {/* Links Grid with strict borders */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-b border-white/10">
+          
+          {/* Modules Col */}
+          <div className="p-6 border-b sm:border-b-0 sm:border-r border-white/10 space-y-6 flex flex-col">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/30">Modules</h4>
+            <ul className="space-y-3 flex-1">
+              {footerLinks.modules.map((link, i) => (
+                <li key={i}>
+                  <Link href={link.href} className="text-white/70 hover:text-osmo-lime transition-colors font-medium text-sm flex items-center gap-2 group">
+                    <span className="w-1.5 h-1.5 bg-transparent group-hover:bg-osmo-lime transition-colors block"></span>
+                    <TextRoll>{link.label}</TextRoll>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Navigation Links Columns */}
-          <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-8 text-sm">
-            
-            {/* Modules */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/40">
-                Modules
-              </h4>
-              <ul className="space-y-2.5">
-                {footerLinks.modules.map((link, i) => (
-                  <li key={i}>
-                    <Link
-                      href={link.href}
-                      className="text-white/70 hover:text-osmo-lime transition-colors block py-0.5"
-                    >
-                      <TextRoll>{link.label}</TextRoll>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Product Col */}
+          <div className="p-6 border-b lg:border-b-0 lg:border-r border-white/10 space-y-6 flex flex-col">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/30">Product</h4>
+            <ul className="space-y-3 flex-1">
+              {footerLinks.product.map((link, i) => (
+                <li key={i}>
+                  <Link href={link.href} className="text-white/70 hover:text-osmo-lime transition-colors font-medium text-sm flex items-center gap-2 group">
+                    <span className="w-1.5 h-1.5 bg-transparent group-hover:bg-osmo-lime transition-colors block"></span>
+                    <TextRoll>{link.label}</TextRoll>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            {/* Product */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/40">
-                Product
-              </h4>
-              <ul className="space-y-2.5">
-                {footerLinks.product.map((link, i) => (
-                  <li key={i}>
-                    <Link
-                      href={link.href}
-                      className="text-white/70 hover:text-osmo-lime transition-colors block py-0.5"
-                    >
-                      <TextRoll>{link.label}</TextRoll>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Resources Col */}
+          <div className="p-6 border-b sm:border-b-0 sm:border-r border-white/10 space-y-6 flex flex-col">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/30">Resources</h4>
+            <ul className="space-y-3 flex-1">
+              {footerLinks.resources.map((link, i) => (
+                <li key={i}>
+                  <Link href={link.href} className="text-white/70 hover:text-osmo-lime transition-colors font-medium text-sm flex items-center gap-2 group">
+                    <span className="w-1.5 h-1.5 bg-transparent group-hover:bg-osmo-lime transition-colors block"></span>
+                    <TextRoll>{link.label}</TextRoll>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            {/* Resources */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/40">
-                Resources
-              </h4>
-              <ul className="space-y-2.5">
-                {footerLinks.resources.map((link, i) => (
-                  <li key={i}>
-                    <Link
-                      href={link.href}
-                      className="text-white/70 hover:text-osmo-lime transition-colors block py-0.5"
-                    >
-                      <TextRoll>{link.label}</TextRoll>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/40">
-                Company
-              </h4>
-              <ul className="space-y-2.5">
-                {footerLinks.company.map((link, i) => (
-                  <li key={i}>
-                    <Link
-                      href={link.href}
-                      className="text-white/70 hover:text-osmo-lime transition-colors block py-0.5"
-                    >
-                      <TextRoll>{link.label}</TextRoll>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
+          {/* Company Col */}
+          <div className="p-6 space-y-6 flex flex-col">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/30">Company</h4>
+            <ul className="space-y-3 flex-1">
+              {footerLinks.company.map((link, i) => (
+                <li key={i}>
+                  <Link href={link.href} className="text-white/70 hover:text-osmo-lime transition-colors font-medium text-sm flex items-center gap-2 group">
+                    <span className="w-1.5 h-1.5 bg-transparent group-hover:bg-osmo-lime transition-colors block"></span>
+                    <TextRoll>{link.label}</TextRoll>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
         </div>
 
-        {/* Bottom Bar: Copyright & Back to Top */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/50">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span>© 2026 Cognify AI Inc. All rights reserved.</span>
-            <span>•</span>
-            <span className="text-white/30">Crafted with Next.js &amp; Mistral AI</span>
+        {/* Bottom Bar */}
+        <div className="p-6 lg:px-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-white/10">
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 relative">
+              <Image src="/Cognify-Logo.png" alt="Cognify Logo" fill className="object-contain" />
+            </div>
+            <span className="font-display font-bold text-xl tracking-tighter text-white">
+              COGNIFY<span className="text-osmo-lime">.</span>
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-6 text-xs font-mono text-white/40 uppercase tracking-widest">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-osmo-lime animate-pulse block"></span>
+              <span>Systems Online</span>
+            </div>
+            <span className="hidden sm:inline">•</span>
+            <span className="hidden sm:inline">Crafted with Next.js</span>
           </div>
 
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-2 text-white hover:text-osmo-lime transition-colors cursor-pointer py-1 px-3 rounded-lg hover:bg-white/5"
+            className="flex items-center gap-2 text-white hover:text-osmo-lime transition-colors font-mono text-xs uppercase tracking-widest group"
           >
-            <span>BACK TO TOP</span>
-            <ArrowUp size={14} weight="bold" />
+            <span>Back to top</span>
+            <ArrowUp size={16} weight="bold" className="group-hover:-translate-y-1 transition-transform" />
           </button>
         </div>
-      </div>
 
-      {/* Massive Running Watermark Marquee */}
-      <div className="relative mt-12 pt-4 border-t border-white/5 overflow-hidden select-none pointer-events-none opacity-20">
-        <div className="whitespace-nowrap flex items-center gap-8 font-black uppercase text-6xl sm:text-8xl lg:text-[140px] tracking-tighter text-white font-display">
-          <span>COGNIFY</span>
-          <span className="text-osmo-lime">✻</span>
-          <span>AI WORKSPACE</span>
-          <span className="text-osmo-purple">✻</span>
-          <span>DEEP FLOW</span>
-          <span className="text-osmo-lime">✻</span>
-          <span>COGNIFY</span>
-          <span className="text-osmo-lime">✻</span>
-          <span>AI WORKSPACE</span>
+        {/* Simple Branding Bottom */}
+        <div className="relative py-2 flex justify-center items-center bg-osmo-dark-surface select-none group overflow-hidden">
+          <div className="font-display font-black uppercase text-7xl sm:text-9xl tracking-tighter text-white/5 transition-all duration-500 group-hover:text-osmo-lime group-hover:scale-105 cursor-default">
+            COGNIFY<span className="text-osmo-lime/20 group-hover:text-white transition-colors duration-500">.</span>
+          </div>
         </div>
+
       </div>
     </footer>
   );

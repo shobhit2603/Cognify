@@ -235,7 +235,7 @@ export default function ToolkitFanSection() {
     <section className="relative w-full py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-none bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
           <Cpu size={14} className="text-osmo-purple" weight="fill" />
           <span>Extensible Architecture</span>
         </div>
@@ -256,9 +256,9 @@ export default function ToolkitFanSection() {
               <button
                 key={cat}
                 onClick={() => setActiveFilter(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 cursor-pointer ${
+                className={`px-4 py-2 rounded-none text-xs font-bold transition-all duration-300 cursor-pointer ${
                   isSelected
-                    ? "bg-[#151515] text-white shadow-md scale-105"
+                    ? "bg-[#151515] text-white scale-105"
                     : "bg-black/5 text-black/70 hover:bg-black/10 hover:text-black"
                 }`}
               >
@@ -277,7 +277,7 @@ export default function ToolkitFanSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl w-full items-center">
           
           {/* Card 1: Electric Purple Card (Tilted Left) */}
-          <div className="group relative bg-osmo-purple text-white rounded-xl p-7 flex flex-col justify-between shadow-xl min-h-105 transition-all duration-500 md:-rotate-4 md:hover:rotate-0 md:hover:scale-105 md:hover:z-20 border border-osmo-purple/50">
+          <div className="group relative bg-osmo-purple text-white rounded-none p-7 flex flex-col justify-between min-h-105 transition-all duration-500 md:-rotate-4 md:hover:rotate-0 md:hover:scale-105 md:hover:z-20 border border-osmo-purple/50">
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-mono font-extrabold uppercase px-2.5 py-1 rounded bg-black/20 text-white tracking-widest">
@@ -288,7 +288,7 @@ export default function ToolkitFanSection() {
                 </span>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mb-4 text-white">
+              <div className="w-12 h-12 rounded-none bg-white/20 flex items-center justify-center mb-4 text-white">
                 {data.card1.icon}
               </div>
 
@@ -309,7 +309,7 @@ export default function ToolkitFanSection() {
 
               <Link
                 href={data.card1.href}
-                className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:bg-osmo-lime transition-colors shadow"
+                className="w-9 h-9 rounded-none bg-white text-black flex items-center justify-center hover:bg-osmo-lime transition-colors"
               >
                 <ArrowUpRight size={16} weight="bold" />
               </Link>
@@ -317,9 +317,9 @@ export default function ToolkitFanSection() {
           </div>
 
           {/* Card 2: Deep Dark Card (Center - High Impact) */}
-          <div className="group relative bg-[#151515] text-white rounded-xl p-8 flex flex-col justify-between shadow-2xl min-h-115 transition-all duration-500 md:scale-105 md:z-10 md:hover:scale-110 border border-white/15">
+          <div className="group relative bg-[#151515] text-white rounded-none p-8 flex flex-col justify-between min-h-115 transition-all duration-500 md:scale-105 md:z-10 md:hover:scale-110 border border-white/15">
             {/* Ambient inner glow */}
-            <div className="absolute inset-0 bg-radial from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none" />
+            <div className="absolute inset-0 bg-radial from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-none pointer-events-none" />
 
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
@@ -331,7 +331,7 @@ export default function ToolkitFanSection() {
                 </span>
               </div>
 
-              <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center mb-5 text-osmo-lime">
+              <div className="w-14 h-14 rounded-none bg-white/10 border border-white/10 flex items-center justify-center mb-5 text-osmo-lime">
                 {data.card2.icon}
               </div>
 
@@ -358,7 +358,7 @@ export default function ToolkitFanSection() {
 
               <Link
                 href={data.card2.href}
-                className="group/btn flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-lime text-black font-bold text-xs uppercase tracking-wider hover:bg-white transition-all shadow"
+                className="group/btn flex items-center gap-2 px-5 py-2.5 rounded-none bg-osmo-lime text-black font-bold text-xs uppercase tracking-wider hover:bg-white transition-all active:scale-95"
               >
                 <TextRoll>Explore</TextRoll>
                 <ArrowRight size={14} weight="bold" className="transition-transform group-hover/btn:translate-x-0.5" />
@@ -367,7 +367,7 @@ export default function ToolkitFanSection() {
           </div>
 
           {/* Card 3: Neon Lime Card (Tilted Right) */}
-          <div className="group relative bg-osmo-lime text-black rounded-xl p-7 flex flex-col justify-between shadow-xl min-h-105 transition-all duration-500 md:rotate-4 md:hover:rotate-0 md:hover:scale-105 md:hover:z-20 border border-osmo-lime">
+          <div className="group relative bg-osmo-lime text-black rounded-none p-7 flex flex-col justify-between min-h-105 transition-all duration-500 md:rotate-4 md:hover:rotate-0 md:hover:scale-105 md:hover:z-20 border border-osmo-lime">
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-mono font-extrabold uppercase px-2.5 py-1 rounded bg-black/10 text-black tracking-widest">
@@ -378,7 +378,7 @@ export default function ToolkitFanSection() {
                 </span>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center mb-4 text-black">
+              <div className="w-12 h-12 rounded-none bg-black/10 flex items-center justify-center mb-4 text-black">
                 {data.card3.icon}
               </div>
 
@@ -399,7 +399,7 @@ export default function ToolkitFanSection() {
 
               <Link
                 href={data.card3.href}
-                className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-osmo-purple transition-colors shadow"
+                className="w-9 h-9 rounded-none bg-black text-white flex items-center justify-center hover:bg-osmo-purple transition-colors"
               >
                 <ArrowUpRight size={16} weight="bold" />
               </Link>

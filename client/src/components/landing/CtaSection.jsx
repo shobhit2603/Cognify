@@ -10,7 +10,7 @@ export default function CtaSection() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 max-w-6xl mx-auto items-stretch">
         
         {/* Left Capsule: Dark Oval with Dynamic Typography */}
-        <div className="md:col-span-5 bg-[#151515] text-white rounded-[120px] p-8 sm:p-10 flex flex-col justify-between items-center text-center border border-white/10 shadow-2xl relative overflow-hidden group min-h-85">
+        <div className="md:col-span-5 bg-[#151515] text-white rounded-none p-8 sm:p-10 flex flex-col justify-between items-center text-center border border-white/10 relative overflow-hidden group min-h-85">
           <div className="absolute inset-0 bg-radial from-white/10 to-transparent opacity-30 pointer-events-none" />
 
           <div className="relative z-10 pt-4">
@@ -37,9 +37,9 @@ export default function CtaSection() {
         </div>
 
         {/* Right Capsule: Electric Purple High-Impact Action Box */}
-        <div className="md:col-span-7 bg-osmo-purple text-white rounded-3xl sm:rounded-[36px] p-8 sm:p-12 flex flex-col justify-between shadow-2xl relative overflow-hidden border border-osmo-purple/50 min-h-85">
+        <div className="md:col-span-7 bg-osmo-purple text-white rounded-none p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden border border-osmo-purple/50 min-h-85">
           {/* Ambient light glow */}
-          <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full bg-white/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-none bg-white/10 pointer-events-none" />
 
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
@@ -61,7 +61,7 @@ export default function CtaSection() {
           <div className="relative z-10 pt-8 mt-6 border-t border-white/20 flex items-center gap-4 flex-wrap">
             <Link
               href="/auth"
-              className="group/btn flex items-center gap-2.5 px-7 py-4 rounded-2xl bg-osmo-lime text-black font-bold text-sm uppercase tracking-wider hover:bg-white transition-all duration-300 shadow-xl active:scale-95"
+              className="group/btn flex items-center gap-2.5 px-7 py-4 rounded-none bg-osmo-lime text-black font-bold text-sm uppercase tracking-wider hover:bg-white transition-all duration-300 active:scale-95"
             >
               <TextRoll>Join Free Today</TextRoll>
               <ArrowRight size={16} weight="bold" className="transition-transform group-hover/btn:translate-x-1" />
@@ -69,7 +69,7 @@ export default function CtaSection() {
 
             <Link
               href="/chat"
-              className="px-6 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm uppercase tracking-wider transition-all duration-300 border border-white/10"
+              className="px-6 py-4 rounded-none bg-white/10 hover:bg-white/20 text-white font-bold text-sm uppercase tracking-wider transition-all duration-300 border border-white/10"
             >
               <TextRoll>Try Sandbox</TextRoll>
             </Link>
