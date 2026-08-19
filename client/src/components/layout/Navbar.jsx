@@ -190,7 +190,7 @@ export default function Navbar() {
     }
   }, [isOpen]);
 
-  if (pathname?.startsWith("/chat")) return null;
+  if (pathname?.startsWith("/chat") || pathname?.startsWith("/dashboard")) return null;
 
   const newLocal = "w-5 rotate-45 translate-y-1.5";
 
@@ -210,6 +210,7 @@ export default function Navbar() {
         }`}
       >
         <div
+          data-lenis-prevent={isOpen ? "" : undefined}
           className={`pointer-events-auto w-full bg-osmo-dark text-white transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border border-white/10 relative overflow-hidden shadow-2xl ${
             isOpen
               ? "max-w-4xl rounded-none p-6 sm:p-8 max-h-[88vh] overflow-y-auto"
