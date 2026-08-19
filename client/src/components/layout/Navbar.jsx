@@ -398,12 +398,12 @@ export default function Navbar() {
                         
                         {/* Card Body */}
                         <div className="relative z-10">
-                          <span className={`text-base block mb-0.5 font-caveat transition-colors ${color.text}`}>
-                            {item.category}
-                          </span>
                           <h3 className="text-sm font-bold tracking-tight text-white mb-1 transition-colors group-hover:text-white">
                             {item.label}
                           </h3>
+                          <span className={`text-base font-bold block mb-0.5 font-caveat transition-colors ${color.text}`}>
+                            {item.category}
+                          </span>
                           <p className="text-xs text-white/50 line-clamp-2 leading-relaxed transition-colors group-hover:text-white/70">
                             {item.preview.description}
                           </p>

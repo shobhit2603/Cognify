@@ -46,9 +46,9 @@ export default function Footer() {
         {/* Massive CTA Section */}
         <div className="py-12 sm:py-16 px-6 lg:px-10 border-b border-white/10 flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8">
           <div className="max-w-2xl">
-            <h2 className="text-4xl sm:text-6xl lg:text-7xl font-display font-black uppercase tracking-tighter text-white leading-[0.9]">
+            <h2 className="text-4xl sm:text-6xl lg:text-7xl font-display font-bold uppercase tracking-tighter text-white leading-[0.9]">
               Free to start.<br/>
-              <span className="text-osmo-lime">Scale later.</span>
+              <span className="text-osmo-lime">Scale <span className="text-osmo-purple">later<span className="text-white">.</span></span></span>
             </h2>
             <p className="mt-4 text-base sm:text-lg text-white/50 max-w-md leading-relaxed font-medium">
               Cognify is completely free for individual power-users. Pay only for intensive usage and extended context limits.
@@ -57,7 +57,7 @@ export default function Footer() {
           
           <Link 
             href="/auth" 
-            className="group flex items-center justify-between gap-4 bg-white text-osmo-dark font-display font-bold uppercase tracking-widest py-4 px-6 sm:px-8 hover:bg-osmo-lime transition-all duration-300 w-full sm:w-auto"
+            className="group flex items-center justify-between gap-4 bg-white text-osmo-dark font-display font-bold uppercase tracking-widest py-4 px-6 sm:px-8 hover:bg-osmo-purple hover:text-white transition-all duration-300 w-full sm:w-auto"
           >
             <span>Launch Workspace</span>
             <ArrowUpRight size={20} weight="bold" className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -151,7 +151,7 @@ export default function Footer() {
 
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-2 text-white hover:text-osmo-lime transition-colors font-mono text-xs uppercase tracking-widest group"
+            className="flex items-center gap-2 text-white hover:text-osmo-lime transition-colors font-mono text-xs uppercase tracking-widest group cursor-pointer"
           >
             <span>Back to top</span>
             <ArrowUp size={16} weight="bold" className="group-hover:-translate-y-1 transition-transform" />
