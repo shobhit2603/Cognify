@@ -4,7 +4,7 @@ import app from "../app.js";
 describe("Auth Endpoints", () => {
   const testUser = {
     name: "Test User",
-    email: "testuser@example.com",
+    email: "starchtony06@gmail.com",
     password: "password123",
   };
 
@@ -70,6 +70,46 @@ describe("Auth Endpoints", () => {
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe("Email Verification", () => {
+    let cookies;
+
+    beforeEach(async () => {
+      // Register and login to get auth cookies
+      await request(app).post("/api/v1/auth/register").send({
+        ...testUser,
+        email: "starchtony06+verify@gmail.com", // use different email to avoid conflicts
+      });
+      const res = await request(app)
+        .post("/api/v1/auth/login")
+        .send({
+          email: "starchtony06+verify@gmail.com",
+          password: testUser.password,
+        });
+      cookies = res.headers["set-cookie"];
+    });
+
+    it("should resend verification email and fail to verify with invalid OTP", async () => {
+      // Test resend
+      const resendResponse = await request(app)
+        .post("/api/v1/auth/resend-verification")
+        .set("Cookie", cookies);
+
+      expect(resendResponse.status).toBe(200);
+      expect(resendResponse.body.success).toBe(true);
+      expect(resendResponse.body.message).toMatch(/Verification email sent successfully/);
+
+      // Test invalid OTP
+      const verifyResponse = await request(app)
+        .post("/api/v1/auth/verify-email")
+        .set("Cookie", cookies)
+        .send({ otp: "000000" });
+
+      expect(verifyResponse.status).toBe(400);
+      expect(verifyResponse.body.success).toBe(false);
+      expect(verifyResponse.body.message).toMatch(/Invalid OTP/);
     });
   });
 });

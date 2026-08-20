@@ -155,3 +155,31 @@ export const resetPassword = async (req, res, next) => {
     next(error);
   }
 };
+
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+    
+    // Using req.user._id since this route will be protected by requireAuth
+    await authService.verifyEmail(req.user._id, otp);
+    
+    res.status(StatusCodes.OK).json(
+      ApiResponse(StatusCodes.OK, "Email verified successfully.")
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendVerificationEmail = async (req, res, next) => {
+  try {
+    // Using req.user._id since this route will be protected by requireAuth
+    await authService.resendVerificationEmail(req.user._id);
+    
+    res.status(StatusCodes.OK).json(
+      ApiResponse(StatusCodes.OK, "Verification email sent successfully.")
+    );
+  } catch (error) {
+    next(error);
+  }
+};

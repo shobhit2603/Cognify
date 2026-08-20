@@ -2,6 +2,7 @@ import rateLimit from "express-rate-limit";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import ApiResponse from "../utils/apiResponse.util.js";
 import { StatusCodes } from "http-status-codes";
+import envConfig from "../config/env.config.js";
 
 /**
  * Global API Rate Limiter
@@ -29,7 +30,7 @@ export const globalLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  max: envConfig.NODE_ENV === "test" ? 100 : 10,
   handler: (req, res) => {
     res.status(StatusCodes.TOO_MANY_REQUESTS).json(
       ApiResponse(

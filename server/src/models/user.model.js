@@ -36,6 +36,14 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    emailVerificationOtp: {
+      type: String,
+      select: false,
+    },
+    emailVerificationOtpExpires: {
+      type: Date,
+      select: false,
+    },
     resetPasswordOtp: {
       type: String,
     },

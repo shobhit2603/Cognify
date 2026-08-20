@@ -1,13 +1,14 @@
 import express from "express";
 import * as chatController from "../controllers/chat.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
-import { requireAuth } from "../middlewares/auth.middleware.js";
+import { requireAuth, requireEmailVerification } from "../middlewares/auth.middleware.js";
 import { createChatSchema, updateChatSchema } from "../validations/chat.validation.js";
 
 const router = express.Router();
 
-// All chat routes require authentication
+// All chat routes require authentication and email verification
 router.use(requireAuth);
+router.use(requireEmailVerification);
 
 /**
  * @swagger

@@ -12,6 +12,10 @@ export const findUserById = async (id) => {
   return User.findById(id);
 };
 
+export const findUserByIdForVerification = async (id) => {
+  return User.findById(id).select("+emailVerificationOtp +emailVerificationOtpExpires");
+};
+
 export const findUserByGoogleId = async (googleId) => {
   return User.findOne({ googleId });
 };

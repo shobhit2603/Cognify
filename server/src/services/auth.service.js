@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomUUID } from "crypto";
+import { randomUUID, randomInt } from "crypto";
 import envConfig from "../config/env.config.js";
 import * as userRepository from "../repositories/user.repository.js";
 import * as sessionRepository from "../repositories/session.repository.js";
@@ -25,19 +25,31 @@ export const registerAndLogin = async ({
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  
+  // Generate 6 digit OTP for email verification
+  const otp = randomInt(100000, 1000000).toString();
+  const hashedOtp = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
   const newUser = await userRepository.createUser({
     name,
     email,
     password: hashedPassword,
+    emailVerificationOtp: hashedOtp,
+    emailVerificationOtpExpires: expiresAt,
   });
 
-  // Send Welcome Email asynchronously
+  // Send Welcome & Verification Email asynchronously
   sendEmail({
     to: newUser.email,
-    subject: "Welcome to Cognify!",
+    subject: "Welcome to Cognify - Verify your email",
     html: `
       <h2>Welcome ${escapeHtml(newUser.name)}!</h2>
       <p>We are thrilled to have you on board.</p>
+      <p>To get started, please verify your email address using the code below:</p>
+      <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
+      <p>This code is valid for 24 hours.</p>
+      <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;" />
       <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
       <ul>
         <li><strong>Personalized Roadmaps:</strong> Generate learning paths tailored to your specific goals.</li>
@@ -188,7 +200,7 @@ export const forgotPassword = async (email) => {
   }
 
   // Generate 6 digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = randomInt(100000, 1000000).toString();
 
   // Hash the OTP
   const hashedOtp = await bcrypt.hash(otp, 10);
@@ -241,5 +253,66 @@ export const resetPassword = async (email, otp, newPassword) => {
     password: hashedPassword,
     resetPasswordOtp: null,
     resetPasswordOtpExpires: null,
+  });
+};
+
+export const verifyEmail = async (userId, otp) => {
+  const user = await userRepository.findUserByIdForVerification(userId);
+  if (!user) {
+    throw ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  if (user.isEmailVerified) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Email is already verified");
+  }
+
+  if (!user.emailVerificationOtp || !user.emailVerificationOtpExpires) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Invalid or expired OTP");
+  }
+
+  if (new Date() > user.emailVerificationOtpExpires) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "OTP has expired");
+  }
+
+  const isOtpValid = await bcrypt.compare(otp, user.emailVerificationOtp);
+  if (!isOtpValid) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Invalid OTP");
+  }
+
+  await userRepository.updateUser(user._id, {
+    isEmailVerified: true,
+    emailVerificationOtp: null,
+    emailVerificationOtpExpires: null,
+  });
+};
+
+export const resendVerificationEmail = async (userId) => {
+  const user = await userRepository.findUserById(userId);
+  if (!user) {
+    throw ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  if (user.isEmailVerified) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Email is already verified");
+  }
+
+  const otp = randomInt(100000, 1000000).toString();
+  const hashedOtp = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await userRepository.updateUser(user._id, {
+    emailVerificationOtp: hashedOtp,
+    emailVerificationOtpExpires: expiresAt,
+  });
+
+  await sendEmail({
+    to: user.email,
+    subject: "Cognify - Verify your email",
+    html: `
+      <h2>Hello ${escapeHtml(user.name)},</h2>
+      <p>Here is your new email verification code:</p>
+      <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
+      <p>This code is valid for 24 hours.</p>
+    `,
   });
 };

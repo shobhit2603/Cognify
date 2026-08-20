@@ -96,6 +96,39 @@ export const useAuth = () => {
     },
   });
 
+  const verifyEmailMutation = useMutation({
+    mutationFn: authService.verifyEmail,
+    onSuccess: () => {
+      queryClient.setQueryData(['user'], (oldData) => {
+        if (!oldData?.data?.user) return oldData;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            user: {
+              ...oldData.data.user,
+              isEmailVerified: true,
+            },
+          },
+        };
+      });
+      toast.success('Email verified successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Verification failed. Invalid or expired OTP.');
+    },
+  });
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: authService.resendVerification,
+    onSuccess: () => {
+      toast.success('Verification email sent! Check your inbox.');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to resend verification email.');
+    },
+  });
+
   return {
     user: userResponse?.data?.user || null,
     isAuthenticated,
@@ -110,5 +143,10 @@ export const useAuth = () => {
     logout: logoutMutation.mutate,
     logoutAsync: logoutMutation.mutateAsync,
     isLoggingOut: logoutMutation.isPending,
+    verifyEmail: verifyEmailMutation.mutate,
+    verifyEmailAsync: verifyEmailMutation.mutateAsync,
+    isVerifying: verifyEmailMutation.isPending,
+    resendVerification: resendVerificationMutation.mutate,
+    isResending: resendVerificationMutation.isPending,
   };
 };
