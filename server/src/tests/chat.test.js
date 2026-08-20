@@ -1,10 +1,11 @@
 import request from "supertest";
 import app from "../app.js";
+import { User } from "../models/user.model.js";
 
 describe("Chat Endpoints", () => {
   const testUser = {
     name: "Chat Test User",
-    email: "chattest@example.com",
+    email: "starchtony06@gmail.com",
     password: "password123",
   };
 
@@ -14,6 +15,10 @@ describe("Chat Endpoints", () => {
   beforeEach(async () => {
     // Register and login to get auth cookies
     await request(app).post("/api/v1/auth/register").send(testUser);
+    
+    // Manually verify user so they can access core features
+    await User.updateOne({ email: testUser.email }, { isEmailVerified: true });
+
     const loginRes = await request(app).post("/api/v1/auth/login").send({
       email: testUser.email,
       password: testUser.password,
