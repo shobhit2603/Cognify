@@ -14,7 +14,7 @@ export default function BentoToolCard({
   bgClass = "bg-[#151414] text-white border border-white/[0.08]",
   accentColor = "text-osmo-lime",
   className = "",
-  isHero = false
+  isHero = false,
 }) {
   return (
     <Link
@@ -47,8 +47,10 @@ export default function BentoToolCard({
       <div className="my-auto py-1">
         <h3
           className={`${
-            isHero ? "text-2xl sm:text-3xl lg:text-4xl" : "text-lg sm:text-xl lg:text-2xl"
-          } font-display font-bold tracking-tight text-white uppercase leading-tight`}
+            isHero
+              ? "text-2xl sm:text-3xl lg:text-4xl"
+              : "text-lg sm:text-xl lg:text-2xl"
+          } font-display font-medium tracking-tight text-white uppercase leading-tight`}
         >
           {title}
         </h3>
@@ -62,11 +64,7 @@ export default function BentoToolCard({
         <span className="font-bold text-white/70 group-hover:text-white transition-colors">
           <TextRoll>{quickAction}</TextRoll>
         </span>
-        <span className={`font-bold uppercase tracking-wider ${accentColor} text-[11px]`}>
-          Launch
-        </span>
       </div>
     </Link>
   );
 }
-
