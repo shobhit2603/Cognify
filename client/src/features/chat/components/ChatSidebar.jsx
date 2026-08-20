@@ -202,7 +202,7 @@ export default function ChatSidebar({
         </div>
 
         {/* Bottom Section: User Profile & Quick Actions */}
-        <div className="pt-2 shrink-0 flex items-center justify-between gap-2 bg-white/4 p-3 rounded-2xl">
+        <div className="shrink-0 bg-white/4 p-3 rounded-2xl">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-osmo-purple text-white flex items-center justify-center text-sm font-medium shrink-0">
               {userInitial}
@@ -212,16 +212,6 @@ export default function ChatSidebar({
                 {user?.name || "Workspace User"}
               </div>
             </div>
-          </div>
-
-          <div className="flex items-center shrink-0">
-            <Link
-              href="/dashboard"
-              className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors"
-              title="Dashboard Bento"
-            >
-              <CubeIcon size={16} weight="bold" />
-            </Link>
           </div>
         </div>
       </div>
