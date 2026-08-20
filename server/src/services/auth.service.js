@@ -255,3 +255,64 @@ export const resetPassword = async (email, otp, newPassword) => {
     resetPasswordOtpExpires: null,
   });
 };
+
+export const verifyEmail = async (userId, otp) => {
+  const user = await userRepository.findUserById(userId);
+  if (!user) {
+    throw ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  if (user.isEmailVerified) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Email is already verified");
+  }
+
+  if (!user.emailVerificationOtp || !user.emailVerificationOtpExpires) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Invalid or expired OTP");
+  }
+
+  if (new Date() > user.emailVerificationOtpExpires) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "OTP has expired");
+  }
+
+  const isOtpValid = await bcrypt.compare(otp, user.emailVerificationOtp);
+  if (!isOtpValid) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Invalid OTP");
+  }
+
+  await userRepository.updateUser(user._id, {
+    isEmailVerified: true,
+    emailVerificationOtp: null,
+    emailVerificationOtpExpires: null,
+  });
+};
+
+export const resendVerificationEmail = async (userId) => {
+  const user = await userRepository.findUserById(userId);
+  if (!user) {
+    throw ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+
+  if (user.isEmailVerified) {
+    throw ApiError(StatusCodes.BAD_REQUEST, "Email is already verified");
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedOtp = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await userRepository.updateUser(user._id, {
+    emailVerificationOtp: hashedOtp,
+    emailVerificationOtpExpires: expiresAt,
+  });
+
+  sendEmail({
+    to: user.email,
+    subject: "Cognify - Verify your email",
+    html: `
+      <h2>Hello ${escapeHtml(user.name)},</h2>
+      <p>Here is your new email verification code:</p>
+      <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
+      <p>This code is valid for 24 hours.</p>
+    `,
+  }).catch((err) => console.error("Failed to resend verification email:", err));
+};

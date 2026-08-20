@@ -160,6 +160,46 @@ router.post("/logout", authController.logout);
 
 /**
  * @swagger
+ * /api/v1/auth/verify-email:
+ *   post:
+ *     summary: Verify email using OTP
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [otp]
+ *             properties:
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Invalid or expired OTP
+ */
+router.post("/verify-email", requireAuth, authController.verifyEmail);
+
+/**
+ * @swagger
+ * /api/v1/auth/resend-verification:
+ *   post:
+ *     summary: Resend email verification OTP
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ */
+router.post("/resend-verification", requireAuth, authController.resendVerificationEmail);
+
+/**
+ * @swagger
  * /api/v1/auth/me:
  *   get:
  *     summary: Get current user profile
