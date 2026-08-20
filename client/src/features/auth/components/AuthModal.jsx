@@ -190,7 +190,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-100 bg-osmo-dark-surface border border-white/10 text-white rounded-xl p-8 shadow-2xl relative overflow-hidden my-auto focus:outline-none"
+            className="w-full max-w-100 bg-osmo-dark border border-white/10 text-white rounded-xl p-8 shadow-2xl relative overflow-hidden my-auto focus:outline-none"
           >
             {/* Close button */}
             <button
