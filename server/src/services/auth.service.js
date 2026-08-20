@@ -9,6 +9,19 @@ import { StatusCodes } from "http-status-codes";
 import { sendEmail } from "../utils/email.util.js";
 
 /**
+ * Escape HTML special characters to prevent HTML injection
+ */
+const escapeHtml = (str) => {
+  if (!str) return str;
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+/**
  * Register a new user and immediately create a session (auto-login on sign-up).
  */
 export const registerAndLogin = async ({
@@ -35,7 +48,7 @@ export const registerAndLogin = async ({
     to: newUser.email,
     subject: "Welcome to Cognify!",
     html: `
-      <h2>Welcome ${newUser.name}!</h2>
+      <h2>Welcome ${escapeHtml(newUser.name)}!</h2>
       <p>We are thrilled to have you on board.</p>
       <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
       <ul>
@@ -158,7 +171,7 @@ export const googleLogin = async (profile, userAgent, ipAddress) => {
         to: user.email,
         subject: "Welcome to Cognify!",
         html: `
-          <h2>Welcome ${user.name}!</h2>
+          <h2>Welcome ${escapeHtml(user.name)}!</h2>
           <p>We are thrilled to have you on board.</p>
           <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
           <ul>
@@ -206,7 +219,7 @@ export const forgotPassword = async (email) => {
     subject: "Cognify - Password Reset OTP",
     html: `
       <h2>Password Reset Request</h2>
-      <p>Hello ${user.name},</p>
+      <p>Hello ${escapeHtml(user.name)},</p>
       <p>We received a request to reset your password. Here is your 6-digit OTP:</p>
       <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
       <p>This OTP is valid for 15 minutes. If you did not request this, please ignore this email.</p>
