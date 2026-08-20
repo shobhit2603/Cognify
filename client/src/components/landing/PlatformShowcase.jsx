@@ -67,11 +67,11 @@ export default function PlatformShowcase() {
   return (
     <section className="relative w-full py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Light circular backdrop halo */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-175 h-175 bg-black/3 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-175 h-175 bg-black/3 rounded-none pointer-events-none" />
 
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-none bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
           <Sparkle size={14} className="text-osmo-purple" weight="fill" />
           <span>Interactive Sandbox</span>
         </div>
@@ -93,14 +93,14 @@ export default function PlatformShowcase() {
 
       {/* Tab Switcher Pills */}
       <div className="flex items-center justify-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
-        <div className="inline-flex p-1.5 rounded-xl bg-black/5 border border-black/10 backdrop-blur-md">
+        <div className="inline-flex p-1.5 rounded-none bg-black/5 border border-black/10">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold tracking-tight transition-all duration-300 cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-none text-xs sm:text-sm font-bold tracking-tight transition-all duration-300 cursor-pointer ${
                   isActive
                     ? "bg-[#151515] text-white shadow-md"
                     : "text-black/60 hover:text-black hover:bg-black/5"
@@ -122,20 +122,20 @@ export default function PlatformShowcase() {
       </div>
 
       {/* Dark IDE / Workspace Mockup Bezel */}
-      <div className="relative bg-[#151515] text-white rounded-xl border border-white/10 shadow-2xl overflow-hidden max-w-5xl mx-auto">
+      <div className="relative bg-[#151515] text-white rounded-none border border-white/10 overflow-hidden max-w-5xl mx-auto">
         {/* Workspace Top Window Bar */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-osmo-dark-card">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-            <span className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-            <span className="w-3 h-3 rounded-full bg-[#27c93f]" />
+            <span className="w-3 h-3 rounded-none bg-[#ff5f56]" />
+            <span className="w-3 h-3 rounded-none bg-[#ffbd2e]" />
+            <span className="w-3 h-3 rounded-none bg-[#27c93f]" />
             <span className="ml-3 text-xs font-mono text-white/40 hidden sm:inline-block">
               cognify-workspace / {activeTab}.engine
             </span>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[11px] font-mono text-osmo-lime bg-osmo-lime/10 px-2.5 py-1 rounded-full border border-osmo-lime/20">
+            <span className="flex items-center gap-1.5 text-[11px] font-mono text-osmo-lime bg-osmo-lime/10 px-2.5 py-1 rounded-none border border-osmo-lime/20">
               <span className="w-1.5 h-1.5 rounded-full bg-osmo-lime animate-pulse" />
               <span>MISTRAL-7B STREAM ACTIVE</span>
             </span>
@@ -156,7 +156,7 @@ export default function PlatformShowcase() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition-all ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-none text-xs font-semibold text-left transition-all ${
                       activeTab === tab.id
                         ? "bg-white/10 text-white"
                         : "text-white/50 hover:bg-white/5 hover:text-white/80"
@@ -176,7 +176,7 @@ export default function PlatformShowcase() {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+            <div className="p-3 rounded-none bg-white/5 border border-white/5">
               <p className="text-[11px] font-bold text-white">Dedicated Token Pool</p>
               <p className="text-[10px] text-white/50 font-mono mt-0.5">8k / 32k context used</p>
               <div className="w-full h-1.5 rounded-full bg-white/10 mt-2 overflow-hidden">
@@ -196,7 +196,7 @@ export default function PlatformShowcase() {
                   <div className="w-8 h-8 rounded-full bg-osmo-purple flex items-center justify-center text-xs font-bold shrink-0">
                     U
                   </div>
-                  <div className="bg-white/10 rounded-2xl rounded-tl-none p-4 text-sm text-white/90">
+                  <div className="bg-white/10 rounded-none p-4 text-sm text-white/90">
                     <p className="font-medium">
                       Explain Node.js event loop with microtasks vs macrotasks and write a minimal demo snippet.
                     </p>
@@ -208,7 +208,7 @@ export default function PlatformShowcase() {
                   <div className="w-8 h-8 rounded-full bg-osmo-lime text-black flex items-center justify-center text-xs font-bold shrink-0">
                     AI
                   </div>
-                  <div className="bg-[#1e1b1b] border border-white/10 rounded-2xl rounded-tl-none p-5 text-sm text-white/90 space-y-4 w-full">
+                  <div className="bg-[#1e1b1b] border border-white/10 rounded-none p-5 text-sm text-white/90 space-y-4 w-full">
                     <div className="flex items-center justify-between text-xs text-white/50 font-mono pb-2 border-b border-white/10">
                       <span>Reasoning stream • 142 tokens/sec</span>
                       <button
@@ -225,7 +225,7 @@ export default function PlatformShowcase() {
                     </p>
 
                     {/* Code Syntax Highlighting Block */}
-                    <div className="rounded-xl bg-[#0d0c0c] border border-white/10 p-3.5 font-mono text-xs text-white/90 overflow-x-auto">
+                    <div className="rounded-none bg-[#0d0c0c] border border-white/10 p-3.5 font-mono text-xs text-white/90 overflow-x-auto">
                       <div className="text-white/40 mb-2"></div>
                       <p className="text-blue-400">console<span className="text-white">.</span><span className="text-yellow-300">log</span><span className="text-white">(</span><span className="text-green-300">&apos;1: Synchronous&apos;</span><span className="text-white">);</span></p>
                       <p className="text-purple-400">setTimeout<span className="text-white">(() =&gt; </span>console<span className="text-white">.</span><span className="text-yellow-300">log</span><span className="text-white">(</span><span className="text-green-300">&apos;4: Macrotask&apos;</span><span className="text-white">), 0);</span></p>
@@ -237,13 +237,13 @@ export default function PlatformShowcase() {
 
                 {/* Chat Prompt Input Simulation */}
                 <div className="pt-4 border-t border-white/10 flex items-center gap-3">
-                  <div className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs sm:text-sm text-white/40 flex items-center justify-between">
+                  <div className="flex-1 bg-white/5 border border-white/10 rounded-none px-4 py-3 text-xs sm:text-sm text-white/40 flex items-center justify-between">
                     <span>Ask a follow up question or paste code...</span>
                     <span className="font-mono text-[10px] text-white/30 hidden sm:inline-block">⌘K</span>
                   </div>
                   <Link
                     href="/chat"
-                    className="p-3 rounded-xl bg-osmo-lime text-black font-bold hover:bg-white transition-all duration-300"
+                    className="p-3 rounded-none bg-osmo-lime text-black font-bold hover:bg-white transition-all duration-300"
                   >
                     <PaperPlaneRight size={18} weight="fill" />
                   </Link>
@@ -254,9 +254,9 @@ export default function PlatformShowcase() {
             {/* MODULE 2: DOCUMENT ANALYSIS */}
             {activeTab === "documents" && (
               <div className="space-y-6 animate-fadeIn">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between p-4 rounded-none bg-white/5 border border-white/10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-none bg-red-500/20 text-red-400 flex items-center justify-center">
                       <FilePdf size={24} weight="bold" />
                     </div>
                     <div>
@@ -264,13 +264,13 @@ export default function PlatformShowcase() {
                       <p className="text-xs text-white/50 font-mono">48 Pages • 2.4 MB • Vector Indexed</p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-osmo-lime/10 text-osmo-lime text-xs font-mono font-bold">
+                  <span className="px-2.5 py-1 rounded-none bg-osmo-lime/10 text-osmo-lime text-xs font-mono font-bold">
                     ✓ PARSED
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-[#1e1b1b] border border-white/10 space-y-2">
+                  <div className="p-4 rounded-none bg-[#1e1b1b] border border-white/10 space-y-2">
                     <span className="text-[10px] font-mono uppercase text-osmo-purple font-bold tracking-wider">
                       SYNTHESIZED INSIGHTS
                     </span>
@@ -283,7 +283,7 @@ export default function PlatformShowcase() {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#1e1b1b] border border-white/10 space-y-2">
+                  <div className="p-4 rounded-none bg-[#1e1b1b] border border-white/10 space-y-2">
                     <span className="text-[10px] font-mono uppercase text-osmo-purple font-bold tracking-wider">
                       SEMANTIC Q&A
                     </span>
@@ -297,7 +297,7 @@ export default function PlatformShowcase() {
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                <div className="p-3.5 rounded-none bg-white/5 border border-white/10 flex items-center justify-between">
                   <span className="text-xs text-white/60">Upload any PDF research paper, technical spec, or legal contract.</span>
                   <Link
                     href="/documents"
@@ -313,9 +313,9 @@ export default function PlatformShowcase() {
             {/* MODULE 3: RESUME STUDIO */}
             {activeTab === "resume" && (
               <div className="space-y-6 animate-fadeIn">
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center p-5 rounded-2xl bg-white/5 border border-white/10">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center p-5 rounded-none bg-white/5 border border-white/10">
                   {/* Gauge */}
-                  <div className="sm:col-span-4 flex flex-col items-center justify-center p-4 rounded-xl bg-[#1e1b1b] border border-white/10 text-center">
+                  <div className="sm:col-span-4 flex flex-col items-center justify-center p-4 rounded-none bg-[#1e1b1b] border border-white/10 text-center">
                     <div className="relative w-24 h-24 flex items-center justify-center">
                       <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                         <path
@@ -350,7 +350,7 @@ export default function PlatformShowcase() {
                       <span className="text-[10px] font-mono text-white/40">3 Gaps Identified</span>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-[#1e1b1b] border border-white/5 text-xs text-white/80 space-y-1">
+                    <div className="p-3 rounded-none bg-[#1e1b1b] border border-white/5 text-xs text-white/80 space-y-1">
                       <div className="flex items-center gap-2 text-osmo-lime font-semibold">
                         <CheckCircle size={14} weight="fill" />
                         <span>Action Verb Density: Excellent (98%)</span>
@@ -360,7 +360,7 @@ export default function PlatformShowcase() {
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-osmo-purple/10 border border-osmo-purple/20 text-xs text-white/80 space-y-1">
+                    <div className="p-3 rounded-none bg-osmo-purple/10 border border-osmo-purple/20 text-xs text-white/80 space-y-1">
                       <div className="flex items-center gap-2 text-osmo-purple font-semibold">
                         <Sparkle size={14} weight="fill" />
                         <span>Suggested ATS Keyword Addition</span>
@@ -376,7 +376,7 @@ export default function PlatformShowcase() {
                   <span className="text-xs text-white/50">Recruiter-grade ATS audit engine tailored for modern tech roles.</span>
                   <Link
                     href="/resume"
-                    className="px-4 py-2 rounded-xl bg-osmo-purple text-white text-xs font-bold hover:bg-white hover:text-black transition-all"
+                    className="px-4 py-2 rounded-none bg-osmo-purple text-white text-xs font-bold hover:bg-white hover:text-black transition-all"
                   >
                     Open Resume Studio
                   </Link>
@@ -394,7 +394,7 @@ export default function PlatformShowcase() {
                       <button
                         key={tone}
                         onClick={() => setWritingTone(tone)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer transition-all ${
+                        className={`px-3 py-1 rounded-none text-xs font-bold cursor-pointer transition-all ${
                           writingTone === tone
                             ? "bg-osmo-lime text-black"
                             : "bg-white/10 text-white/70 hover:text-white"
@@ -407,7 +407,7 @@ export default function PlatformShowcase() {
                   <span className="text-xs font-mono text-white/40">Cover Letter & Executive Memo</span>
                 </div>
 
-                <div className="bg-[#1e1b1b] border border-white/10 rounded-2xl p-5 text-sm text-white/90 space-y-3 font-sans">
+                <div className="bg-[#1e1b1b] border border-white/10 rounded-none p-5 text-sm text-white/90 space-y-3 font-sans">
                   <p className="text-xs font-mono text-osmo-lime">Subject: Application for Lead AI Architect — [Your Name]</p>
                   <p className="text-sm leading-relaxed text-white/80">
                     Dear Hiring Team,
@@ -424,7 +424,7 @@ export default function PlatformShowcase() {
                   <span className="text-xs text-white/50">Tuned for career documents, pitch drafts, and formal emails.</span>
                   <Link
                     href="/writing"
-                    className="px-4 py-2 rounded-xl bg-white text-black text-xs font-bold hover:bg-osmo-lime transition-all"
+                    className="px-4 py-2 rounded-none bg-white text-black text-xs font-bold hover:bg-osmo-lime transition-all"
                   >
                     Start Writing
                   </Link>
@@ -437,12 +437,12 @@ export default function PlatformShowcase() {
               <div className="space-y-6 animate-fadeIn">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Raw Notes */}
-                  <div className="p-4 rounded-2xl bg-[#1e1b1b] border border-white/10 space-y-2">
+                  <div className="p-4 rounded-none bg-[#1e1b1b] border border-white/10 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono uppercase text-white/40 font-bold">RAW ROUGH NOTES</span>
                       <span className="text-[10px] text-red-400 font-mono">Unstructured</span>
                     </div>
-                    <div className="text-xs text-white/60 font-mono space-y-1.5 p-2 rounded-lg bg-black/30">
+                    <div className="text-xs text-white/60 font-mono space-y-1.5 p-2 rounded-none bg-black/30">
                       <p>• Raft consensus - leader election</p>
                       <p>• Term numbers prevent split brain</p>
                       <p>• Heartbeat timeout vs election timeout</p>
@@ -451,7 +451,7 @@ export default function PlatformShowcase() {
                   </div>
 
                   {/* AI Enhanced Study Blueprint */}
-                  <div className="p-4 rounded-2xl bg-[#1e1b1b] border border-osmo-lime/30 space-y-2 relative">
+                  <div className="p-4 rounded-none bg-[#1e1b1b] border border-osmo-lime/30 space-y-2 relative">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono uppercase text-osmo-lime font-bold">COGNIFY SYNTHESIS</span>
                       <span className="text-[10px] text-osmo-lime font-mono">Cornell Structure</span>
@@ -472,7 +472,7 @@ export default function PlatformShowcase() {
                   <span className="text-xs text-white/50">Transforms messy meeting notes into structured learning resources.</span>
                   <Link
                     href="/notes"
-                    className="px-4 py-2 rounded-xl bg-osmo-lime text-black text-xs font-bold hover:bg-white transition-all"
+                    className="px-4 py-2 rounded-none bg-osmo-lime text-black text-xs font-bold hover:bg-white transition-all"
                   >
                     Open Notes Enhancer
                   </Link>
@@ -494,7 +494,7 @@ export default function PlatformShowcase() {
 
           <Link
             href="/auth"
-            className="group flex items-center gap-2 px-5 py-2.5 rounded-lg bg-osmo-lime text-black hover:bg-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300 shadow-md"
+            className="group flex items-center gap-2 px-5 py-2.5 rounded-none bg-osmo-lime text-black hover:bg-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all duration-300"
           >
             <TextRoll>Launch Free Workspace</TextRoll>
             <ArrowUpRight size={16} weight="bold" className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

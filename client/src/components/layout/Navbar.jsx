@@ -8,7 +8,6 @@ import { useGSAP } from "@gsap/react";
 import TextRoll from "../ui/TextRoll";
 import { 
   ArrowUpRight, 
-  ArrowRight,
   ChatTeardropDots, 
   FilePdf, 
   BriefcaseMetal, 
@@ -111,14 +110,10 @@ const resourceLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState(capabilities[0]);
   const { isAuthenticated, logout, isLoggingOut } = useAuth();
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
-  const menuContainerRef = useRef(null);
   const menuGridRef = useRef(null);
-  
-
 
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -132,7 +127,6 @@ export default function Navbar() {
         window.requestAnimationFrame(() => {
           const currentScrollY = window.scrollY;
           
-          // Require at least a 10px scroll distance to trigger a state change (prevents jitter)
           if (currentScrollY > lastScrollY.current && currentScrollY - lastScrollY.current > 10 && currentScrollY > 150) {
             setIsVisible(false);
           } else if (currentScrollY < lastScrollY.current && lastScrollY.current - currentScrollY > 10 || currentScrollY < 50) {
@@ -163,33 +157,47 @@ export default function Navbar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Synchronized GSAP Entry and Exit Timeline
   useGSAP(() => {
     if (!menuGridRef.current) return;
-    
+    const items = gsap.utils.toArray(menuGridRef.current.querySelectorAll(".menu-animate-item"));
+
+    gsap.killTweensOf(items);
+
     if (isOpen) {
       gsap.fromTo(
-        gsap.utils.toArray(menuGridRef.current.querySelectorAll('.menu-animate-item')),
-        { y: 30, opacity: 0, scale: 0.98 },
+        items,
+        { y: 20, opacity: 0, scale: 0.98 },
         { 
           y: 0, 
           opacity: 1, 
           scale: 1,
-          duration: 0.6, 
-          stagger: 0.05, 
-          ease: "power3.out",
-          delay: 0.15 // Wait for container to expand slightly
+          duration: 0.45, 
+          stagger: 0.04, 
+          ease: "power2.out",
+          delay: 0.12, // Waits for container expansion to begin, eliminating clip lag
+          clearProps: "transform,opacity"
         }
       );
+    } else {
+      gsap.to(items, {
+        y: -10,
+        opacity: 0,
+        duration: 0.2,
+        ease: "power2.in",
+        stagger: 0.02
+      });
     }
   }, [isOpen]);
 
-  if (pathname?.startsWith("/chat")) return null;
+  if (pathname?.startsWith("/chat") || pathname?.startsWith("/dashboard")) return null;
 
   const newLocal = "w-5 rotate-45 translate-y-1.5";
+
   return (
     <>
       <div
-        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-500 pointer-events-auto ${
+        className={`fixed inset-0 z-40 bg-osmo-dark/95 backdrop-blur-sm transition-opacity duration-500 pointer-events-auto ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setIsOpen(false)}
@@ -197,20 +205,18 @@ export default function Navbar() {
       />
 
       <header 
-        className={`fixed top-0 inset-x-0 z-50 flex justify-center px-4 sm:px-8 pointer-events-none font-sans transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`fixed top-0 inset-x-0 z-50 flex justify-center px-4 sm:px-8 pointer-events-none font-sans transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isVisible || isOpen ? "translate-y-4 sm:translate-y-6" : "translate-y-[-120%]"
         }`}
       >
         <div
-          ref={menuContainerRef}
-          className={`pointer-events-auto w-full bg-[#151515] text-white shadow-2xl transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] border border-white/10 relative overflow-hidden ${
+          data-lenis-prevent={isOpen ? "" : undefined}
+          className={`pointer-events-auto w-full bg-osmo-dark text-white transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border border-white/10 relative overflow-hidden shadow-2xl ${
             isOpen
-              ? "max-w-6xl rounded-2xl p-6 sm:p-10"
-              : "max-w-3xl rounded-xl px-5 py-3 sm:px-6 sm:py-4 hover:border-white/20"
+              ? "max-w-4xl rounded-none p-6 sm:p-8 max-h-[88vh] overflow-y-auto"
+              : "max-w-3xl rounded-none px-5 py-3 sm:px-6 sm:py-4 hover:border-white/20"
           }`}
         >
-
-
           {/* Main Bar */}
           <div className="flex items-center justify-between gap-4 relative z-20">
             
@@ -270,7 +276,7 @@ export default function Navbar() {
                   <Link
                     href="/dashboard"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg bg-white/5 text-white hover:bg-white/10 transition-all"
+                    className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-none bg-white/5 text-white hover:bg-white/10 transition-all border border-white/5 hover:border-white/10"
                   >
                     <SquaresFour size={18} weight="bold" />
                     <TextRoll>Dashboard</TextRoll>
@@ -278,7 +284,7 @@ export default function Navbar() {
                   <button
                     onClick={() => logout()}
                     disabled={isLoggingOut}
-                    className="p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/90 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+                    className="p-2.5 rounded-none bg-white/5 hover:bg-white/10 text-white/90 hover:text-white transition-all cursor-pointer disabled:opacity-50 border border-white/5"
                     title="Sign Out"
                   >
                     <SignOut size={18} weight="bold" />
@@ -289,14 +295,14 @@ export default function Navbar() {
                   <Link
                     href="/auth"
                     onClick={() => setIsOpen(false)}
-                    className="text-sm font-semibold px-4 py-2.5 rounded-lg text-white/80 hover:text-white hover:bg-white/5 transition-all hidden sm:block"
+                    className="text-sm font-semibold px-4 py-2.5 rounded-none text-white/80 hover:text-white hover:bg-white/5 transition-all hidden sm:block"
                   >
                     <TextRoll>Login</TextRoll>
                   </Link>
                   <Link
                     href="/auth"
                     onClick={() => setIsOpen(false)}
-                    className="group text-sm font-semibold px-5 py-2.5 rounded-lg bg-osmo-lime text-black hover:bg-white active:scale-95 transition-all shadow-[0_0_20px_rgba(161,255,98,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)]"
+                    className="group text-sm font-semibold px-5 py-2.5 rounded-none bg-osmo-lime text-black hover:bg-white active:scale-95 transition-all shadow-[0_0_15px_rgba(202,254,72,0.15)] hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
                   >
                     <TextRoll>Join</TextRoll>
                   </Link>
@@ -307,140 +313,126 @@ export default function Navbar() {
 
           {/* Drawer Grid */}
           <div
-            className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] ${
-              isOpen ? "grid-rows-[1fr] opacity-100 mt-10 pt-8 border-t border-white/10" : "grid-rows-[0fr] opacity-0"
+            className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isOpen ? "grid-rows-[1fr] opacity-100 mt-8 pt-6 border-t border-white/10" : "grid-rows-[0fr] opacity-0"
             }`}
           >
             <div className="overflow-hidden" ref={menuGridRef}>
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-                
-                {/* Modules Navigation */}
-                <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
-                  <div>
-                    <div className="flex items-center justify-between mb-5 px-2 menu-animate-item">
-                      <span className="text-xs font-bold uppercase tracking-widest text-white/40">
-                        System Capabilities
-                      </span>
-                      <span className="text-xs font-medium text-white/30">
-                        05 Modules
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {capabilities.map((item) => {
-                        const isHovered = activeItem.id === item.id;
-                        return (
-                          <div
-                            key={item.id}
-                            onMouseEnter={() => setActiveItem(item)}
-                            className="group menu-animate-item"
-                          >
-                            <Link
-                              href={item.href}
-                              onClick={() => setIsOpen(false)}
-                              className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${
-                                isHovered
-                                  ? "bg-white/10"
-                                  : "bg-transparent hover:bg-white/5"
-                              }`}
-                            >
-                              <div className="flex items-center gap-5">
-                                <span className="text-sm font-medium text-white/30 font-mono">
-                                  {item.number}
-                                </span>
-                                <div>
-                                  <div className="flex items-center gap-3">
-                                    <h3 className="text-2xl font-semibold tracking-tight text-white">
-                                      {item.label}
-                                    </h3>
-                                    {item.badge && (
-                                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-osmo-purple text-white tracking-widest">
-                                        {item.badge}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className="text-sm text-white/50 block mt-1">
-                                    {item.category}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <span className={`text-osmo-lime transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] ${isHovered ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}>
-                                <ArrowRight size={24} weight="bold" />
-                              </span>
-                            </Link>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Resource Links */}
-                  <div className="pt-6 border-t border-white/10 menu-animate-item">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm font-medium">
-                      {resourceLinks.map((res, idx) => (
-                        <Link
-                          key={idx}
-                          href={res.href}
-                          onClick={() => setIsOpen(false)}
-                          className="flex items-center gap-2.5 text-white/60 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5"
-                        >
-                          <span className="text-white/40">{res.icon}</span>
-                          <span><TextRoll>{res.label}</TextRoll></span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-5 px-1 menu-animate-item will-change-transform">
+                  <span className="text-xs font-bold uppercase tracking-widest text-white/40">
+                    System Capabilities
+                  </span>
+                  <span className="text-xl font-medium text-white/60 font-caveat">
+                    05 Modules
+                  </span>
                 </div>
 
-                {/* Preview Card */}
-                <div className="lg:col-span-5 flex flex-col justify-between gap-5 menu-animate-item">
-                  <div className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden h-full min-h-75 group/card hover:border-white/10 transition-colors duration-500">
-                    <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-6">
-                        <span className="inline-block px-3 py-1 rounded bg-white/5 text-[11px] font-bold uppercase tracking-widest text-white/80">
-                          {activeItem.preview.tag}
-                        </span>
+                {/* Capabilities Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+                  {capabilities.map((item, idx) => {
+                    const colors = [
+                      { 
+                        text: "group-hover:text-osmo-lime", 
+                        bg: "bg-osmo-lime text-black", 
+                        border: "hover:border-osmo-lime/40",
+                        glow: "group-hover:bg-osmo-lime/10" 
+                      },
+                      { 
+                        text: "group-hover:text-osmo-purple", 
+                        bg: "bg-osmo-purple text-white", 
+                        border: "hover:border-osmo-purple/40",
+                        glow: "group-hover:bg-osmo-purple/10" 
+                      },
+                      { 
+                        text: "group-hover:text-[#ffbd2e]", 
+                        bg: "bg-[#ffbd2e] text-black", 
+                        border: "hover:border-[#ffbd2e]/40",
+                        glow: "group-hover:bg-[#ffbd2e]/10" 
+                      },
+                      { 
+                        text: "group-hover:text-[#ff5f56]", 
+                        bg: "bg-[#ff5f56] text-white", 
+                        border: "hover:border-[#ff5f56]/40",
+                        glow: "group-hover:bg-[#ff5f56]/10" 
+                      },
+                      { 
+                        text: "group-hover:text-[#27c93f]", 
+                        bg: "bg-[#27c93f] text-black", 
+                        border: "hover:border-[#27c93f]/40",
+                        glow: "group-hover:bg-[#27c93f]/10" 
+                      },
+                    ];
+                    const color = colors[idx % colors.length];
 
-                        <span className="text-lg font-medium text-osmo-lime font-caveat">
-                          {activeItem.preview.note}
-                        </span>
-                      </div>
-
-                      <h4 className="text-3xl font-semibold tracking-tight text-white mb-4 leading-tight">
-                        {activeItem.preview.title}
-                      </h4>
-                      <p className="text-base text-white/50 leading-relaxed">
-                        {activeItem.preview.description}
-                      </p>
-                    </div>
-
-                    <div className="relative z-10 pt-6 mt-6 border-t border-white/10 flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-sm font-semibold text-white/60 font-mono tracking-tight">
-                        <span className="w-2 h-2 rounded-full bg-osmo-lime animate-pulse" />
-                        <span>{activeItem.preview.stat}</span>
-                      </div>
-
+                    return (
                       <Link
-                        href={activeItem.href}
+                        key={item.id}
+                        href={item.href}
                         onClick={() => setIsOpen(false)}
-                        className="group/btn inline-flex items-center gap-2 bg-white hover:bg-osmo-lime text-black text-sm font-bold py-3 px-6 rounded-xl transition-colors duration-300 active:scale-95"
+                        className={`group menu-animate-item relative flex flex-col justify-between p-5 rounded-none bg-white/2 border border-white/8 hover:bg-white/5 transition-all duration-300 ease-out hover:-translate-y-1 min-h-40 overflow-hidden will-change-transform ${color.border}`}
                       >
-                        <TextRoll>Discover</TextRoll>
-                        <ArrowUpRight size={16} weight="bold" className="transition-transform duration-300 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                        {/* Ambient Card Corner Glow */}
+                        <div 
+                          className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100 pointer-events-none ${color.glow}`} 
+                        />
+
+                        {/* Card Top Row */}
+                        <div className="flex items-start justify-between mb-4 relative z-10">
+                          <div className={`text-white/60 transition-all duration-300 transform group-hover:scale-110 ${color.text}`}>
+                            {item.icon}
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            {item.badge && (
+                              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-none tracking-widest shadow-sm ${color.bg}`}>
+                                {item.badge}
+                              </span>
+                            )}
+                            <ArrowUpRight 
+                              size={16} 
+                              className="text-white/30 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300" 
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Card Body */}
+                        <div className="relative z-10">
+                          <h3 className="text-sm font-bold tracking-tight text-white mb-1 transition-colors group-hover:text-white">
+                            {item.label}
+                          </h3>
+                          <span className={`text-base font-bold block mb-0.5 font-caveat transition-colors ${color.text}`}>
+                            {item.category}
+                          </span>
+                          <p className="text-xs text-white/50 line-clamp-2 leading-relaxed transition-colors group-hover:text-white/70">
+                            {item.preview.description}
+                          </p>
+                        </div>
                       </Link>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between px-2 text-sm text-white/40 menu-animate-item">
-                    <span className="font-medium font-mono">Cognify AI Workspace</span>
-                  </div>
-
+                    );
+                  })}
                 </div>
 
+                {/* Resource Links & Footer */}
+                <div className="pt-4 border-t border-white/10 menu-animate-item will-change-transform mt-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-sm font-medium flex-wrap">
+                    {resourceLinks.map((res, idx) => (
+                      <Link
+                        key={idx}
+                        href={res.href}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-2 text-white/60 hover:text-white transition-all py-1.5 px-3 rounded-none hover:bg-white/5 border border-transparent hover:border-white/10 active:scale-95"
+                      >
+                        <span className="text-white/40 group-hover:text-white transition-colors">{res.icon}</span>
+                        <span><TextRoll>{res.label}</TextRoll></span>
+                      </Link>
+                    ))}
+                  </div>
+                  <span className="font-mono text-[11px] text-white/30 px-3 tracking-wider uppercase">
+                    Cognify AI Workspace
+                  </span>
+                </div>
               </div>
             </div>
           </div>

@@ -50,7 +50,7 @@ export default function WhyCognifySection() {
         <div className="lg:col-span-4 flex flex-col justify-between space-y-8">
           <div className="space-y-4">
             {/* Retro / Modern Logo Stamp */}
-            <div className="p-4 rounded-2xl bg-black/5 border border-black/10 inline-block">
+            <div className="p-4 rounded-none bg-black/5 border border-black/10 inline-block">
               <div className="flex items-center gap-3">
                 <div className="relative w-8 h-8">
                   <Image
@@ -84,7 +84,7 @@ export default function WhyCognifySection() {
             </div>
           </div>
 
-          <div className="hidden lg:block p-6 rounded-3xl bg-[#151515] text-white space-y-3 border border-white/10">
+          <div className="hidden lg:block p-6 rounded-none bg-[#151515] text-white space-y-3 border border-white/10">
             <span className="text-[10px] font-mono uppercase text-osmo-lime font-bold tracking-widest">
               ENTERPRISE SOVEREIGNTY
             </span>
@@ -108,7 +108,7 @@ export default function WhyCognifySection() {
             {valuePoints.map((point, idx) => (
               <div
                 key={idx}
-                className="py-8 sm:py-10 grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-8 group hover:bg-black/2 transition-colors px-2 rounded-xl"
+                className="py-8 sm:py-10 grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-8 group hover:bg-black/2 transition-colors px-2 rounded-none"
               >
                 <div className="sm:col-span-5">
                   <h3 className="text-xl sm:text-2xl font-bold text-osmo-dark font-display group-hover:text-osmo-purple transition-colors">
@@ -134,7 +134,7 @@ export default function WhyCognifySection() {
               {techPartners.map((tech, i) => (
                 <div
                   key={i}
-                  className="p-3 rounded-xl bg-black/5 border border-black/5 hover:border-black/15 transition-all text-center"
+                  className="p-3 rounded-none bg-black/5 border border-black/5 hover:border-black/15 transition-all text-center"
                 >
                   <p className="text-xs font-mono font-extrabold text-osmo-dark">{tech.name}</p>
                   <p className="text-[10px] text-black/50 font-medium mt-0.5">{tech.role}</p>

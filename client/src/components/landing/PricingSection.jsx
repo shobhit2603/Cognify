@@ -18,7 +18,7 @@ export default function PricingSection() {
     <section className="relative w-full py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-none bg-black/5 border border-black/10 text-xs font-bold uppercase tracking-wider text-black/70 mb-4">
           <CreditCard size={14} className="text-osmo-purple" weight="fill" />
           <span>Transparent Pricing</span>
         </div>
@@ -29,12 +29,12 @@ export default function PricingSection() {
 
         {/* Billing Switcher Pill */}
         <div className="flex items-center justify-center gap-3 mt-8">
-          <div className="p-1 rounded-xl bg-black/5 border border-black/10 inline-flex items-center">
+          <div className="p-1 rounded-none bg-black/5 border border-black/10 inline-flex items-center">
             <button
               onClick={() => setIsAnnual(false)}
-              className={`px-5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              className={`px-5 py-2 rounded-none text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 !isAnnual
-                  ? "bg-[#151515] text-white shadow-md"
+                  ? "bg-[#151515] text-white"
                   : "text-black/60 hover:text-black"
               }`}
             >
@@ -42,14 +42,14 @@ export default function PricingSection() {
             </button>
             <button
               onClick={() => setIsAnnual(true)}
-              className={`px-5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-5 py-2 rounded-none text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 isAnnual
-                  ? "bg-[#151515] text-white shadow-md"
+                  ? "bg-[#151515] text-white"
                   : "text-black/60 hover:text-black"
               }`}
             >
               <span>Yearly</span>
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-osmo-lime text-black">
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-none bg-osmo-lime text-black">
                 Save 20%
               </span>
             </button>
@@ -61,7 +61,7 @@ export default function PricingSection() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
         
         {/* Plan 1: Solo (Electric Purple) */}
-        <div className="relative bg-osmo-purple text-white rounded-2xl p-8 sm:p-10 flex flex-col justify-between shadow-2xl border border-osmo-purple/60 group">
+        <div className="relative bg-osmo-purple text-white rounded-none p-8 sm:p-10 flex flex-col justify-between border border-osmo-purple/60 group">
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-mono font-extrabold uppercase px-3 py-1 rounded bg-black/20 text-white tracking-widest">
@@ -112,7 +112,7 @@ export default function PricingSection() {
           <div className="pt-8 mt-8 border-t border-white/20">
             <Link
               href="/auth"
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-white text-black hover:bg-osmo-lime font-bold text-sm uppercase tracking-wider transition-all duration-300 shadow-lg active:scale-98"
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-none bg-white text-black hover:bg-osmo-lime font-bold text-sm uppercase tracking-wider transition-all duration-300 active:scale-95"
             >
               <TextRoll>Start 14-Day Free Trial</TextRoll>
               <ArrowRight size={16} weight="bold" />
@@ -121,7 +121,7 @@ export default function PricingSection() {
         </div>
 
         {/* Plan 2: Team / Pro (Crisp White with Dark Accents) */}
-        <div className="relative bg-[#151515] text-white rounded-2xl p-8 sm:p-10 flex flex-col justify-between shadow-2xl border border-white/10 group">
+        <div className="relative bg-[#151515] text-white rounded-none p-8 sm:p-10 flex flex-col justify-between border border-white/10 group">
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-mono font-extrabold uppercase px-3 py-1 rounded bg-white/10 text-osmo-lime tracking-widest">
@@ -172,7 +172,7 @@ export default function PricingSection() {
           <div className="pt-8 mt-8 border-t border-white/10">
             <Link
               href="/auth"
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-osmo-lime text-black hover:bg-white font-bold text-sm uppercase tracking-wider transition-all duration-300 shadow-lg active:scale-98"
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-none bg-osmo-lime text-black hover:bg-white font-bold text-sm uppercase tracking-wider transition-all duration-300 active:scale-95"
             >
               <TextRoll>Upgrade to Team</TextRoll>
               <ArrowRight size={16} weight="bold" />

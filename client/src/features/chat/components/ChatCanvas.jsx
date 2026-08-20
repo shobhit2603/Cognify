@@ -360,6 +360,7 @@ export default function ChatCanvas({ chatId }) {
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
+            data-lenis-prevent
             className="flex-1 overflow-y-auto px-4 sm:px-10 py-8 pb-40"
           >
             <div className="max-w-3xl mx-auto flex flex-col gap-8">

@@ -5,6 +5,8 @@ import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
 import { Caveat } from "next/font/google";
 
+import MainLayoutWrapper from "../components/layout/MainLayoutWrapper";
+
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
@@ -21,12 +23,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`h-full antialiased selection:bg-osmo-lime selection:text-osmo-dark ${caveat.variable}`}>
-      <body className="min-h-full flex flex-col bg-osmo-bg text-osmo-dark font-sans">
+    <html lang="en" className={`antialiased selection:bg-osmo-lime selection:text-osmo-dark ${caveat.variable}`}>
+      <body className="min-h-screen flex flex-col bg-osmo-bg text-osmo-dark font-sans">
         <Providers>
           <AuthInitializer>
             <Navbar />
-            <main className="grow pt-28 sm:pt-32">{children}</main>
+            <MainLayoutWrapper>{children}</MainLayoutWrapper>
             <Footer />
           </AuthInitializer>
         </Providers>

@@ -40,7 +40,7 @@ export default function MetricsAndQuoteSection() {
         
         {/* Left Side: Dark Circular Radar / Globe Widget */}
         <div className="lg:col-span-5 flex justify-center">
-          <div className="relative w-72 h-84 sm:w-80 sm:h-96 rounded-2xl bg-[#151515] border border-white/10 p-6 flex flex-col justify-between items-center text-center shadow-2xl overflow-hidden group">
+          <div className="relative w-72 h-84 sm:w-80 sm:h-96 rounded-none bg-[#151515] border border-white/10 p-6 flex flex-col justify-between items-center text-center overflow-hidden group">
             {/* Ambient Radial background */}
             <div className="absolute inset-0 bg-radial from-osmo-lime/10 via-transparent to-transparent opacity-60" />
 
@@ -60,7 +60,7 @@ export default function MetricsAndQuoteSection() {
               <div className="absolute inset-0 rounded-full border border-dashed border-white/20 animate-spin-slow" />
               
               {/* Pulsing Core Node */}
-              <div className="relative z-10 w-24 h-24 rounded-full bg-osmo-lime/20 border border-osmo-lime/40 flex flex-col items-center justify-center backdrop-blur-sm">
+              <div className="relative z-10 w-24 h-24 rounded-full bg-osmo-lime/20 border border-osmo-lime/40 flex flex-col items-center justify-center">
                 <span className="text-xl font-black font-mono text-white">&lt;45ms</span>
                 <span className="text-[9px] font-mono text-osmo-lime font-bold uppercase tracking-tight">
                   STREAM LATENCY
@@ -79,9 +79,9 @@ export default function MetricsAndQuoteSection() {
 
         {/* Right Side: Electric Purple Testimonial Showcase Card */}
         <div className="lg:col-span-7">
-          <div className="bg-osmo-purple text-white rounded-3xl sm:rounded-5xl p-8 sm:p-10 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-95 border border-osmo-purple/50">
+          <div className="bg-osmo-purple text-white rounded-none p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between min-h-95 border border-osmo-purple/50">
             {/* Background Glow */}
-            <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+            <div className="absolute -top-20 -right-20 w-60 h-60 rounded-none bg-white/10 pointer-events-none" />
 
             <div className="relative z-10">
               <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white leading-snug font-display mb-6">

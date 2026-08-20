@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "lenis/dist/lenis.css";
 
 @theme {
   --font-sans: "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -18,6 +19,11 @@
 }
 
 @layer base {
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
   body {
     background-color: var(--color-osmo-bg);
     color: var(--color-osmo-dark);
