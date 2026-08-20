@@ -27,9 +27,7 @@ const loginSchema = z.object({
     .string()
     .min(1, "Email is required")
     .email("Please enter a valid email address"),
-  password: z
-    .string()
-    .min(1, "Password is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 const registerSchema = z.object({
@@ -104,16 +102,16 @@ export default function AuthModal({ isOpen = true, onClose }) {
     if (isOpen) {
       previousFocusRef.current = document.activeElement;
       document.body.style.overflow = "hidden";
-      
+
       const handleKeyDown = (e) => {
         if (e.key === "Escape") handleClose();
-        
+
         if (e.key === "Tab" && modalRef.current) {
           const focusable = modalRef.current.querySelectorAll(
-            'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
           );
           if (focusable.length === 0) return;
-          
+
           const first = focusable[0];
           const last = focusable[focusable.length - 1];
 
@@ -128,7 +126,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
       };
 
       document.addEventListener("keydown", handleKeyDown);
-      
+
       // Focus modal container
       setTimeout(() => {
         if (modalRef.current) modalRef.current.focus();
@@ -151,7 +149,11 @@ export default function AuthModal({ isOpen = true, onClose }) {
       if (isLogin) {
         await loginAsync({ email: data.email, password: data.password });
       } else {
-        await registerAsync({ name: data.name, email: data.email, password: data.password });
+        await registerAsync({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        });
       }
       // Navigation is handled in useAuth's onSuccess callbacks
     } catch {
@@ -177,7 +179,6 @@ export default function AuthModal({ isOpen = true, onClose }) {
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-osmo-dark/95"
           onClick={handleClose}
         >
-
           <motion.div
             ref={modalRef}
             tabIndex={-1}
@@ -189,7 +190,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-100 bg-osmo-dark-surface border border-white/10 text-white rounded-none p-8 shadow-2xl relative overflow-hidden my-auto focus:outline-none"
+            className="w-full max-w-100 bg-osmo-dark-surface border border-white/10 text-white rounded-xl p-8 shadow-2xl relative overflow-hidden my-auto focus:outline-none"
           >
             {/* Close button */}
             <button
@@ -212,7 +213,10 @@ export default function AuthModal({ isOpen = true, onClose }) {
                   priority
                 />
               </div>
-              <h2 id="auth-modal-title" className="text-2xl font-display font-semibold tracking-tight text-white">
+              <h2
+                id="auth-modal-title"
+                className="text-2xl font-display font-semibold tracking-tight text-white"
+              >
                 {isLogin ? "Welcome back" : "Create account"}
               </h2>
               <p className="text-sm text-gray-400 mt-1.5 font-sans">
@@ -223,7 +227,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
             </div>
 
             {/* Login / Register tab switcher */}
-            <div className="relative flex bg-white/5 p-1 rounded-none mb-6">
+            <div className="relative flex bg-white/5 p-1 rounded-lg mb-6">
               <button
                 type="button"
                 onClick={() => {
@@ -238,7 +242,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                 {isLogin && (
                   <motion.div
                     layoutId="auth-tab-indicator"
-                    className="absolute inset-0 bg-white/10 rounded-none shadow-sm"
+                    className="absolute inset-0 bg-white/10 rounded-sm shadow-sm"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -259,7 +263,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
                 {!isLogin && (
                   <motion.div
                     layoutId="auth-tab-indicator"
-                    className="absolute inset-0 bg-white/10 rounded-none shadow-sm"
+                    className="absolute inset-0 bg-white/10 rounded-sm shadow-sm"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -272,13 +276,25 @@ export default function AuthModal({ isOpen = true, onClose }) {
               type="button"
               onClick={handleGoogleAuth}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 text-white transition-colors py-3 rounded-none group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 text-white transition-colors py-3 rounded-lg group cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
-                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/>
-                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.4C3.7 20.1 7.5 23 12 23z"/>
+                <path
+                  fill="#EA4335"
+                  d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 16.4C3.7 20.1 7.5 23 12 23z"
+                />
               </svg>
               <span className="font-display font-medium text-sm text-gray-200 group-hover:text-white transition-colors">
                 Continue with Google
@@ -288,12 +304,18 @@ export default function AuthModal({ isOpen = true, onClose }) {
             {/* Divider */}
             <div className="flex items-center gap-3 my-5">
               <div className="h-px bg-white/10 flex-1" />
-              <span className="text-gray-500 text-xs uppercase font-mono tracking-wider">or email</span>
+              <span className="text-gray-500 text-xs uppercase font-medium tracking-wider">
+                or email
+              </span>
               <div className="h-px bg-white/10 flex-1" />
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-4"
+              noValidate
+            >
               <AnimatePresence mode="popLayout" initial={false}>
                 {!isLogin && (
                   <motion.div
@@ -308,7 +330,9 @@ export default function AuthModal({ isOpen = true, onClose }) {
                       <User
                         size={18}
                         className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
-                          errors.name ? "text-red-400" : "text-gray-500 group-focus-within:text-osmo-lime"
+                          errors.name
+                            ? "text-red-400"
+                            : "text-gray-500 group-focus-within:text-osmo-lime"
                         }`}
                       />
                       <input
@@ -334,7 +358,9 @@ export default function AuthModal({ isOpen = true, onClose }) {
                   <EnvelopeSimple
                     size={18}
                     className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
-                      errors.email ? "text-red-400" : "text-gray-500 group-focus-within:text-osmo-lime"
+                      errors.email
+                        ? "text-red-400"
+                        : "text-gray-500 group-focus-within:text-osmo-lime"
                     }`}
                   />
                   <input
@@ -358,7 +384,9 @@ export default function AuthModal({ isOpen = true, onClose }) {
                   <LockSimple
                     size={18}
                     className={`absolute left-1 transition-colors duration-300 pointer-events-none ${
-                      errors.password ? "text-red-400" : "text-gray-500 group-focus-within:text-osmo-lime"
+                      errors.password
+                        ? "text-red-400"
+                        : "text-gray-500 group-focus-within:text-osmo-lime"
                     }`}
                   />
                   <input
@@ -375,7 +403,9 @@ export default function AuthModal({ isOpen = true, onClose }) {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                     className="absolute right-1 text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer"
                   >
                     {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
@@ -400,7 +430,7 @@ export default function AuthModal({ isOpen = true, onClose }) {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-200 text-osmo-dark active:scale-[0.99] font-display font-semibold text-sm transition-all py-3 rounded-none mt-1 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group"
+                className="w-full flex items-center justify-center gap-2 bg-osmo-lime hover:bg-gray-200 text-osmo-dark active:scale-[0.99] font-display font-semibold text-sm transition-all duration-200 py-3 rounded-sm hover:rounded-2xl mt-1 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group"
               >
                 {isLoading ? (
                   <span className="w-5 h-5 border-2 border-black/20 border-t-osmo-dark rounded-full animate-spin" />
@@ -418,8 +448,8 @@ export default function AuthModal({ isOpen = true, onClose }) {
             </form>
 
             {/* Security footer */}
-            <div className="flex items-center justify-center gap-2 mt-6 text-gray-400 text-xs text-center">
-              <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+            <div className="flex items-center justify-center gap-2 mt-6 text-gray-300 text-sm text-center">
+              <ShieldCheck size={18} className="text-emerald-500 shrink-0" />
               <span>Isolated session encryption</span>
             </div>
           </motion.div>
