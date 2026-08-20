@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { WarningCircle, X, ShieldCheck } from "@phosphor-icons/react";
 import { useAuth } from "../hooks/useAuth";
 
-export default function EmailVerificationBanner() {
+export default function EmailVerificationBanner({ forceOpen = false }) {
   const { user, verifyEmail, isVerifying, resendVerification, isResending } = useAuth();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(forceOpen);
   const [otp, setOtp] = useState("");
 
   if (!user || user.isEmailVerified) {
