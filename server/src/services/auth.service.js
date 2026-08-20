@@ -25,19 +25,31 @@ export const registerAndLogin = async ({
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  
+  // Generate 6 digit OTP for email verification
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashedOtp = await bcrypt.hash(otp, 10);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
   const newUser = await userRepository.createUser({
     name,
     email,
     password: hashedPassword,
+    emailVerificationOtp: hashedOtp,
+    emailVerificationOtpExpires: expiresAt,
   });
 
-  // Send Welcome Email asynchronously
+  // Send Welcome & Verification Email asynchronously
   sendEmail({
     to: newUser.email,
-    subject: "Welcome to Cognify!",
+    subject: "Welcome to Cognify - Verify your email",
     html: `
       <h2>Welcome ${escapeHtml(newUser.name)}!</h2>
       <p>We are thrilled to have you on board.</p>
+      <p>To get started, please verify your email address using the code below:</p>
+      <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
+      <p>This code is valid for 24 hours.</p>
+      <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;" />
       <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
       <ul>
         <li><strong>Personalized Roadmaps:</strong> Generate learning paths tailored to your specific goals.</li>
