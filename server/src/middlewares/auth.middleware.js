@@ -36,3 +36,12 @@ export const requireAuth = async (req, res, next) => {
       .json(ApiResponse(StatusCodes.UNAUTHORIZED, "Authentication failed"));
   }
 };
+
+export const requireEmailVerification = (req, res, next) => {
+  if (req.user && !req.user.isEmailVerified) {
+    return res.status(StatusCodes.FORBIDDEN).json(
+      ApiResponse(StatusCodes.FORBIDDEN, "Please verify your email to access this feature.")
+    );
+  }
+  next();
+};

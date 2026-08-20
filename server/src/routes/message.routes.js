@@ -1,7 +1,7 @@
 import express from "express";
 import * as messageController from "../controllers/message.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
-import { requireAuth } from "../middlewares/auth.middleware.js";
+import { requireAuth, requireEmailVerification } from "../middlewares/auth.middleware.js";
 import {
   addMessageSchema,
   updateMessageSchema,
@@ -10,8 +10,9 @@ import { aiEndpointLimiter } from "../middlewares/rateLimiter.middleware.js";
 
 const router = express.Router();
 
-// All message routes require authentication
+// All message routes require authentication and email verification
 router.use(requireAuth);
+router.use(requireEmailVerification);
 
 /**
  * @swagger
