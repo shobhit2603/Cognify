@@ -8,6 +8,24 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
   const { user, verifyEmail, isVerifying, resendVerification, isResending } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(forceOpen);
   const [otp, setOtp] = useState("");
+  const triggerRef = React.useRef(null);
+  const modalRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (isModalOpen) {
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") setIsModalOpen(false);
+      };
+      document.addEventListener("keydown", handleKeyDown);
+      const firstInput = modalRef.current?.querySelector('input');
+      if (firstInput) firstInput.focus();
+      
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        triggerRef.current?.focus();
+      };
+    }
+  }, [isModalOpen]);
 
   if (!user || user.isEmailVerified) {
     return null;
@@ -33,6 +51,7 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
           <span>Please verify your email address to access all core features like Chat and Progress Tracking.</span>
         </div>
         <button
+          ref={triggerRef}
           onClick={() => setIsModalOpen(true)}
           className="ml-4 whitespace-nowrap bg-red-600 text-white px-4 py-1.5 rounded-full hover:bg-red-700 transition-colors shadow-sm"
         >
@@ -53,6 +72,10 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
             />
             
             <motion.div
+              ref={modalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="verify-email-title"
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -60,6 +83,7 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
             >
               <button
                 onClick={() => setIsModalOpen(false)}
+                aria-label="Close verification modal"
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={20} />
@@ -69,10 +93,12 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
                 <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-red-500 mb-3">
                   <ShieldCheck size={24} weight="fill" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Verify Your Email</h3>
+                <h3 id="verify-email-title" className="text-xl font-bold text-gray-900">Verify Your Email</h3>
                 <p className="text-sm text-gray-500 mt-2">
                   We've sent a 6-digit code to <strong>{user.email}</strong>. 
                   Enter it below to unlock all features.
+                  <br />
+                  <span className="text-xs text-gray-400 mt-1 block">Please check your spam folder if you don't see it.</span>
                 </p>
               </div>
 

@@ -3,7 +3,7 @@ import passport from "passport";
 import * as authController from "../controllers/auth.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../validations/auth.validation.js";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, verifyEmailSchema } from "../validations/auth.validation.js";
 import { authLimiter } from "../middlewares/rateLimiter.middleware.js";
 
 const router = express.Router();
@@ -182,7 +182,7 @@ router.post("/logout", authController.logout);
  *       400:
  *         description: Invalid or expired OTP
  */
-router.post("/verify-email", requireAuth, authController.verifyEmail);
+router.post("/verify-email", authLimiter, requireAuth, validate(verifyEmailSchema), authController.verifyEmail);
 
 /**
  * @swagger
@@ -196,7 +196,7 @@ router.post("/verify-email", requireAuth, authController.verifyEmail);
  *       200:
  *         description: Verification email sent successfully
  */
-router.post("/resend-verification", requireAuth, authController.resendVerificationEmail);
+router.post("/resend-verification", authLimiter, requireAuth, authController.resendVerificationEmail);
 
 /**
  * @swagger

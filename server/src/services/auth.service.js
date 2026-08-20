@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomUUID } from "crypto";
+import { randomUUID, randomInt } from "crypto";
 import envConfig from "../config/env.config.js";
 import * as userRepository from "../repositories/user.repository.js";
 import * as sessionRepository from "../repositories/session.repository.js";
@@ -27,7 +27,7 @@ export const registerAndLogin = async ({
   const hashedPassword = await bcrypt.hash(password, 10);
   
   // Generate 6 digit OTP for email verification
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = randomInt(100000, 1000000).toString();
   const hashedOtp = await bcrypt.hash(otp, 10);
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -200,7 +200,7 @@ export const forgotPassword = async (email) => {
   }
 
   // Generate 6 digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = randomInt(100000, 1000000).toString();
 
   // Hash the OTP
   const hashedOtp = await bcrypt.hash(otp, 10);
@@ -257,7 +257,7 @@ export const resetPassword = async (email, otp, newPassword) => {
 };
 
 export const verifyEmail = async (userId, otp) => {
-  const user = await userRepository.findUserById(userId);
+  const user = await userRepository.findUserByIdForVerification(userId);
   if (!user) {
     throw ApiError(StatusCodes.NOT_FOUND, "User not found");
   }
@@ -296,7 +296,7 @@ export const resendVerificationEmail = async (userId) => {
     throw ApiError(StatusCodes.BAD_REQUEST, "Email is already verified");
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = randomInt(100000, 1000000).toString();
   const hashedOtp = await bcrypt.hash(otp, 10);
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -305,7 +305,7 @@ export const resendVerificationEmail = async (userId) => {
     emailVerificationOtpExpires: expiresAt,
   });
 
-  sendEmail({
+  await sendEmail({
     to: user.email,
     subject: "Cognify - Verify your email",
     html: `
@@ -314,5 +314,5 @@ export const resendVerificationEmail = async (userId) => {
       <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px;">${otp}</h1>
       <p>This code is valid for 24 hours.</p>
     `,
-  }).catch((err) => console.error("Failed to resend verification email:", err));
+  });
 };
