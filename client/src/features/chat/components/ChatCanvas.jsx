@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
 
 // Chat Components
 import ChatHeader from "./ChatHeader";
@@ -9,26 +10,29 @@ import ChatInputArea from "./ChatInputArea";
 
 // API Service
 import * as chatService from "../services/chat.service";
-
 import { useChatContext } from "../context/ChatContext";
-import { useRouter } from "next/navigation";
 
-export default function ChatCanvas({ chatId }) {
+export default function ChatCanvas({ chatId: propChatId }) {
   const router = useRouter();
-  const { isSidebarOpen, setIsSidebarOpen, refreshChatTitle, setConversations } = useChatContext();
+  const params = useParams();
+  const chatId = propChatId !== undefined ? propChatId : (params?.id || null);
+  const {
+    isSidebarOpen,
+    setIsSidebarOpen,
+    refreshChatTitle,
+    conversations,
+    setConversations,
+  } = useChatContext();
 
   const [messages, setMessages] = useState([]);
   const [editPromptText, setEditPromptText] = useState(null);
-  const [attachedFiles, setAttachedFiles] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // Streaming UI state — tracks which assistant message bubble is actively streaming
+  // Streaming UI state
   const [streamingMessageId, setStreamingMessageId] = useState(null);
 
   // Micro-interactions
-  const [editingChatId, setEditingChatId] = useState(null);
-  const [editTitle, setEditTitle] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
 
@@ -38,25 +42,26 @@ export default function ChatCanvas({ chatId }) {
   const lastScrollTopRef = useRef(0);
   const previousMessagesLength = useRef(0);
 
-  // Ref that is true whenever a stream is in-flight — prevents the
-  // getMessages effect from overwriting optimistic state mid-stream.
+  // Ref that is true whenever a stream is in-flight
   const isStreamingRef = useRef(false);
 
-  // AbortController ref — a new one is created per stream.
+  // AbortController ref
   const abortControllerRef = useRef(null);
   const streamChatIdRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Current active conversation meta
+  const currentChat = conversations.find((c) => c._id === chatId);
+  const activeChatTitle = currentChat ? currentChat.title : "New Conversation";
 
   // ─── Fetch Messages on Chat Switch ──────────────────────────────────────────
-  // Guard: skip if a stream is active to avoid overwriting optimistic state.
-
   useEffect(() => {
     let active = true;
 
-    // Defer state updates to avoid synchronous cascading renders in the effect
     const timerId = setTimeout(() => {
       if (!active) return;
 
-      // 1. If we switch away from the currently streaming chat to another chat
+      // 1. If we switch away from currently streaming chat to another
       if (isStreamingRef.current && streamChatIdRef.current !== chatId) {
         abortControllerRef.current?.abort();
         isStreamingRef.current = false;
@@ -67,16 +72,15 @@ export default function ChatCanvas({ chatId }) {
       // 2. If navigating to New Chat
       if (!chatId) {
         setMessages([]);
-        setAttachedFiles([]);
         return;
       }
 
-      // 3. If navigating to the chat that is currently streaming (e.g. the first message just set the URL)
+      // 3. If navigating to the chat that is currently streaming
       if (isStreamingRef.current && streamChatIdRef.current === chatId) {
         return;
       }
 
-      // 4. Otherwise, safe to clear and load the new chat history
+      // 4. Safe to clear and load the new chat history
       setMessages([]);
 
       chatService
@@ -84,8 +88,6 @@ export default function ChatCanvas({ chatId }) {
         .then((data) => {
           if (!active) return;
           if (!data?.messages) return;
-          // Backend already sorts { createdAt: 1 } — chronological order.
-          // No .reverse() needed.
           const formatted = data.messages.map((m) => ({
             id: m._id,
             role: m.role,
@@ -99,14 +101,13 @@ export default function ChatCanvas({ chatId }) {
         });
     }, 0);
 
-    return () => { 
+    return () => {
       active = false;
       clearTimeout(timerId);
     };
   }, [chatId]);
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────────
-
   const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } =
@@ -114,13 +115,13 @@ export default function ChatCanvas({ chatId }) {
 
     const isScrollingUp = scrollTop < lastScrollTopRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
-    
+
     if (isScrollingUp && !isAtBottom) {
       isUserScrolledUpRef.current = true;
     } else if (isAtBottom) {
       isUserScrolledUpRef.current = false;
     }
-    
+
     lastScrollTopRef.current = scrollTop;
   }, []);
 
@@ -136,26 +137,28 @@ export default function ChatCanvas({ chatId }) {
     const isNewMessage = messages.length > previousMessagesLength.current;
     previousMessagesLength.current = messages.length;
 
-    // Use smooth scrolling if a brand new message was just added,
-    // or if we're not actively generating.
-    // During chunk updates (streaming), use 'auto' to prevent flickering.
     const useSmooth = isNewMessage || !isGenerating;
     scrollToBottom(false, useSmooth);
   }, [messages, isGenerating, scrollToBottom]);
 
   // ─── Cleanup on unmount ──────────────────────────────────────────────────────
-
   useEffect(() => {
     return () => {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
       abortControllerRef.current?.abort();
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
     };
   }, []);
 
   // ─── Utility Actions ─────────────────────────────────────────────────────────
-
   const handleCopy = async (text, id) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -183,22 +186,65 @@ export default function ChatCanvas({ chatId }) {
     }
   };
 
+  // ─── Speech Recognition (Mic) ────────────────────────────────────────────────
   const handleToggleMic = () => {
-    setIsListening((prev) => !prev);
+    if (typeof window === "undefined") return;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert(
+        "Speech recognition is not supported in this browser. Please use Chrome or Edge.",
+      );
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (transcript) {
+            setEditPromptText({ text: transcript, nonce: Date.now() });
+          }
+          setIsListening(false);
+        };
+
+        recognition.onerror = (event) => {
+          console.warn("[SpeechRecognition] error:", event.error);
+          setIsListening(false);
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+      } catch (err) {
+        console.error("Failed to start speech recognition:", err);
+        setIsListening(false);
+      }
+    }
   };
 
-
-
-  // ─── SEND & STREAM ───────────────────────────────────────────────────────────
-
+  // ─── Send & Stream Message ───────────────────────────────────────────────────
   const handleSend = async (submittedText) => {
     const textToSend = typeof submittedText === "string" ? submittedText : "";
     if (!textToSend.trim() || isGenerating) return;
 
-    // Capture whether this is a brand-new chat (no chatId yet)
     const isNewChat = !chatId;
 
-    // ── 1. Optimistic: add user message + assistant placeholder atomically ────
     const userMessageId = `user-${Date.now()}`;
     const assistantId = `assistant-${Date.now() + 1}`;
 
@@ -208,26 +254,21 @@ export default function ChatCanvas({ chatId }) {
         id: userMessageId,
         role: "user",
         content: textToSend.trim(),
-        files: [...attachedFiles],
       },
       { id: assistantId, role: "assistant", content: "" },
     ]);
     setEditPromptText(null);
-    setAttachedFiles([]);
     setIsGenerating(true);
     setStreamingMessageId(assistantId);
     isStreamingRef.current = true;
     isUserScrolledUpRef.current = false;
 
-    // Fresh AbortController per stream
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    // Track the chatId used for this stream (needed for title refresh and stream cancellation)
     let streamChatId = chatId;
     streamChatIdRef.current = chatId;
 
-    // ── 2. Start SSE stream ──────────────────────────────────────────────────
     try {
       await chatService.streamMessage(
         textToSend.trim(),
@@ -235,15 +276,12 @@ export default function ChatCanvas({ chatId }) {
         {
           onConnected: (payload) => {
             if (isNewChat && payload.chat) {
-              // New chat created by backend — sync to state
               const newChatId = payload.chat._id;
               streamChatId = newChatId;
               streamChatIdRef.current = newChatId;
               setConversations((prev) => [payload.chat, ...prev]);
-              // Redirect to the new chat page (useEffect handles not aborting the stream)
               router.push(`/chat/${newChatId}`);
             }
-            // Replace optimistic user-message id with real DB _id
             if (payload.message) {
               setMessages((prev) =>
                 prev.map((msg) =>
@@ -266,7 +304,6 @@ export default function ChatCanvas({ chatId }) {
           },
 
           onDone: (payload) => {
-            // Replace temp assistant id with real DB _id
             if (payload?.message) {
               setMessages((prev) =>
                 prev.map((msg) =>
@@ -276,8 +313,6 @@ export default function ChatCanvas({ chatId }) {
                 ),
               );
             }
-            // For new chats: fetch the AI-generated title after a short delay
-            // so the sidebar shows the real title instead of "New Chat"
             if (isNewChat && streamChatId) {
               refreshChatTitle(streamChatId);
             }
@@ -292,7 +327,7 @@ export default function ChatCanvas({ chatId }) {
                       ...msg,
                       content:
                         msg.content ||
-                        "Sorry, something went wrong. Please try again.",
+                        "Sorry, something went wrong while reasoning. Please try again.",
                     }
                   : msg,
               ),
@@ -325,7 +360,6 @@ export default function ChatCanvas({ chatId }) {
   };
 
   // ─── Stop Generation ─────────────────────────────────────────────────────────
-
   const handleStop = () => {
     abortControllerRef.current?.abort();
     isStreamingRef.current = false;
@@ -333,66 +367,52 @@ export default function ChatCanvas({ chatId }) {
     setIsGenerating(false);
   };
 
-  // ─── Chat Management ──────────────────────────────────────────────────────────
-
-  const handleNewChat = () => {
-    abortControllerRef.current?.abort();
-    isStreamingRef.current = false;
-    setStreamingMessageId(null);
-    setIsGenerating(false);
-    setMessages([]);
-    setAttachedFiles([]);
-    setEditPromptText("");
-    router.push("/chat");
-  };
-
-  // ─── Render ───────────────────────────────────────────────────────────────────
-
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-[#FBFBFA] relative">
+    <div className="flex-1 h-full min-h-0 bg-[#151414] text-white rounded-3xl flex flex-col overflow-hidden relative select-none shadow-2xl">
+      {/* Top Header */}
       <ChatHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        onClearCanvas={() => handleNewChat()}
+        activeChatTitle={activeChatTitle}
       />
 
-          {/* Messages Scroll Area */}
-          <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            data-lenis-prevent
-            className="flex-1 overflow-y-auto px-4 sm:px-10 py-8 pb-40"
-          >
-            <div className="max-w-3xl mx-auto flex flex-col gap-8">
-              {messages.length === 0 ? (
-                <ChatEmptyState onSendStarter={handleSend} />
-              ) : (
-                <ChatMessageFeed
-                  messages={messages}
-                  streamingMessageId={streamingMessageId}
-                  copiedId={copiedId}
-                  playingVoiceId={playingVoiceId}
-                  handleCopy={handleCopy}
-                  handleToggleVoice={handleToggleVoice}
-                  onEditPrompt={(text) => setEditPromptText({ text, nonce: Date.now() })}
-                />
-              )}
+      {/* Scrollable Message History Area */}
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        data-lenis-prevent
+        className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-10 lg:px-16 py-6 pb-36 select-text"
+      >
+        <div className="max-w-3xl mx-auto flex flex-col gap-6">
+          {messages.length === 0 ? (
+            <ChatEmptyState />
+          ) : (
+            <ChatMessageFeed
+              messages={messages}
+              streamingMessageId={streamingMessageId}
+              copiedId={copiedId}
+              playingVoiceId={playingVoiceId}
+              handleCopy={handleCopy}
+              handleToggleVoice={handleToggleVoice}
+              onEditPrompt={(text) =>
+                setEditPromptText({ text, nonce: Date.now() })
+              }
+            />
+          )}
 
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
 
-          {/* INPUT AREA */}
-          <ChatInputArea
-            editPromptText={editPromptText}
-            isGenerating={isGenerating}
-            onSend={handleSend}
-            onStop={handleStop}
-            attachedFiles={attachedFiles}
-            setAttachedFiles={setAttachedFiles}
-            isListening={isListening}
-            onToggleMic={handleToggleMic}
-          />
+      {/* Floating Bottom Input Capsule */}
+      <ChatInputArea
+        editPromptText={editPromptText}
+        isGenerating={isGenerating}
+        onSend={handleSend}
+        onStop={handleStop}
+        isListening={isListening}
+        onToggleMic={handleToggleMic}
+      />
     </div>
   );
 }

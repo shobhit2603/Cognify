@@ -1,7 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AnimatePresence } from "motion/react";
 import ChatSidebar from "./ChatSidebar";
 import { useChatContext } from "../context/ChatContext";
 
@@ -28,9 +27,21 @@ export default function ChatSidebarWrapper() {
   const pinnedConversations = filteredConversations.filter((c) => c.pinned);
   const unpinnedConversations = filteredConversations.filter((c) => !c.pinned);
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     router.push("/chat");
-  };
+  }, [router]);
+
+  // Global shortcut listener: Cmd/Ctrl + N for new thread
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n" && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        handleNewChat();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleNewChat]);
 
   const handleSelectChat = (id) => {
     if (id !== activeChatId) {
@@ -79,37 +90,33 @@ export default function ChatSidebarWrapper() {
   };
 
   return (
-    <AnimatePresence initial={false}>
-      {isSidebarOpen && (
-        <ChatSidebar
-          isSidebarOpen={isSidebarOpen}
-          searchFilter={searchFilter}
-          setSearchFilter={setSearchFilter}
-          pinnedConversations={pinnedConversations.map((c) => ({
-            id: c._id,
-            title: c.title,
-            date: c.createdAt,
-            isPinned: c.pinned,
-          }))}
-          unpinnedConversations={unpinnedConversations.map((c) => ({
-            id: c._id,
-            title: c.title,
-            date: c.createdAt,
-            isPinned: c.pinned,
-          }))}
-          activeChatId={activeChatId}
-          editingChatId={editingChatId}
-          editTitle={editTitle}
-          setEditTitle={setEditTitle}
-          onNewChat={handleNewChat}
-          onSelectChat={handleSelectChat}
-          onStartRename={handleStartRename}
-          onSaveRename={handleSaveRename}
-          onCancelRename={handleCancelRename}
-          onTogglePin={handleTogglePin}
-          onDelete={handleDelete}
-        />
-      )}
-    </AnimatePresence>
+    <ChatSidebar
+      isSidebarOpen={isSidebarOpen}
+      searchFilter={searchFilter}
+      setSearchFilter={setSearchFilter}
+      pinnedConversations={pinnedConversations.map((c) => ({
+        id: c._id,
+        title: c.title,
+        date: c.createdAt,
+        isPinned: c.pinned,
+      }))}
+      unpinnedConversations={unpinnedConversations.map((c) => ({
+        id: c._id,
+        title: c.title,
+        date: c.createdAt,
+        isPinned: c.pinned,
+      }))}
+      activeChatId={activeChatId}
+      editingChatId={editingChatId}
+      editTitle={editTitle}
+      setEditTitle={setEditTitle}
+      onNewChat={handleNewChat}
+      onSelectChat={handleSelectChat}
+      onStartRename={handleStartRename}
+      onSaveRename={handleSaveRename}
+      onCancelRename={handleCancelRename}
+      onTogglePin={handleTogglePin}
+      onDelete={handleDelete}
+    />
   );
 }

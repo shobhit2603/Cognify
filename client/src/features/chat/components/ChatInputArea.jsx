@@ -1,18 +1,20 @@
-import React, { useRef, useState, useEffect } from "react";
-import { PaperPlaneRight, StopCircle, Paperclip, Microphone, FilePdf, X } from "@phosphor-icons/react";
+"use client";
+import React, { useRef, useState } from "react";
+import {
+  StopCircle,
+  Microphone,
+  ArrowUp
+} from "@phosphor-icons/react";
 
 export default function ChatInputArea({
   editPromptText,
   isGenerating,
   onSend,
   onStop,
-  attachedFiles,
-  setAttachedFiles,
   isListening,
-  onToggleMic,
+  onToggleMic
 }) {
   const [input, setInput] = useState("");
-  const fileInputRef = useRef(null);
   const inputRef = useRef(null);
 
   // Sync external edit prompts into local state
@@ -28,7 +30,9 @@ export default function ChatInputArea({
     if (!input.trim() || isGenerating) return;
     onSend(input);
     setInput("");
-    if (inputRef.current) inputRef.current.style.height = "auto";
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -38,106 +42,47 @@ export default function ChatInputArea({
     }
   };
 
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setAttachedFiles((prev) => [
-        ...prev,
-        ...files.map((file) => ({
-          id: Date.now().toString(36) + Math.random().toString(36).substring(2),
-          name: file.name,
-          size: (file.size / 1024).toFixed(1) + " KB"
-        }))
-      ]);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const removeAttachedFile = (fileId) => {
-    setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
-  };
-
   return (
-    <div className="absolute bottom-5 left-0 right-0 px-4 sm:px-8 flex flex-col items-center pointer-events-none z-10">
-      <div className="w-full max-w-3xl pointer-events-auto bg-white border border-black/15 shadow-2xl shadow-black/10 rounded-2xl p-2.5 flex flex-col gap-2 transition-all focus-within:border-brand-orange/60 focus-within:ring-2 focus-within:ring-brand-orange/10">
+    <div className="absolute bottom-4 left-0 right-0 px-4 sm:px-8 flex flex-col items-center pointer-events-none z-20">
+      <div className="w-full max-w-3xl pointer-events-auto bg-[#1c1a1a]/95 backdrop-blur-2xl shadow-2xl rounded-3xl p-3 sm:p-3.5 flex flex-col gap-2 transition-all">
         
-        {/* Staged Attached Files Preview */}
-        {attachedFiles.length > 0 && (
-          <div className="flex flex-wrap gap-2 px-2 pt-1">
-            {attachedFiles.map((file) => (
-              <div
-                key={file.id}
-                className="flex items-center gap-2 bg-[#F4F4F3] border border-black/10 px-2.5 py-1 rounded-lg text-xs font-medium text-gray-700"
-              >
-                <FilePdf size={14} className="text-brand-orange" weight="fill" />
-                <span className="truncate max-w-45">{file.name}</span>
-                <span className="text-[10px] text-gray-400">({file.size})</span>
-                <button
-                  onClick={() => removeAttachedFile(file.id)}
-                  className="text-gray-400 hover:text-red-500 transition-colors ml-1 cursor-pointer"
-                >
-                  <X size={12} weight="bold" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Textarea & Dynamic Command Buttons */}
-        <div className="flex items-end gap-2 w-full">
+        {/* Textarea & Command Controls */}
+        <div className="flex items-end gap-3 w-full">
           
-          {/* Hidden File Input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.txt"
-            className="hidden"
-            onChange={handleFileUpload}
-          />
-
-          {/* Attach Document Trigger */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-9 h-9 shrink-0 rounded-xl hover:bg-black/5 text-gray-500 hover:text-brand-black flex items-center justify-center transition-colors cursor-pointer mb-0.5"
-            title="Attach documents (PDF, TXT, DOCX)"
-          >
-            <Paperclip size={18} weight="bold" />
-          </button>
-
           {/* Voice Input Trigger */}
           <button
             type="button"
             onClick={onToggleMic}
-            className={`w-9 h-9 shrink-0 rounded-xl transition-colors flex items-center justify-center cursor-pointer mb-0.5 ${
-              isListening ? "bg-red-50 text-red-600 animate-pulse" : "hover:bg-black/5 text-gray-500 hover:text-brand-black"
+            className={`w-10 h-10 shrink-0 rounded-2xl transition-all flex items-center justify-center cursor-pointer mb-0.5 ${
+              isListening
+                ? "bg-red-500/20 text-red-400 animate-pulse"
+                : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
             }`}
-            title={isListening ? "Stop recording voice" : "Spoken audio prompt"}
+            title={isListening ? "Listening... click to stop" : "Voice dictation (speech-to-text)"}
           >
             <Microphone size={18} weight={isListening ? "fill" : "bold"} />
           </button>
 
-          {/* Expanding Textarea */}
+          {/* Auto-growing Textarea with Larger Text */}
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Cognify to reason, synthesize notes, analyze documents..."
-            className="w-full max-h-40 min-h-10.5 bg-transparent resize-none outline-none py-2 px-2 text-brand-black placeholder:text-gray-400 font-sans font-normal text-[15px] leading-relaxed"
+            placeholder="Ask Cognify anything..."
+            className="w-full max-h-44 min-h-11 bg-transparent resize-none outline-none py-2 px-1 text-white placeholder:text-white/35 font-normal text-base sm:text-lg leading-relaxed select-text"
             rows={1}
             onInput={(e) => {
               e.target.style.height = "auto";
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 176)}px`;
             }}
           />
 
-          {/* Dynamic Send / Stop Action */}
+          {/* Dynamic Send / Stop Action Button */}
           {isGenerating ? (
             <button
               onClick={onStop}
-              className="w-9 h-9 shrink-0 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors cursor-pointer mb-0.5 shadow-2xs"
+              className="w-10 h-10 shrink-0 rounded-2xl bg-red-500/20 hover:bg-red-500/30 text-red-400 flex items-center justify-center transition-colors cursor-pointer mb-0.5 shadow-sm"
               title="Stop generating"
             >
               <StopCircle size={20} weight="fill" />
@@ -146,18 +91,24 @@ export default function ChatInputArea({
             <button
               onClick={submitMessage}
               disabled={!input.trim()}
-              className="w-9 h-9 shrink-0 rounded-xl bg-brand-black hover:bg-brand-orange disabled:bg-black/5 disabled:text-gray-300 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs disabled:cursor-not-allowed mb-0.5"
-              title="Send message"
+              className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center transition-all cursor-pointer mb-0.5 shadow-sm ${
+                input.trim()
+                  ? "bg-osmo-lime text-[#151414] hover:bg-osmo-lime/90 hover:scale-105 active:scale-95"
+                  : "bg-white/5 text-white/20 cursor-not-allowed"
+              }`}
+              title="Send (Enter)"
             >
-              <PaperPlaneRight size={16} weight="fill" />
+              <ArrowUp size={18} weight="bold" />
             </button>
           )}
         </div>
       </div>
 
-      <p className="text-[10px] text-gray-400 font-sans tracking-wide mt-2">
-        Cognify Workspace Intelligence • Isolated multi-turn context
-      </p>
+      <div className="flex items-center gap-2 text-xs text-white/30 font-normal mt-2 select-none">
+        <span>Shift + Enter for newline</span>
+        <span>•</span>
+        <span>Enter to send</span>
+      </div>
     </div>
   );
 }
