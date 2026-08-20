@@ -42,7 +42,7 @@ export default function ChatSidebar({
 
   return (
     <aside
-      className={`h-full bg-[#151414] text-white rounded-3xl overflow-hidden select-none shrink-0 z-20 shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width,opacity,margin] ${
+      className={`h-full bg-[#151414] text-white rounded-2xl overflow-hidden select-none shrink-0 z-20 shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width,opacity,margin] ${
         isSidebarOpen
           ? "w-72 sm:w-80 opacity-100"
           : "w-0 opacity-0 pointer-events-none -mr-3"
@@ -69,7 +69,7 @@ export default function ChatSidebar({
                 />
               </div>
               <div>
-                <span className="font-display font-medium text-xl tracking-tight text-white leading-none block">
+                <span className="font-display font-bold text-xl tracking-tight text-white leading-none block">
                   COGNIFY<span className="text-osmo-lime">.</span>
                 </span>
               </div>

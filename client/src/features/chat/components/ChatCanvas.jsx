@@ -368,7 +368,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
   };
 
   return (
-    <div className="flex-1 h-full min-h-0 bg-[#151414] text-white rounded-3xl flex flex-col overflow-hidden relative select-none shadow-2xl">
+    <div className="flex-1 h-full min-h-0 bg-[#151414] text-white rounded-2xl flex flex-col overflow-hidden relative select-none shadow-2xl">
       {/* Top Header */}
       <ChatHeader
         isSidebarOpen={isSidebarOpen}
