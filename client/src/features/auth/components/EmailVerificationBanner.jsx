@@ -20,9 +20,11 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
       const firstInput = modalRef.current?.querySelector('input');
       if (firstInput) firstInput.focus();
       
+      const currentTrigger = triggerRef.current;
+      
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
-        triggerRef.current?.focus();
+        currentTrigger?.focus();
       };
     }
   }, [isModalOpen]);
@@ -95,10 +97,10 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
                 </div>
                 <h3 id="verify-email-title" className="text-xl font-bold text-gray-900">Verify Your Email</h3>
                 <p className="text-sm text-gray-500 mt-2">
-                  We've sent a 6-digit code to <strong>{user.email}</strong>. 
+                  We&apos;ve sent a 6-digit code to <strong>{user.email}</strong>. 
                   Enter it below to unlock all features.
                   <br />
-                  <span className="text-xs text-gray-400 mt-1 block">Please check your spam folder if you don't see it.</span>
+                  <span className="text-xs text-gray-400 mt-1 block">Please check your spam folder if you don&apos;t see it.</span>
                 </p>
               </div>
 
@@ -122,7 +124,7 @@ export default function EmailVerificationBanner({ forceOpen = false }) {
               </form>
 
               <div className="mt-6 text-center text-sm text-gray-500">
-                Didn't receive the code?{" "}
+                Didn&apos;t receive the code?{" "}
                 <button
                   onClick={() => resendVerification()}
                   disabled={isResending}

@@ -7,9 +7,9 @@ export default function DashboardLayout({ children }) {
   return (
     <ProtectedRoute>
       <EmailVerificationBanner />
-      <div className="w-full bg-osmo-bg text-osmo-dark font-sans md:h-screen md:overflow-hidden md:flex md:flex-col p-2 sm:p-2.5 lg:p-2">
+      <div className="w-full bg-osmo-bg text-osmo-dark font-sans h-screen max-h-screen overflow-hidden flex flex-col p-2 sm:p-3 lg:p-3.5 selection:bg-osmo-lime selection:text-osmo-dark">
         {children}
       </div>
     </ProtectedRoute>
   );
-}
+}
