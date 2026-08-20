@@ -7,6 +7,7 @@ import * as sessionRepository from "../repositories/session.repository.js";
 import ApiError from "../utils/apiError.util.js";
 import { StatusCodes } from "http-status-codes";
 import { sendEmail } from "../utils/email.util.js";
+import { escapeHtml } from "../utils/escape.util.js";
 
 /**
  * Register a new user and immediately create a session (auto-login on sign-up).
@@ -35,7 +36,7 @@ export const registerAndLogin = async ({
     to: newUser.email,
     subject: "Welcome to Cognify!",
     html: `
-      <h2>Welcome ${newUser.name}!</h2>
+      <h2>Welcome ${escapeHtml(newUser.name)}!</h2>
       <p>We are thrilled to have you on board.</p>
       <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
       <ul>
@@ -158,7 +159,7 @@ export const googleLogin = async (profile, userAgent, ipAddress) => {
         to: user.email,
         subject: "Welcome to Cognify!",
         html: `
-          <h2>Welcome ${user.name}!</h2>
+          <h2>Welcome ${escapeHtml(user.name)}!</h2>
           <p>We are thrilled to have you on board.</p>
           <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
           <ul>
