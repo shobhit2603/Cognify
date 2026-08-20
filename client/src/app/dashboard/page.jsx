@@ -7,7 +7,7 @@ import {
   FilePdf,
   BriefcaseMetal,
   PenNib,
-  Graph
+  Graph,
 } from "@phosphor-icons/react";
 
 import BrandProfileCard from "../../features/dashboard/components/BrandProfileCard";
@@ -25,7 +25,7 @@ const TOOL_MODULES = [
     href: "/chat",
     quickAction: "Start AI Thread",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
-    accentColor: "text-osmo-lime"
+    accentColor: "text-osmo-purple",
   },
   {
     id: "documents",
@@ -36,7 +36,7 @@ const TOOL_MODULES = [
     href: "/documents",
     quickAction: "Upload PDF",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
-    accentColor: "text-osmo-purple"
+    accentColor: "text-osmo-lime",
   },
   {
     id: "resume",
@@ -47,7 +47,7 @@ const TOOL_MODULES = [
     href: "/resume",
     quickAction: "Audit Resume",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
-    accentColor: "text-[#ffbd2e]"
+    accentColor: "text-[#ffbd2e]",
   },
   {
     id: "writing",
@@ -58,7 +58,7 @@ const TOOL_MODULES = [
     href: "/writing",
     quickAction: "Draft Copy",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
-    accentColor: "text-[#ff5f56]"
+    accentColor: "text-[#ff5f56]",
   },
   {
     id: "notes",
@@ -69,8 +69,8 @@ const TOOL_MODULES = [
     href: "/notes",
     quickAction: "Structure Note",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
-    accentColor: "text-[#00FFFF]"
-  }
+    accentColor: "text-[#00FFFF]",
+  },
 ];
 
 export default function DashboardPage() {
@@ -78,7 +78,9 @@ export default function DashboardPage() {
 
   useGSAP(() => {
     if (!containerRef.current) return;
-    const cards = gsap.utils.toArray(containerRef.current.querySelectorAll(".bento-card-animate"));
+    const cards = gsap.utils.toArray(
+      containerRef.current.querySelectorAll(".bento-card-animate"),
+    );
 
     gsap.fromTo(
       cards,
@@ -90,8 +92,8 @@ export default function DashboardPage() {
         duration: 0.5,
         stagger: 0.04,
         ease: "power3.out",
-        clearProps: "transform,opacity"
-      }
+        clearProps: "transform,opacity",
+      },
     );
   }, []);
 
@@ -105,7 +107,7 @@ export default function DashboardPage() {
     >
       {/* LEFT COLUMN: Workspace Identity & Live Chrono */}
       <div className="md:col-span-3 flex flex-col gap-2 h-full min-h-0">
-        <div className="bento-card-animate flex-1 min-h-0">
+        <div className="bento-card-animate flex-2 min-h-0">
           <BrandProfileCard />
         </div>
         <div className="bento-card-animate flex-1 min-h-0">
@@ -156,4 +158,3 @@ export default function DashboardPage() {
     </main>
   );
 }
-

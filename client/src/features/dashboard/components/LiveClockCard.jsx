@@ -50,7 +50,7 @@ export default function LiveClockCard() {
       {/* Top Header */}
       <div className="relative z-10 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-widest text-osmo-lime">
-          CHRONO TELEMETRY
+          CURRENT TIME
         </span>
         <span className="text-lg font-caveat text-white/50 group-hover:text-white/80 transition-colors">
           Flow Mode
@@ -80,7 +80,7 @@ export default function LiveClockCard() {
           <span className="w-1.5 h-1.5 rounded-full bg-osmo-lime animate-pulse" />
           <span>5 Engines Online</span>
         </div>
-        <span className="text-osmo-lime font-bold">&lt;45ms Latency</span>
+        {/* <span className="text-osmo-lime font-bold">less than 45ms Latency</span> */}
       </div>
     </div>
   );

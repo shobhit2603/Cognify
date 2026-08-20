@@ -46,10 +46,10 @@ export default function BrandProfileCard() {
           </div>
         </Link>
 
-        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-osmo-lime/10 border border-osmo-lime/25 text-[10px] font-bold text-osmo-lime uppercase tracking-wider">
+        {/* <div className="flex items-center gap-1.5 px-2 py-0.5 bg-osmo-lime/10 border border-osmo-lime/25 text-[10px] font-bold text-osmo-lime uppercase tracking-wider">
           <span className="w-1.5 h-1.5 rounded-full bg-osmo-lime animate-pulse" />
           <span>Active</span>
-        </div>
+        </div> */}
       </div>
 
       {/* Middle: Editorial Greeting */}
@@ -57,14 +57,19 @@ export default function BrandProfileCard() {
         <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest block mb-1">
           Cognitive Workspace
         </span>
-        <h2 className="font-display text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white leading-tight">
+        <h2 className="font-display text-xl sm:text-2xl lg:text-4xl font-medium text-white leading-tight">
           Good {getGreetingTime()},{" "}
           <span className="text-white/90">{firstName}</span>
           <span className="text-osmo-lime">.</span>
         </h2>
-        <p className="text-xs text-white/50 font-medium leading-relaxed mt-1 line-clamp-2">
-          Unified low-latency intelligence for deep creative & technical flow.
+        <p className="text-sm text-white/50 font-medium leading-relaxed mt-1 line-clamp-2">
+          Which tool you want to begin with Today?
         </p>
+
+        {/* Handwritten Note */}
+        <div className="absolute -top-2 md:-top-4 right-0 rotate-[4deg] text-osmo-lime font-caveat text-xl opacity-90 pointer-events-none">
+          Ready to start
+        </div>
       </div>
 
       {/* Bottom: User Card & Quick Action */}
