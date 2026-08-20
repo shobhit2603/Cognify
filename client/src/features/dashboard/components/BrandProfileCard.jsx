@@ -21,7 +21,7 @@ export default function BrandProfileCard() {
   };
 
   return (
-    <div className="group relative w-full h-full bg-[#151414] border border-white/8 hover:border-white/20 text-white rounded-none p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
+    <div className="group relative w-full h-full bg-[#151414] border border-white/8 hover:border-white/20 text-white rounded-lg p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
       {/* Top: Brand Header */}
       <div className="relative z-10 flex items-center justify-between">
         <Link
@@ -70,14 +70,14 @@ export default function BrandProfileCard() {
       {/* Bottom: User Card & Quick Action */}
       <div className="relative z-10 pt-3 border-t border-white/8 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-none bg-osmo-purple text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
+          <div className="w-10 h-10 rounded-full bg-osmo-purple text-white flex items-center justify-center text-md font-bold shrink-0 shadow-sm">
             {userInitial}
           </div>
           <div className="min-w-0">
-            <div className="text-xs font-bold text-white truncate leading-tight">
+            <div className="text-md font-bold text-white truncate leading-tight">
               {user?.name || "Workspace User"}
             </div>
-            <div className="text-[10px] text-white/40 truncate">
+            <div className="text-sm text-white/40 truncate">
               {user?.email || "Pro Plan"}
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function BrandProfileCard() {
         <button
           onClick={() => logout()}
           disabled={isLoggingOut}
-          className="p-1.5 bg-white/5 border border-white/10 hover:bg-red-500/20 text-white/60 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50"
+          className="p-2 bg-white/8 hover:bg-red-500/20 text-white/60 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 rounded-lg"
           title="Sign Out"
         >
           <SignOut size={16} weight="bold" />

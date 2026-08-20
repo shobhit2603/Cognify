@@ -19,7 +19,7 @@ export default function BentoToolCard({
   return (
     <Link
       href={href}
-      className={`group relative flex flex-col justify-between p-5 lg:p-6 rounded-4xl transition-all duration-400 ease-out hover:scale-[0.985] active:scale-[0.97] hover:rounded-none hover:border-white/20 select-none ${bgClass} ${className}`}
+      className={`group relative flex flex-col justify-between p-5 lg:p-6 rounded-4xl transition-all duration-400 ease-out hover:scale-[0.95] active:scale-[0.92] hover:rounded-sm hover:bg-black select-none ${bgClass} ${className}`}
     >
       {/* Top Bar: Naked Icon + Number on left, Single Arrow on right */}
       <div className="flex items-center justify-between">
@@ -31,7 +31,7 @@ export default function BentoToolCard({
               className={`${accentColor} transition-transform duration-200`}
             />
           )}
-          <span className="font-mono text-xs font-bold text-white/30 tracking-widest uppercase">
+          <span className="font-display text-lg font-bold text-white/30 tracking-widest uppercase">
             {number}
           </span>
         </div>
@@ -52,7 +52,7 @@ export default function BentoToolCard({
         >
           {title}
         </h3>
-        <p className="text-lg sm:text-xl font-caveat text-white/50 group-hover:text-white/80 transition-colors mt-0.5">
+        <p className="text-md sm:text-lg font-caveat text-white/50 group-hover:text-white/80 transition-colors mt-0.5">
           {category}
         </p>
       </div>

@@ -101,10 +101,10 @@ export default function DashboardPage() {
   return (
     <main
       ref={containerRef}
-      className="w-full h-full flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-3 overflow-hidden select-none"
+      className="w-full h-full flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-2 overflow-hidden select-none"
     >
       {/* LEFT COLUMN: Workspace Identity & Live Chrono */}
-      <div className="md:col-span-3 flex flex-col gap-3 h-full min-h-0">
+      <div className="md:col-span-3 flex flex-col gap-2 h-full min-h-0">
         <div className="bento-card-animate flex-1 min-h-0">
           <BrandProfileCard />
         </div>
@@ -114,7 +114,7 @@ export default function DashboardPage() {
       </div>
 
       {/* CENTER COLUMN: Hero Tool (AI Chat) + 2x2 Submodule Grid */}
-      <div className="md:col-span-6 flex flex-col gap-3 h-full min-h-0">
+      <div className="md:col-span-6 flex flex-col gap-1 h-full min-h-0">
         <div className="bento-card-animate h-[42%] min-h-0">
           <BentoToolCard
             number={chatTool.number}
@@ -130,7 +130,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="flex-1 min-h-0 grid grid-cols-2 gap-3">
+        <div className="flex-1 min-h-0 grid grid-cols-2 gap-1">
           {subTools.map((tool) => (
             <div key={tool.id} className="bento-card-animate h-full min-h-0">
               <BentoToolCard
@@ -156,4 +156,4 @@ export default function DashboardPage() {
     </main>
   );
 }
-
+

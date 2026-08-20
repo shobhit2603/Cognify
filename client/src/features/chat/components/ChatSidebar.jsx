@@ -12,7 +12,8 @@ import {
   Check,
   SquaresFour,
   SignOut,
-  ChatDots
+  ChatDots,
+  CubeIcon,
 } from "@phosphor-icons/react";
 import { useAuth } from "../../auth/hooks/useAuth";
 
@@ -32,10 +33,12 @@ export default function ChatSidebar({
   onSaveRename,
   onCancelRename,
   onTogglePin,
-  onDelete
+  onDelete,
 }) {
   const { user, logout, isLoggingOut } = useAuth();
-  const userInitial = (user?.name || user?.email || "U").charAt(0).toUpperCase();
+  const userInitial = (user?.name || user?.email || "U")
+    .charAt(0)
+    .toUpperCase();
 
   return (
     <aside
@@ -48,7 +51,6 @@ export default function ChatSidebar({
       <div className="w-72 sm:w-80 h-full flex flex-col justify-between p-4 gap-4 shrink-0">
         {/* Top Section: Brand Header & New Thread & Search */}
         <div className="flex flex-col gap-3.5 shrink-0">
-          
           {/* Brand Header */}
           <div className="flex items-center justify-between px-1 pt-1">
             <Link
@@ -80,7 +82,11 @@ export default function ChatSidebar({
             className="w-full flex items-center justify-between bg-white/5 hover:bg-white/10 text-white py-3 px-4 rounded-2xl text-sm font-medium transition-all duration-200 cursor-pointer group shadow-sm"
           >
             <span className="flex items-center gap-2.5">
-              <Plus size={17} weight="bold" className="text-osmo-lime group-hover:rotate-90 transition-transform duration-300" />
+              <Plus
+                size={17}
+                weight="bold"
+                className="text-osmo-lime group-hover:rotate-90 transition-transform duration-300"
+              />
               <span>New Conversation</span>
             </span>
             <span className="text-xs text-white/40 px-2 py-0.5 bg-white/5 rounded-lg">
@@ -90,7 +96,10 @@ export default function ChatSidebar({
 
           {/* Search Field */}
           <div className="relative flex items-center">
-            <MagnifyingGlass size={16} className="absolute left-3.5 text-white/40 pointer-events-none" />
+            <MagnifyingGlass
+              size={16}
+              className="absolute left-3.5 text-white/40 pointer-events-none"
+            />
             <input
               type="text"
               placeholder="Search conversations..."
@@ -110,8 +119,10 @@ export default function ChatSidebar({
         </div>
 
         {/* Center: Scrollable Conversation History */}
-        <div data-lenis-prevent className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
-          
+        <div
+          data-lenis-prevent
+          className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1"
+        >
           {/* Pinned Threads */}
           {pinnedConversations.length > 0 && (
             <div>
@@ -120,7 +131,9 @@ export default function ChatSidebar({
                   <PushPin size={13} weight="fill" className="text-osmo-lime" />
                   <span>Pinned</span>
                 </div>
-                <span className="text-xs text-white/30">{pinnedConversations.length}</span>
+                <span className="text-xs text-white/30">
+                  {pinnedConversations.length}
+                </span>
               </div>
               <div className="space-y-1">
                 {pinnedConversations.map((chat) => (
@@ -147,7 +160,9 @@ export default function ChatSidebar({
           <div>
             <div className="flex items-center justify-between text-xs font-medium text-white/40 uppercase tracking-wider px-2 mb-2">
               <span>Recent</span>
-              <span className="text-xs text-white/30">{unpinnedConversations.length}</span>
+              <span className="text-xs text-white/30">
+                {unpinnedConversations.length}
+              </span>
             </div>
             <div className="space-y-1">
               {unpinnedConversations.map((chat) => (
@@ -171,12 +186,17 @@ export default function ChatSidebar({
                   No matching conversations
                 </div>
               )}
-              {unpinnedConversations.length === 0 && !searchFilter && pinnedConversations.length === 0 && (
-                <div className="text-center py-8 px-2 text-sm text-white/40">
-                  <ChatDots size={20} className="mx-auto text-white/30 mb-2" />
-                  No active conversations
-                </div>
-              )}
+              {unpinnedConversations.length === 0 &&
+                !searchFilter &&
+                pinnedConversations.length === 0 && (
+                  <div className="text-center py-8 px-2 text-sm text-white/40">
+                    <ChatDots
+                      size={20}
+                      className="mx-auto text-white/30 mb-2"
+                    />
+                    No active conversations
+                  </div>
+                )}
             </div>
           </div>
         </div>
@@ -194,22 +214,14 @@ export default function ChatSidebar({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center shrink-0">
             <Link
               href="/dashboard"
               className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors"
               title="Dashboard Bento"
             >
-              <SquaresFour size={16} weight="bold" />
+              <CubeIcon size={16} weight="bold" />
             </Link>
-            <button
-              onClick={() => logout()}
-              disabled={isLoggingOut}
-              className="p-2 bg-white/5 hover:bg-red-500/20 rounded-xl text-white/60 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50"
-              title="Sign Out"
-            >
-              <SignOut size={16} weight="bold" />
-            </button>
           </div>
         </div>
       </div>
@@ -229,7 +241,7 @@ function ChatListItem({
   onSaveRename,
   onCancelRename,
   onTogglePin,
-  onDelete
+  onDelete,
 }) {
   const isEditing = editingChatId === chat.id;
 
@@ -260,7 +272,6 @@ function ChatListItem({
       }`}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1 mr-1">
-
         {isEditing ? (
           <input
             autoFocus
@@ -275,7 +286,9 @@ function ChatListItem({
             className="bg-[#1e1c1c] text-white px-2.5 py-1 outline-none w-full text-sm rounded-xl font-normal"
           />
         ) : (
-          <span className="truncate leading-tight">{chat.title || "Untitled Conversation"}</span>
+          <span className="truncate leading-tight">
+            {chat.title || "Untitled Conversation"}
+          </span>
         )}
       </div>
 
@@ -284,7 +297,9 @@ function ChatListItem({
         <button
           onClick={onTogglePin}
           className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${
-            chat.isPinned ? "text-osmo-lime opacity-100" : "text-white/40 hover:text-white"
+            chat.isPinned
+              ? "text-osmo-lime opacity-100"
+              : "text-white/40 hover:text-white"
           }`}
           title={chat.isPinned ? "Unpin thread" : "Pin thread"}
         >

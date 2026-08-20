@@ -59,7 +59,7 @@ export default function RecentActivityCard() {
   };
 
   return (
-    <div className="group relative w-full h-full bg-[#151414] border border-white/8 hover:border-white/20 text-white rounded-none p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
+    <div className="group relative w-full h-full bg-[#151414] border border-white/8 hover:border-white/20 text-white rounded-lg p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between pb-3 border-b border-white/8 shrink-0">
@@ -67,12 +67,12 @@ export default function RecentActivityCard() {
           <h3 className="text-lg lg:text-xl font-display font-bold uppercase tracking-tight text-white leading-none">
             Activity
           </h3>
-          <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest mt-1 block">
+          <span className="text-[10px] text-white/40 uppercase tracking-widest mt-1 block">
             Session Stream
           </span>
         </div>
 
-        <span className="px-2 py-0.5 bg-white/5 border border-white/10 text-[10px] font-mono font-bold text-white/70 tracking-wider">
+        <span className="px-2 py-0.5 text-[10px] font-bold text-white/70 tracking-wider">
           {activities.length} SESSIONS
         </span>
       </div>
@@ -119,17 +119,17 @@ export default function RecentActivityCard() {
             <Link
               key={act.id}
               href={act.href}
-              className="group/item flex items-center justify-between p-2.5 bg-white/2 hover:bg-white/6 border border-transparent hover:border-white/10 transition-all duration-200"
+              className="group/item flex items-center rounded-lg justify-between p-2.5 bg-white/2 hover:bg-white/6 transition-all duration-200"
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="p-1.5 bg-white/5 border border-white/10 shrink-0 group-hover/item:border-white/20 transition-colors">
+                <div className="shrink-0 transition-colors">
                   {getToolIcon(act.toolType)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-bold text-white/90 truncate group-hover/item:text-osmo-lime transition-colors">
+                  <h4 className="text-md font-bold text-white/90 truncate group-hover/item:text-osmo-lime transition-colors">
                     {act.title}
                   </h4>
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-white/40 mt-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-white/40 mt-0.5">
                     <span>{act.tool}</span>
                     <span>•</span>
                     <span>{act.time}</span>
@@ -138,7 +138,7 @@ export default function RecentActivityCard() {
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                <span className={`text-[9px] font-mono font-extrabold uppercase px-1.5 py-0.5 ${act.badgeColor}`}>
+                <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 ${act.badgeColor}`}>
                   {act.badge}
                 </span>
                 <ArrowRight
@@ -152,7 +152,7 @@ export default function RecentActivityCard() {
       </div>
 
       {/* Footer */}
-      <div className="relative z-10 pt-2.5 border-t border-white/8 flex items-center justify-between text-[10px] font-mono text-white/40 shrink-0">
+      <div className="relative z-10 pt-2.5 border-t border-white/8 flex items-center justify-between text-[10px] text-white/40 shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-osmo-lime animate-pulse" />
           <span>Realtime Sync</span>
