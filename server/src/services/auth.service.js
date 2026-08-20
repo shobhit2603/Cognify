@@ -7,18 +7,50 @@ import * as sessionRepository from "../repositories/session.repository.js";
 import ApiError from "../utils/apiError.util.js";
 import { StatusCodes } from "http-status-codes";
 import { sendEmail } from "../utils/email.util.js";
+import { escapeHtml } from "../utils/escape.util.js";
 
 /**
  * Register a new user and immediately create a session (auto-login on sign-up).
  */
-export const registerAndLogin = async ({ name, email, password, userAgent, ipAddress }) => {
+export const registerAndLogin = async ({
+  name,
+  email,
+  password,
+  userAgent,
+  ipAddress,
+}) => {
   const existingUser = await userRepository.findUserByEmail(email);
   if (existingUser) {
     throw ApiError(StatusCodes.CONFLICT, "Email is already registered");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = await userRepository.createUser({ name, email, password: hashedPassword });
+  const newUser = await userRepository.createUser({
+    name,
+    email,
+    password: hashedPassword,
+  });
+
+  // Send Welcome Email asynchronously
+  sendEmail({
+    to: newUser.email,
+    subject: "Welcome to Cognify!",
+    html: `
+      <h2>Welcome ${escapeHtml(newUser.name)}!</h2>
+      <p>We are thrilled to have you on board.</p>
+      <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
+      <ul>
+        <li><strong>Personalized Roadmaps:</strong> Generate learning paths tailored to your specific goals.</li>
+        <li><strong>Interactive Modules:</strong> Engage with dynamic content and hands-on exercises.</li>
+        <li><strong>AI Chat Support:</strong> Get instant help, explanations, and guidance as you learn.</li>
+        <li><strong>Progress Tracking:</strong> Monitor your growth and stay motivated on your journey.</li>
+      </ul>
+      <p>Get started today and explore all the features we have crafted for you.</p>
+      <br />
+      <p>Happy Learning!</p>
+      <p>The Cognify Team</p>
+    `,
+  }).catch((err) => console.error("Failed to send welcome email:", err));
 
   return createTokensAndSession(newUser, userAgent, ipAddress);
 };
@@ -121,6 +153,27 @@ export const googleLogin = async (profile, userAgent, ipAddress) => {
         avatar: profile.photos[0].value,
         isEmailVerified: true,
       });
+
+      // Send Welcome Email asynchronously
+      sendEmail({
+        to: user.email,
+        subject: "Welcome to Cognify!",
+        html: `
+          <h2>Welcome ${escapeHtml(user.name)}!</h2>
+          <p>We are thrilled to have you on board.</p>
+          <p><strong>Cognify</strong> is your all-in-one AI powered learning and development platform. Here is a quick look at what you can do:</p>
+          <ul>
+            <li><strong>Personalized Roadmaps:</strong> Generate learning paths tailored to your specific goals.</li>
+            <li><strong>Interactive Modules:</strong> Engage with dynamic content and hands-on exercises.</li>
+            <li><strong>AI Chat Support:</strong> Get instant help, explanations, and guidance as you learn.</li>
+            <li><strong>Progress Tracking:</strong> Monitor your growth and stay motivated on your journey.</li>
+          </ul>
+          <p>Get started today and explore all the features we have crafted for you.</p>
+          <br />
+          <p>Happy Learning!</p>
+          <p>The Cognify Team</p>
+        `,
+      }).catch((err) => console.error("Failed to send welcome email:", err));
     }
   }
 
@@ -136,10 +189,10 @@ export const forgotPassword = async (email) => {
 
   // Generate 6 digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  
+
   // Hash the OTP
   const hashedOtp = await bcrypt.hash(otp, 10);
-  
+
   // Expiry time: 15 minutes from now
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
