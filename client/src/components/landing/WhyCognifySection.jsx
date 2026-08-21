@@ -33,7 +33,7 @@ const techPartners = [
   { name: "MISTRAL AI", role: "Primary LLM Engine" },
   { name: "NEXT.JS 16", role: "SSR & Streaming Client" },
   { name: "MONGODB", role: "Vector & Document Store" },
-  { name: "GSAP ANIMATION", role: "Awwwards-Grade Motion" },
+  { name: "GSAP", role: "Awwwards-Grade Motion" },
   { name: "TAILWIND CSS", role: "Atomic Styling Engine" },
   { name: "REDUX TOOLKIT", role: "Global State Pipeline" }
 ];
@@ -50,7 +50,7 @@ export default function WhyCognifySection() {
         <div className="lg:col-span-4 flex flex-col justify-between space-y-8">
           <div className="space-y-4">
             {/* Retro / Modern Logo Stamp */}
-            <div className="p-4 rounded-none bg-black/5 border border-black/10 inline-block">
+            <div className="p-4 rounded-sm bg-black/5 border border-black/10 inline-block">
               <div className="flex items-center gap-3">
                 <div className="relative w-8 h-8">
                   <Image
@@ -84,7 +84,7 @@ export default function WhyCognifySection() {
             </div>
           </div>
 
-          <div className="hidden lg:block p-6 rounded-none bg-[#151515] text-white space-y-3 border border-white/10">
+          <div className="hidden lg:block p-6 rounded-xl bg-[#151515] text-white space-y-3 border border-white/10">
             <span className="text-[10px] font-mono uppercase text-osmo-lime font-bold tracking-widest">
               ENTERPRISE SOVEREIGNTY
             </span>
@@ -126,7 +126,7 @@ export default function WhyCognifySection() {
 
           {/* Tech Partners / Stack Row */}
           <div className="pt-4">
-            <div className="text-xs font-mono font-bold uppercase tracking-widest text-black/40 mb-5">
+            <div className="text-xs font-bold uppercase tracking-widest text-black/40 mb-5">
               Built on Modern Sovereign Architecture
             </div>
 
@@ -134,9 +134,9 @@ export default function WhyCognifySection() {
               {techPartners.map((tech, i) => (
                 <div
                   key={i}
-                  className="p-3 rounded-none bg-black/5 border border-black/5 hover:border-black/15 transition-all text-center"
+                  className="p-3 rounded-lg bg-black/5 border border-black/5 hover:border-black/15 transition-all text-center"
                 >
-                  <p className="text-xs font-mono font-extrabold text-osmo-dark">{tech.name}</p>
+                  <p className="text-xs font-bold text-osmo-dark">{tech.name}</p>
                   <p className="text-[10px] text-black/50 font-medium mt-0.5">{tech.role}</p>
                 </div>
               ))}

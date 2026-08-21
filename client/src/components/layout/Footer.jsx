@@ -62,7 +62,7 @@ export default function Footer() {
           
           <Link 
             href="/auth" 
-            className="group flex items-center justify-between gap-4 bg-white text-osmo-dark font-display font-bold uppercase tracking-widest py-4 px-6 sm:px-8 hover:bg-osmo-purple hover:text-white transition-all duration-300 w-full sm:w-auto"
+            className="group flex items-center justify-between gap-2 bg-white text-osmo-dark font-display font-bold uppercase tracking-widest py-4 px-6 sm:px-8 rounded-sm hover:bg-osmo-purple hover:rounded-2xl hover:text-white transition-all duration-300 w-full sm:w-auto"
           >
             <span>Launch Workspace</span>
             <ArrowUpRight size={20} weight="bold" className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -145,9 +145,9 @@ export default function Footer() {
             </span>
           </div>
           
-          <div className="flex items-center gap-6 text-xs font-mono text-white/40 uppercase tracking-widest">
+          <div className="flex items-center gap-6 text-xs text-white/40 uppercase tracking-widest">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-osmo-lime animate-pulse block"></span>
+              <span className="w-2 h-2 bg-osmo-lime rounded-full animate-pulse block"></span>
               <span>Systems Online</span>
             </div>
             <span className="hidden sm:inline">•</span>
@@ -156,7 +156,7 @@ export default function Footer() {
 
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-2 text-white hover:text-osmo-lime transition-colors font-mono text-xs uppercase tracking-widest group cursor-pointer"
+            className="flex items-center gap-2 text-white hover:text-osmo-lime transition-colors text-xs uppercase tracking-widest group cursor-pointer"
           >
             <span>Back to top</span>
             <ArrowUp size={16} weight="bold" className="group-hover:-translate-y-1 transition-transform" />
@@ -165,7 +165,7 @@ export default function Footer() {
 
         {/* Simple Branding Bottom */}
         <div className="relative py-2 flex justify-center items-center bg-osmo-dark-surface select-none group overflow-hidden">
-          <div className="font-display font-black uppercase text-7xl sm:text-9xl tracking-tighter text-white/5 transition-all duration-500 group-hover:text-osmo-lime group-hover:scale-105 cursor-default">
+          <div className="font- font-black uppercase text-7xl sm:text-9xl tracking-tighter text-white/5 transition-all duration-500 group-hover:text-osmo-lime group-hover:scale-105 cursor-default">
             COGNIFY<span className="text-osmo-lime/20 group-hover:text-white transition-colors duration-500">.</span>
           </div>
         </div>

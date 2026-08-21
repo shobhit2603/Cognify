@@ -215,7 +215,7 @@ export default function HeroSection() {
                   transform: `translateY(${yOff}px) rotate(${rot}deg)`,
                   transition: "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease"
                 }}
-                className={`hero-fan-card group relative w-full sm:w-[48%] md:w-56 lg:w-60 h-72 sm:h-80 rounded-none p-5 flex flex-col justify-between border cursor-pointer select-none overflow-hidden transition-all duration-300 hover:z-20 hover:scale-105 hover:-translate-y-2 ${
+                className={`hero-fan-card group relative w-full sm:w-[48%] md:w-56 lg:w-60 h-72 sm:h-80 rounded-lg p-5 flex flex-col justify-between border cursor-pointer select-none overflow-hidden transition-all duration-300 hover:z-20 hover:scale-105 hover:-translate-y-2 ${
                   cap.color
                 } ${hoveredCard === cap.id ? "ring-2 ring-osmo-lime" : ""}`}
               >
@@ -229,7 +229,7 @@ export default function HeroSection() {
                   </span>
                   {cap.badge && (
                     <span
-                      className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-none tracking-wider ${cap.badgeColor}`}
+                      className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-sm tracking-wider ${cap.badgeColor}`}
                     >
                       {cap.badge}
                     </span>
@@ -238,7 +238,7 @@ export default function HeroSection() {
 
                 {/* Icon & Title */}
                 <div className="relative z-10 my-auto">
-                  <div className="w-11 h-11 rounded-none bg-white/10 flex items-center justify-center mb-3 text-white group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-300">
+                  <div className="w-11 h-11 rounded-lg bg-white/10 flex items-center justify-center mb-3 text-white group-hover:scale-110 group-hover:bg-white group-hover:text-black transition-all duration-300">
                     {cap.icon}
                   </div>
                   <h3 className="text-xl font-bold tracking-tight text-white mb-1">
@@ -255,7 +255,7 @@ export default function HeroSection() {
                 {/* Bottom link trigger */}
                 <div className="relative z-10 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-white/80 group-hover:text-white">
                   <span>Explore Module</span>
-                  <div className="w-6 h-6 rounded-none bg-white/10 flex items-center justify-center group-hover:bg-osmo-lime group-hover:text-black transition-colors">
+                  <div className="w-6 h-6 rounded-sm bg-white/10 flex items-center justify-center group-hover:bg-osmo-lime group-hover:text-black transition-colors">
                     <ArrowUpRight size={13} weight="bold" />
                   </div>
                 </div>
@@ -272,7 +272,7 @@ export default function HeroSection() {
             </span>
             <Link
               href="/auth"
-              className="group flex items-center gap-2.5 px-6 py-2.5 rounded-none bg-[#151515] text-white hover:bg-osmo-purple transition-all duration-300 active:scale-95"
+              className="group flex items-center gap-2.5 px-6 py-2.5 rounded-lg bg-[#151515] text-white hover:bg-osmo-purple transition-all duration-300 active:scale-95"
             >
               <span className="w-2.5 h-2.5 rounded-full bg-osmo-lime animate-pulse" />
               <span className="text-sm font-bold uppercase tracking-wider">
@@ -296,13 +296,13 @@ export default function HeroSection() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-10 sm:mt-14 max-w-5xl mx-auto">
         
         {/* Left Spotlight: Electric Purple Card */}
-        <div className="hero-spotlight-item md:col-span-6 bg-osmo-purple text-white rounded-none p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden min-h-75 group">
+        <div className="hero-spotlight-item md:col-span-6 bg-osmo-purple text-white rounded-lg p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden min-h-75 group">
           {/* Subtle graphic accent */}
-          <div className="absolute -top-12 -right-12 w-44 h-44 rounded-none bg-white/10 pointer-events-none" />
+          <div className="absolute -top-12 -right-12 w-44 h-44 rounded-lg bg-white/10 pointer-events-none" />
           
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-[11px] font-mono font-extrabold uppercase px-2.5 py-1 rounded-none bg-black/20 text-white tracking-widest">
+              <span className="text-[11px] font-mono font-extrabold uppercase px-2.5 py-1 rounded-sm bg-black/20 text-white tracking-widest">
                 STREAMING ENGINE
               </span>
               <span className="text-xs font-caveat text-osmo-lime">
@@ -322,7 +322,7 @@ export default function HeroSection() {
 
           <div className="relative z-10 pt-6 mt-6 border-t border-white/20 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-none bg-white/20 flex items-center justify-center font-bold text-white text-sm">
+              <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center font-bold text-white text-sm">
                 AI
               </div>
               <div>
@@ -333,7 +333,7 @@ export default function HeroSection() {
 
             <Link
               href="/chat"
-              className="p-3 rounded-none bg-white text-black hover:bg-osmo-lime transition-all duration-300 group-hover:scale-105"
+              className="p-3 rounded-lg bg-white text-black hover:bg-osmo-lime transition-all duration-300 group-hover:scale-105"
             >
               <ArrowUpRight size={18} weight="bold" />
             </Link>
@@ -341,7 +341,7 @@ export default function HeroSection() {
         </div>
 
         {/* Right Spotlight: Dark Oval / Interactive Status Pill */}
-        <div className="hero-spotlight-item md:col-span-6 bg-[#151515] text-white rounded-none p-7 sm:p-8 flex flex-col justify-between border border-white/10 min-h-75 relative overflow-hidden">
+        <div className="hero-spotlight-item md:col-span-6 bg-[#151515] text-white rounded-lg p-7 sm:p-8 flex flex-col justify-between border border-white/10 min-h-75 relative overflow-hidden">
           {/* Circular radial ticks visual backdrop */}
           <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
             <div className="w-64 h-64 rounded-full border border-dashed border-white animate-spin-slow" />
@@ -364,27 +364,27 @@ export default function HeroSection() {
             
             {/* Quick module badges */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4">
-              <div className="px-3 py-2 rounded-none bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
+              <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
                 <ChatTeardropDots size={14} className="text-osmo-lime" />
                 <span>AI Chat</span>
               </div>
-              <div className="px-3 py-2 rounded-none bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
+              <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
                 <FilePdf size={14} className="text-osmo-purple" />
                 <span>PDF Analysis</span>
               </div>
-              <div className="px-3 py-2 rounded-none bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
+              <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
                 <BriefcaseMetal size={14} className="text-osmo-lime" />
                 <span>ATS Resume</span>
               </div>
-              <div className="px-3 py-2 rounded-none bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
+              <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
                 <PenNib size={14} className="text-white" />
                 <span>AI Writing</span>
               </div>
-              <div className="px-3 py-2 rounded-none bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
+              <div className="px-3 py-2 rounded-lg bg-white/5 border border-white/5 text-xs font-medium text-white/80 flex items-center gap-2">
                 <Graph size={14} className="text-osmo-purple" />
                 <span>Notes Recall</span>
               </div>
-              <div className="px-3 py-2 rounded-none bg-osmo-lime/10 border border-osmo-lime/20 text-xs font-bold text-osmo-lime flex items-center gap-1.5">
+              <div className="px-3 py-2 rounded-lg bg-osmo-lime/10 border border-osmo-lime/20 text-xs font-bold text-osmo-lime flex items-center gap-1.5">
                 <Lightning size={14} weight="bold" />
                 <span>Unified Store</span>
               </div>
