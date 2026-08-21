@@ -45,15 +45,37 @@ export const useAuth = () => {
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
-    onSuccess: (data) => {
-      if (data?.data?.user) {
-        queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
+    onSuccess: async (data) => {
+      // First ensure we have the user state resolved
+      let user = data?.data?.user;
+      if (!user) {
+        // If login response omits user, fetch it using getMe
+        try {
+          const meResponse = await queryClient.fetchQuery({
+            queryKey: ['user'],
+            queryFn: authService.getMe,
+          });
+          user = meResponse?.data?.user;
+        } catch {
+          // Failure to fetch me means we aren't truly authenticated
+        }
+      }
+
+      if (user) {
+        queryClient.setQueryData(['user'], { success: true, data: { user } });
       } else {
         queryClient.invalidateQueries({ queryKey: ['user'] });
       }
+      
       dispatch(setAuthenticated(true));
       toast.success('Welcome back!');
-      router.push('/dashboard');
+      
+      // Send unverified users to /verify-email, verified users to /dashboard
+      if (user && !user.isEmailVerified) {
+        router.push('/verify-email');
+      } else {
+        router.push('/dashboard');
+      }
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Login failed. Check your credentials.');
@@ -63,13 +85,17 @@ export const useAuth = () => {
   const registerMutation = useMutation({
     mutationFn: authService.register,
     onSuccess: (data) => {
-      // After registration, auto-login by invalidating the user query
-      // (server may or may not set cookies on register — adjust if needed)
-      if (data?.data?.user) {
-        queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
+      const user = data?.data?.user;
+      if (user) {
+        queryClient.setQueryData(['user'], { success: true, data: { user } });
         dispatch(setAuthenticated(true));
         toast.success('Account created! Welcome to Cognify.');
-        router.push('/dashboard');
+        // New users always need email verification
+        if (!user.isEmailVerified) {
+          router.push('/verify-email');
+        } else {
+          router.push('/dashboard');
+        }
       } else {
         toast.success('Account created! Please sign in.');
       }
@@ -129,6 +155,26 @@ export const useAuth = () => {
     },
   });
 
+  const forgotPasswordMutation = useMutation({
+    mutationFn: authService.forgotPassword,
+    onSuccess: () => {
+      toast.success('OTP sent! Check your inbox.');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: authService.resetPassword,
+    onSuccess: () => {
+      toast.success('Password reset successfully! Please sign in.');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to reset password. Invalid or expired OTP.');
+    },
+  });
+
   return {
     user: userResponse?.data?.user || null,
     isAuthenticated,
@@ -147,6 +193,13 @@ export const useAuth = () => {
     verifyEmailAsync: verifyEmailMutation.mutateAsync,
     isVerifying: verifyEmailMutation.isPending,
     resendVerification: resendVerificationMutation.mutate,
+    resendVerificationAsync: resendVerificationMutation.mutateAsync,
     isResending: resendVerificationMutation.isPending,
+    forgotPassword: forgotPasswordMutation.mutate,
+    forgotPasswordAsync: forgotPasswordMutation.mutateAsync,
+    isSendingOtp: forgotPasswordMutation.isPending,
+    resetPassword: resetPasswordMutation.mutate,
+    resetPasswordAsync: resetPasswordMutation.mutateAsync,
+    isResettingPassword: resetPasswordMutation.isPending,
   };
 };
