@@ -14,15 +14,21 @@ import {
 
 // ─── OTP Digit Boxes — bottom-border style matching AuthModal inputs ───────────
 
-function OtpInput({ value, onChange, onVerify, hasError }) {
+const OtpInput = React.forwardRef(({ value, onChange, onVerify, hasError }, ref) => {
   const inputRefs = useRef([]);
-  const digits = Array.from({ length: 6 }, (_, i) => value[i] || "");
+  const digits = Array.from({ length: 6 }, (_, i) => value[i]?.trim() || "");
+
+  React.useImperativeHandle(ref, () => ({
+    focusFirst: () => {
+      inputRefs.current[0]?.focus();
+    },
+  }));
 
   const handleChange = (index, char) => {
     const cleaned = char.replace(/\D/g, "").slice(-1);
     const newDigits = [...digits];
     newDigits[index] = cleaned;
-    const joined = newDigits.join("");
+    const joined = newDigits.map((d) => d || " ").join("");
     onChange(joined);
 
     if (cleaned && index < 5) {
@@ -39,12 +45,12 @@ function OtpInput({ value, onChange, onVerify, hasError }) {
       if (!digits[index] && index > 0) {
         const newDigits = [...digits];
         newDigits[index - 1] = "";
-        onChange(newDigits.join(""));
+        onChange(newDigits.map((d) => d || " ").join(""));
         inputRefs.current[index - 1]?.focus();
       } else if (digits[index]) {
         const newDigits = [...digits];
         newDigits[index] = "";
-        onChange(newDigits.join(""));
+        onChange(newDigits.map((d) => d || " ").join(""));
       }
     } else if (e.key === "ArrowLeft" && index > 0) {
       inputRefs.current[index - 1]?.focus();
@@ -55,14 +61,28 @@ function OtpInput({ value, onChange, onVerify, hasError }) {
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    const padded = pasted.padEnd(6, "").slice(0, 6);
-    onChange(padded);
-    if (pasted.length >= 6) {
-      inputRefs.current[5]?.focus();
-      onVerify(pasted.slice(0, 6));
-    } else if (pasted.length > 0) {
-      inputRefs.current[Math.min(pasted.length, 5)]?.focus();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (!pasted) return;
+
+    const focusedIndex = inputRefs.current.findIndex(
+      (el) => el === document.activeElement
+    );
+    const startIndex = Math.max(0, focusedIndex);
+
+    const newDigits = [...digits];
+    let pasteIndex = 0;
+    for (let i = startIndex; i < 6 && pasteIndex < pasted.length; i++) {
+      newDigits[i] = pasted[pasteIndex++];
+    }
+
+    const joined = newDigits.map((d) => d || " ").join("");
+    onChange(joined);
+
+    const nextFocusIndex = Math.min(startIndex + pasted.length, 5);
+    inputRefs.current[nextFocusIndex]?.focus();
+
+    if (newDigits.every(Boolean)) {
+      onVerify(joined);
     }
   };
 
@@ -76,6 +96,7 @@ function OtpInput({ value, onChange, onVerify, hasError }) {
             inputMode="numeric"
             maxLength={1}
             value={digit}
+            autoComplete={i === 0 ? "one-time-code" : undefined}
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             className={`w-10 h-10 text-center text-lg font-display font-semibold bg-transparent text-white caret-osmo-lime focus:outline-none transition-all duration-300 border-b-2 ${
@@ -91,7 +112,8 @@ function OtpInput({ value, onChange, onVerify, hasError }) {
       ))}
     </div>
   );
-}
+});
+OtpInput.displayName = "OtpInput";
 
 // ─── Resend Button with 60s cooldown ──────────────────────────────────────────
 
@@ -104,10 +126,14 @@ function ResendButton({ onResend, isResending }) {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (cooldown > 0 || isResending) return;
-    onResend();
-    setCooldown(60);
+    try {
+      await onResend();
+      setCooldown(60);
+    } catch {
+      // Keep cooldown unchanged on error
+    }
   };
 
   const isDisabled = cooldown > 0 || isResending;
@@ -138,7 +164,7 @@ export default function VerifyEmailPage() {
     isInitialized,
     verifyEmailAsync,
     isVerifying,
-    resendVerification,
+    resendVerificationAsync,
     isResending,
     logout,
   } = useAuth();
@@ -146,24 +172,33 @@ export default function VerifyEmailPage() {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [verified, setVerified] = useState(false);
+  const otpInputRef = useRef(null);
 
   // ─── Route guards ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isInitialized) return;
     if (!isAuthenticated) { router.replace("/auth"); return; }
-    if (user?.isEmailVerified) { router.replace("/dashboard"); }
-  }, [isInitialized, isAuthenticated, user, router]);
+    if (user?.isEmailVerified && !verified) { router.replace("/dashboard"); }
+  }, [isInitialized, isAuthenticated, user, verified, router]);
+
+  // Delayed redirect on successful verification
+  useEffect(() => {
+    if (verified) {
+      const t = setTimeout(() => router.push("/dashboard"), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [verified, router]);
 
   // Focus first box on mount
   useEffect(() => {
     const t = setTimeout(() => {
-      document.querySelector('[aria-label="OTP digit 1"]')?.focus();
+      otpInputRef.current?.focusFirst();
     }, 300);
     return () => clearTimeout(t);
   }, []);
 
   const handleVerify = useCallback(async (otpValue) => {
-    const code = otpValue ?? otp;
+    const code = (otpValue ?? otp).replace(/\s/g, "");
     if (code.length !== 6) return;
     setOtpError("");
     try {
@@ -173,7 +208,7 @@ export default function VerifyEmailPage() {
       setOtp("");
       setOtpError("Invalid or expired code. Try again.");
       setTimeout(() => {
-        document.querySelector('[aria-label="OTP digit 1"]')?.focus();
+        otpInputRef.current?.focusFirst();
       }, 100);
     }
   }, [otp, verifyEmailAsync]);
@@ -185,6 +220,10 @@ export default function VerifyEmailPage() {
         <div className="w-6 h-6 border-2 border-white/10 border-t-white/40 rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (!isAuthenticated || (user?.isEmailVerified && !verified)) {
+    return null;
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -258,6 +297,7 @@ export default function VerifyEmailPage() {
               {/* OTP Boxes */}
               <div className="mb-2">
                 <OtpInput
+                  ref={otpInputRef}
                   value={otp}
                   onChange={(v) => { setOtp(v); setOtpError(""); }}
                   onVerify={handleVerify}
@@ -285,7 +325,7 @@ export default function VerifyEmailPage() {
               <button
                 type="button"
                 onClick={() => handleVerify(otp)}
-                disabled={otp.length !== 6 || isVerifying}
+                disabled={otp.replace(/\s/g, "").length !== 6 || isVerifying}
                 className="w-full flex items-center justify-center gap-2 bg-osmo-lime hover:bg-gray-200 text-osmo-dark active:scale-[0.99] font-display font-semibold text-sm transition-all duration-200 py-3 rounded-sm hover:rounded-2xl mt-5 cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group"
               >
                 {isVerifying ? (
@@ -306,7 +346,7 @@ export default function VerifyEmailPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <ResendButton onResend={resendVerification} isResending={isResending} />
+                  <ResendButton onResend={resendVerificationAsync} isResending={isResending} />
                   <div className="w-px h-3 bg-white/10" />
                   <button
                     type="button"

@@ -45,16 +45,32 @@ export const useAuth = () => {
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
-    onSuccess: (data) => {
-      const user = data?.data?.user;
+    onSuccess: async (data) => {
+      // First ensure we have the user state resolved
+      let user = data?.data?.user;
+      if (!user) {
+        // If login response omits user, fetch it using getMe
+        try {
+          const meResponse = await queryClient.fetchQuery({
+            queryKey: ['user'],
+            queryFn: authService.getMe,
+          });
+          user = meResponse?.data?.user;
+        } catch {
+          // Failure to fetch me means we aren't truly authenticated
+        }
+      }
+
       if (user) {
         queryClient.setQueryData(['user'], { success: true, data: { user } });
       } else {
         queryClient.invalidateQueries({ queryKey: ['user'] });
       }
+      
       dispatch(setAuthenticated(true));
       toast.success('Welcome back!');
-      // Redirect to verify-email if not yet verified, otherwise dashboard
+      
+      // Send unverified users to /verify-email, verified users to /dashboard
       if (user && !user.isEmailVerified) {
         router.push('/verify-email');
       } else {
@@ -123,7 +139,6 @@ export const useAuth = () => {
         };
       });
       toast.success('Email verified successfully!');
-      router.push('/dashboard');
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Verification failed. Invalid or expired OTP.');

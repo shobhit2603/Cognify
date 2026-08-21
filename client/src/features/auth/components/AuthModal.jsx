@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useIsPresent } from "motion/react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -107,6 +107,7 @@ const slideVariants = {
 // ─── Forgot Password View ─────────────────────────────────────────────────────
 
 function ForgotPasswordView({ onBack, onOtpSent }) {
+  const isPresent = useIsPresent();
   const { forgotPasswordAsync, isSendingOtp } = useAuth();
   const {
     register,
@@ -151,7 +152,10 @@ function ForgotPasswordView({ onBack, onOtpSent }) {
         <div className="w-11 h-11 rounded-full bg-osmo-lime/10 border border-osmo-lime/20 flex items-center justify-center mb-4">
           <LockKey size={22} className="text-osmo-lime" weight="duotone" />
         </div>
-        <h2 className="text-2xl font-display font-semibold tracking-tight text-white">
+        <h2
+          id={isPresent ? "auth-modal-title" : undefined}
+          className="text-2xl font-display font-semibold tracking-tight text-white"
+        >
           Forgot password?
         </h2>
         <p className="text-sm text-gray-400 mt-1.5 font-sans max-w-xs">
@@ -206,6 +210,7 @@ function ForgotPasswordView({ onBack, onOtpSent }) {
 // ─── Reset Password View ──────────────────────────────────────────────────────
 
 function ResetPasswordView({ prefillEmail, onBack, onSuccess }) {
+  const isPresent = useIsPresent();
   const { resetPasswordAsync, isResettingPassword } = useAuth();
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -257,7 +262,10 @@ function ResetPasswordView({ prefillEmail, onBack, onSuccess }) {
         <div className="w-11 h-11 rounded-full bg-osmo-lime/10 border border-osmo-lime/20 flex items-center justify-center mb-4">
           <ShieldCheck size={22} className="text-osmo-lime" weight="duotone" />
         </div>
-        <h2 className="text-2xl font-display font-semibold tracking-tight text-white">
+        <h2
+          id={isPresent ? "auth-modal-title" : undefined}
+          className="text-2xl font-display font-semibold tracking-tight text-white"
+        >
           Reset password
         </h2>
         <p className="text-sm text-gray-400 mt-1.5 font-sans max-w-xs">
@@ -340,6 +348,7 @@ function ResetPasswordView({ prefillEmail, onBack, onSuccess }) {
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
+              aria-label={showNewPassword ? "Hide password" : "Show password"}
               className="absolute right-1 text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer"
             >
               {showNewPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
@@ -371,6 +380,7 @@ function ResetPasswordView({ prefillEmail, onBack, onSuccess }) {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
               className="absolute right-1 text-gray-500 hover:text-white transition-colors duration-300 cursor-pointer"
             >
               {showConfirmPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
@@ -401,6 +411,7 @@ function ResetPasswordView({ prefillEmail, onBack, onSuccess }) {
 // ─── Login / Register View ────────────────────────────────────────────────────
 
 function LoginRegisterView({ onForgotPassword }) {
+  const isPresent = useIsPresent();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const { loginAsync, registerAsync, isLoggingIn, isRegistering } = useAuth();
@@ -459,7 +470,7 @@ function LoginRegisterView({ onForgotPassword }) {
           />
         </div>
         <h2
-          id="auth-modal-title"
+          id={isPresent ? "auth-modal-title" : undefined}
           className="text-2xl font-display font-semibold tracking-tight text-white"
         >
           {isLogin ? "Welcome back" : "Create account"}
