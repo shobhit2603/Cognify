@@ -46,14 +46,20 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
-      if (data?.data?.user) {
-        queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
+      const user = data?.data?.user;
+      if (user) {
+        queryClient.setQueryData(['user'], { success: true, data: { user } });
       } else {
         queryClient.invalidateQueries({ queryKey: ['user'] });
       }
       dispatch(setAuthenticated(true));
       toast.success('Welcome back!');
-      router.push('/dashboard');
+      // Redirect to verify-email if not yet verified, otherwise dashboard
+      if (user && !user.isEmailVerified) {
+        router.push('/verify-email');
+      } else {
+        router.push('/dashboard');
+      }
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Login failed. Check your credentials.');
@@ -63,13 +69,17 @@ export const useAuth = () => {
   const registerMutation = useMutation({
     mutationFn: authService.register,
     onSuccess: (data) => {
-      // After registration, auto-login by invalidating the user query
-      // (server may or may not set cookies on register — adjust if needed)
-      if (data?.data?.user) {
-        queryClient.setQueryData(['user'], { success: true, data: { user: data.data.user } });
+      const user = data?.data?.user;
+      if (user) {
+        queryClient.setQueryData(['user'], { success: true, data: { user } });
         dispatch(setAuthenticated(true));
         toast.success('Account created! Welcome to Cognify.');
-        router.push('/dashboard');
+        // New users always need email verification
+        if (!user.isEmailVerified) {
+          router.push('/verify-email');
+        } else {
+          router.push('/dashboard');
+        }
       } else {
         toast.success('Account created! Please sign in.');
       }
@@ -113,6 +123,7 @@ export const useAuth = () => {
         };
       });
       toast.success('Email verified successfully!');
+      router.push('/dashboard');
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Verification failed. Invalid or expired OTP.');
@@ -126,6 +137,26 @@ export const useAuth = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to resend verification email.');
+    },
+  });
+
+  const forgotPasswordMutation = useMutation({
+    mutationFn: authService.forgotPassword,
+    onSuccess: () => {
+      toast.success('OTP sent! Check your inbox.');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: authService.resetPassword,
+    onSuccess: () => {
+      toast.success('Password reset successfully! Please sign in.');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to reset password. Invalid or expired OTP.');
     },
   });
 
@@ -147,6 +178,13 @@ export const useAuth = () => {
     verifyEmailAsync: verifyEmailMutation.mutateAsync,
     isVerifying: verifyEmailMutation.isPending,
     resendVerification: resendVerificationMutation.mutate,
+    resendVerificationAsync: resendVerificationMutation.mutateAsync,
     isResending: resendVerificationMutation.isPending,
+    forgotPassword: forgotPasswordMutation.mutate,
+    forgotPasswordAsync: forgotPasswordMutation.mutateAsync,
+    isSendingOtp: forgotPasswordMutation.isPending,
+    resetPassword: resetPasswordMutation.mutate,
+    resetPasswordAsync: resetPasswordMutation.mutateAsync,
+    isResettingPassword: resetPasswordMutation.isPending,
   };
 };

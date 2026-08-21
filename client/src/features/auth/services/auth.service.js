@@ -30,4 +30,14 @@ export const authService = {
     const response = await axiosInstance.post('/auth/resend-verification');
     return response.data;
   },
+
+  forgotPassword: async (data) => {
+    const response = await axiosInstance.post('/auth/forgot-password', data);
+    return response.data;
+  },
+
+  resetPassword: async (data) => {
+    const response = await axiosInstance.post('/auth/reset-password', data);
+    return response.data;
+  },
 };

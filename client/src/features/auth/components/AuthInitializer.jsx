@@ -19,7 +19,7 @@ export default function AuthInitializer({ children }) {
   const pathname = usePathname();
 
   const isProtectedRoute =
-    pathname.startsWith('/dashboard') || pathname.startsWith('/chat');
+    pathname.startsWith('/dashboard') || pathname.startsWith('/chat') || pathname.startsWith('/verify-email');
 
   if (!isInitialized && isProtectedRoute) {
     return (
