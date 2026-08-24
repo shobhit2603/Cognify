@@ -34,7 +34,7 @@ export default function ChatLayout({ children }) {
   return (
     <ProtectedRoute>
       <ChatProvider>
-        <div className="w-full bg-osmo-bg text-osmo-dark font-sans h-screen max-h-screen overflow-hidden flex p-2 sm:p-3 lg:p-3.5 gap-3 selection:bg-osmo-lime selection:text-osmo-dark">
+        <div className="w-full bg-osmo-bg text-osmo-dark font-sans h-screen max-h-screen overflow-hidden flex p-1 gap-1 selection:bg-osmo-lime selection:text-osmo-dark">
           <ChatSidebarWrapper />
           <ChatCanvas />
           {children}

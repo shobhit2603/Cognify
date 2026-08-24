@@ -10,7 +10,7 @@
     "postinstall": "node patch-langchain.cjs",
     "test": "cross-env NODE_ENV=test MISTRAL_API_KEY=mock_key PINECONE_API_KEY=mock_key TAVILY_API_KEY=mock_key NODE_OPTIONS=--experimental-vm-modules jest --detectOpenHandles --forceExit",
     "start": "node server.js",
-    "dev": "nodemon -L server.js"
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "Shashank Lakhera & Shobhit Shrivastava",

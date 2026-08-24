@@ -158,6 +158,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
     };
   }, []);
 
+
   // ─── Utility Actions ─────────────────────────────────────────────────────────
   const handleCopy = async (text, id) => {
     try {
@@ -358,6 +359,27 @@ export default function ChatCanvas({ chatId: propChatId }) {
       setIsGenerating(false);
     }
   };
+
+  // ─── Auto-fire pending prompt from Dashboard quick-send ──────────────────────
+  useEffect(() => {
+    // Only auto-send when we're on a fresh /chat (no existing chatId)
+    if (chatId) return;
+    if (typeof window === "undefined") return;
+
+    const pending = sessionStorage.getItem("cognify_pending_prompt");
+    if (!pending?.trim()) return;
+
+    // Clear immediately so it doesn't re-fire on future renders
+    sessionStorage.removeItem("cognify_pending_prompt");
+
+    // Small delay so the canvas is fully mounted before streaming starts
+    const timer = setTimeout(() => {
+      handleSend(pending.trim());
+    }, 150);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId]);
 
   // ─── Stop Generation ─────────────────────────────────────────────────────────
   const handleStop = () => {

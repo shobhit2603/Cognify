@@ -21,7 +21,7 @@ export default function BrandProfileCard() {
   };
 
   return (
-    <div className="group relative w-full h-full bg-[#151414] border border-white/8 hover:border-white/20 text-white rounded-lg p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
+    <div className="group relative w-full h-full bg-[#151414] border border-white/8 text-white  p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
       {/* Top: Brand Header */}
       <div className="relative z-10 flex items-center justify-between">
         <Link
