@@ -14,7 +14,9 @@ export default function ChatSidebarWrapper() {
     conversations,
     togglePinChat,
     deleteChat,
-    saveRenameChat
+    saveRenameChat,
+    setIsTemporaryChat,
+    triggerNewChat
   } = useChatContext();
 
   const [searchFilter, setSearchFilter] = useState("");
@@ -28,8 +30,10 @@ export default function ChatSidebarWrapper() {
   const unpinnedConversations = filteredConversations.filter((c) => !c.pinned);
 
   const handleNewChat = useCallback(() => {
+    setIsTemporaryChat(false);
+    triggerNewChat();
     router.push("/chat");
-  }, [router]);
+  }, [router, setIsTemporaryChat, triggerNewChat]);
 
   // Global shortcut listener: Cmd/Ctrl + N for new thread
   useEffect(() => {
@@ -44,6 +48,7 @@ export default function ChatSidebarWrapper() {
   }, [handleNewChat]);
 
   const handleSelectChat = (id) => {
+    setIsTemporaryChat(false);
     if (id !== activeChatId) {
       router.push(`/chat/${id}`);
     }

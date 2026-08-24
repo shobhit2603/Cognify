@@ -23,6 +23,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
     conversations,
     setConversations,
     isTemporaryChat,
+    newChatTrigger,
   } = useChatContext();
 
   const [messages, setMessages] = useState([]);
@@ -107,6 +108,20 @@ export default function ChatCanvas({ chatId: propChatId }) {
       clearTimeout(timerId);
     };
   }, [chatId]);
+
+  // ─── Handle New Chat Trigger ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (newChatTrigger > 0 && !chatId) {
+      if (isStreamingRef.current) {
+        abortControllerRef.current?.abort();
+        isStreamingRef.current = false;
+        setIsGenerating(false);
+        setStreamingMessageId(null);
+      }
+      setMessages([]);
+      setEditPromptText(null);
+    }
+  }, [newChatTrigger, chatId]);
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────────
   const handleScroll = useCallback(() => {
@@ -390,6 +405,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         activeChatTitle={activeChatTitle}
+        hasMessages={messages.length > 0}
       />
 
       {/* Scrollable Message History Area */}
