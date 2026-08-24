@@ -9,6 +9,7 @@ export function ChatProvider({ children }) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isTemporaryChat, setIsTemporaryChat] = useState(false);
 
   // Initialize conversations
   useEffect(() => {
@@ -108,6 +109,8 @@ export function ChatProvider({ children }) {
     setConversations,
     isSidebarOpen,
     setIsSidebarOpen,
+    isTemporaryChat,
+    setIsTemporaryChat,
     refreshChatTitle,
     togglePinChat,
     deleteChat,
@@ -115,6 +118,7 @@ export function ChatProvider({ children }) {
   }), [
     conversations,
     isSidebarOpen,
+    isTemporaryChat,
     refreshChatTitle,
     togglePinChat,
     deleteChat,
