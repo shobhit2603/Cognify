@@ -36,40 +36,54 @@ export const addMessage = async (req, res, next) => {
   try {
     let chatId = req.params.chatId;
     const userId = req.user._id;
-    const { role, content } = req.body;
+    const { role, content, isTemporary, history: clientHistory = [] } = req.body;
 
     let chat = null;
+    let message = null;
 
-    // If no chatId is provided, create a new chat
-    if (!chatId) {
-      chat = await chatService.createChat(userId, "New Chat");
-      chatId = chat._id.toString();
+    if (!isTemporary) {
+      // If no chatId is provided, create a new chat
+      if (!chatId) {
+        chat = await chatService.createChat(userId, "New Chat");
+        chatId = chat._id.toString();
+      }
+      message = await messageService.addMessage(chatId, userId, role, content);
+    } else {
+      // Temporary chat: mock the message object
+      message = { _id: `temp-${Date.now()}`, role, content, createdAt: new Date() };
     }
-
-    const message = await messageService.addMessage(chatId, userId, role, content);
 
     let assistantMessage = null;
 
     if (role === "user") {
-      // Get history for AI
-      const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+      let history;
+      if (!isTemporary) {
+        // Get history for AI
+        const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
 
-      if (!chat) {
-        chat = await chatService.getChatById(chatId, userId);
-      }
+        if (!chat) {
+          chat = await chatService.getChatById(chatId, userId);
+        }
 
-      maybeGenerateTitle(chat, chatId, userId, content, messages.length);
+        maybeGenerateTitle(chat, chatId, userId, content, messages.length);
 
-      // Build history excluding the user's current message by its _id to
-      // avoid relying on positional assumptions (slice(-1) is fragile when
-      // page-1 returns fewer items than expected).
-      const userMsgId = message._id.toString();
-      const history = messages
-        .filter((m) => m._id.toString() !== userMsgId)
-        .map((m) => ({
+        // Build history excluding the user's current message by its _id to
+        // avoid relying on positional assumptions (slice(-1) is fragile when
+        // page-1 returns fewer items than expected).
+        const userMsgId = message._id.toString();
+        history = messages
+          .filter((m) => m._id.toString() !== userMsgId)
+          .map((m) => ({
+            role: m.role === "assistant" ? "ai" : m.role,
+            content: m.content,
+          }));
+      } else {
+        // Temporary chat: use client provided history
+        history = clientHistory.map((m) => ({
           role: m.role === "assistant" ? "ai" : m.role,
           content: m.content,
         }));
+      }
 
       // Generate AI Response
       let fullResponse = "";
@@ -80,7 +94,11 @@ export const addMessage = async (req, res, next) => {
 
       // Save assistant message
       if (fullResponse) {
-        assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+        if (!isTemporary) {
+          assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+        } else {
+          assistantMessage = { _id: `temp-${Date.now()}`, role: "assistant", content: fullResponse, createdAt: new Date() };
+        }
       }
     }
 
@@ -99,7 +117,7 @@ export const addMessage = async (req, res, next) => {
 export const streamMessage = async (req, res, next) => {
   let chatId = req.params.chatId;
   const userId = req.user._id;
-  const { role, content } = req.body;
+  const { role, content, isTemporary, history: clientHistory = [] } = req.body;
 
   if (role !== "user") {
     return res
@@ -113,14 +131,18 @@ export const streamMessage = async (req, res, next) => {
   try {
     // ── 1. Perform all DB work BEFORE committing to SSE headers ──────────────
     //    If anything here throws we can still send a normal JSON error via next().
-    if (!chatId) {
-      chat = await chatService.createChat(userId, "New Chat");
-      chatId = chat._id.toString();
-    } else {
-      chat = await chatService.getChatById(chatId, userId);
-    }
+    if (!isTemporary) {
+      if (!chatId) {
+        chat = await chatService.createChat(userId, "New Chat");
+        chatId = chat._id.toString();
+      } else {
+        chat = await chatService.getChatById(chatId, userId);
+      }
 
-    userMessage = await messageService.addMessage(chatId, userId, role, content);
+      userMessage = await messageService.addMessage(chatId, userId, role, content);
+    } else {
+      userMessage = { _id: `temp-${Date.now()}`, role, content, createdAt: new Date() };
+    }
 
     // ── 2. Now that setup succeeded, switch to SSE mode ──────────────────────
     res.setHeader("Content-Type", "text/event-stream");
@@ -137,19 +159,27 @@ export const streamMessage = async (req, res, next) => {
       clientDisconnected = true;
     });
 
-    // Get history for AI
-    const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+    let history;
+    if (!isTemporary) {
+      // Get history for AI
+      const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
 
-    maybeGenerateTitle(chat, chatId, userId, content, messages.length);
+      maybeGenerateTitle(chat, chatId, userId, content, messages.length);
 
-    // Build history excluding the current user message by _id
-    const userMsgId = userMessage._id.toString();
-    const history = messages
-      .filter((m) => m._id.toString() !== userMsgId)
-      .map((m) => ({
+      // Build history excluding the current user message by _id
+      const userMsgId = userMessage._id.toString();
+      history = messages
+        .filter((m) => m._id.toString() !== userMsgId)
+        .map((m) => ({
+          role: m.role === "assistant" ? "ai" : m.role,
+          content: m.content,
+        }));
+    } else {
+      history = clientHistory.map((m) => ({
         role: m.role === "assistant" ? "ai" : m.role,
         content: m.content,
       }));
+    }
 
     let fullResponse = "";
 
@@ -171,7 +201,11 @@ export const streamMessage = async (req, res, next) => {
     if (!clientDisconnected) {
       let assistantMessage = null;
       if (fullResponse) {
-        assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+        if (!isTemporary) {
+          assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+        } else {
+          assistantMessage = { _id: `temp-ai-${Date.now()}`, role: "assistant", content: fullResponse, createdAt: new Date() };
+        }
       }
       res.write(`data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`);
       res.end();
