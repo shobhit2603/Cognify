@@ -87,7 +87,7 @@ export const addMessage = async (req, res, next) => {
 
       // Generate AI Response
       let fullResponse = "";
-      const events = aiService.getAIResponse({ content, history, chatId });
+      const events = aiService.getAIResponse({ content, history, chatId: chatId || 'temp' });
       for await (const chunk of events) {
         fullResponse += chunk.content;
       }
@@ -184,7 +184,7 @@ export const streamMessage = async (req, res, next) => {
     let fullResponse = "";
 
     // Generate AI Response and stream directly to client
-    const events = aiService.getAIResponse({ content, history, chatId });
+    const events = aiService.getAIResponse({ content, history, chatId: chatId || 'temp' });
 
     for await (const chunk of events) {
       // Stop consuming events if the client has already disconnected

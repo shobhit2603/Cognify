@@ -7,9 +7,13 @@ export default function ChatHeader({
   isSidebarOpen,
   onToggleSidebar,
   activeChatTitle = "New Conversation",
+  hasMessages = false,
 }) {
   const { isTemporaryChat, setIsTemporaryChat } = useChatContext();
   const isNewChat = activeChatTitle === "New Conversation" || activeChatTitle === "New Chat";
+  const showToggle = isNewChat && !hasMessages;
+
+  const displayTitle = isTemporaryChat ? "Temporary Chat" : (activeChatTitle || "New Conversation");
 
   return (
     <header className="h-16 shrink-0 flex items-center justify-between px-6 bg-transparent z-10 select-none text-white">
@@ -29,14 +33,14 @@ export default function ChatHeader({
 
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-base sm:text-lg font-medium text-white/90 truncate">
-            {activeChatTitle || "New Conversation"}
+            {displayTitle}
           </span>
         </div>
       </div>
 
       {/* Right: Actions & AI Status */}
       <div className="flex items-center gap-4">
-        {isNewChat && (
+        {showToggle && (
           <button
             onClick={() => setIsTemporaryChat(!isTemporaryChat)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
