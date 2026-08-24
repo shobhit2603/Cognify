@@ -12,6 +12,7 @@ export default function AIChatEngineCard() {
   const handleSend = () => {
     const trimmed = prompt.trim();
     if (!trimmed) return;
+    setPrompt(""); // Clear immediately to prevent double submissions
     // Store the pending prompt so the chat page can auto-fire it
     try {
       sessionStorage.setItem("cognify_pending_prompt", trimmed);
@@ -29,7 +30,10 @@ export default function AIChatEngineCard() {
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#151414]">
+    <div 
+      className="relative w-full h-full overflow-hidden bg-[#151414] cursor-pointer"
+      onClick={() => router.push("/chat")}
+    >
       <div className="w-full h-full bg-[#151414] border border-white/[0.08] text-white p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
 
         {/* Top: Icon + number + arrow */}
@@ -45,7 +49,10 @@ export default function AIChatEngineCard() {
             </span>
           </div>
           <button
-            onClick={() => router.push("/chat")}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push("/chat");
+            }}
             className="text-white/30 cursor-pointer"
             title="Open AI Chat"
           >
@@ -64,7 +71,10 @@ export default function AIChatEngineCard() {
         </div>
 
         {/* Bottom: Quick-send search box */}
-        <div className="pt-3 border-t border-white/[0.08]">
+        <div 
+          className="pt-3 border-t border-white/[0.08]"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div
             className={`flex items-center gap-2 bg-white/[0.04] border rounded-xl px-3 py-2 transition-all duration-200 ${
               isFocused

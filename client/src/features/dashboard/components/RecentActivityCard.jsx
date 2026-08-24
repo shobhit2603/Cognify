@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Sparkle,
   Plus,
-  SignOut
+  SignOut,
 } from "@phosphor-icons/react";
 import TextRoll from "../../../components/ui/TextRoll";
 import { getChats } from "../../chat/services/chat.service";
@@ -19,12 +19,18 @@ import { useAuth } from "../../auth/hooks/useAuth";
 
 export default function RecentActivityCard() {
   const { user, logout, isLoggingOut } = useAuth();
-  const userInitial = (user?.name || user?.email || "U").charAt(0).toUpperCase();
-  const { data: chatsData, isPending, isError } = useQuery({
+  const userInitial = (user?.name || user?.email || "U")
+    .charAt(0)
+    .toUpperCase();
+  const {
+    data: chatsData,
+    isPending,
+    isError,
+  } = useQuery({
     queryKey: ["chats", 1, 20],
     queryFn: () => getChats(1, 20),
     staleTime: 30000,
-    retry: 1
+    retry: 1,
   });
 
   const apiChats = chatsData?.chats || [];
@@ -38,21 +44,32 @@ export default function RecentActivityCard() {
       toolType: "chat",
       href: `/chat/${chat._id}`,
       time: timestamp
-        ? new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        ? new Date(timestamp).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
         : "Recently",
       badge: "CHAT",
-      badgeColor: "bg-osmo-lime/15 text-osmo-lime"
+      badgeColor: "bg-osmo-lime/15 text-osmo-lime",
     };
   });
 
   const getToolIcon = (type) => {
     switch (type) {
       case "chat":
-        return <ChatTeardropDots size={15} weight="bold" className="text-osmo-purple" />;
+        return (
+          <ChatTeardropDots
+            size={15}
+            weight="bold"
+            className="text-osmo-purple"
+          />
+        );
       case "documents":
         return <FilePdf size={15} weight="bold" className="text-osmo-lime" />;
       case "resume":
-        return <BriefcaseMetal size={15} weight="bold" className="text-[#ffbd2e]" />;
+        return (
+          <BriefcaseMetal size={15} weight="bold" className="text-[#ffbd2e]" />
+        );
       case "writing":
         return <PenNib size={15} weight="bold" className="text-[#ff5f56]" />;
       case "notes":
@@ -64,7 +81,6 @@ export default function RecentActivityCard() {
 
   return (
     <div className="group relative w-full h-full bg-[#151414] border border-white/8 text-white p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
-
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between pb-3 border-b border-white/8 shrink-0">
         <div>
@@ -82,11 +98,17 @@ export default function RecentActivityCard() {
       </div>
 
       {/* Scrollable Stream */}
-      <div data-lenis-prevent className="relative z-10 my-2.5 flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1">
+      <div
+        data-lenis-prevent
+        className="relative z-10 my-2.5 flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-1"
+      >
         {isPending && (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center gap-2.5 p-2.5 bg-white/2 border border-white/5 animate-pulse">
+              <div
+                key={i}
+                className="flex items-center gap-2.5 p-2.5 bg-white/2 border border-white/5 animate-pulse"
+              >
                 <div className="w-7 h-7 bg-white/10 shrink-0" />
                 <div className="flex-1 space-y-1.5">
                   <div className="h-3 bg-white/10 w-3/4" />
@@ -106,7 +128,9 @@ export default function RecentActivityCard() {
         {!isPending && !isError && activities.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center p-4 text-center border border-dashed border-white/10 bg-white/2">
             <Sparkle size={20} className="text-white/30 mb-2" />
-            <p className="text-xs font-mono text-white/50">No activity sessions yet</p>
+            <p className="text-xs font-mono text-white/50">
+              No activity sessions yet
+            </p>
             <Link
               href="/chat"
               className="mt-3 inline-flex items-center gap-1 px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-osmo-lime transition-colors"
@@ -123,7 +147,7 @@ export default function RecentActivityCard() {
             <Link
               key={act.id}
               href={act.href}
-              className="group/item flex items-center rounded-lg justify-between p-2.5 bg-white/2 hover:bg-white/6 transition-all duration-200"
+              className="group/item flex items-center rounded-lg justify-between p-2.5 hover:bg-[#00000065] transition-all duration-200"
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div className="shrink-0 transition-colors">
@@ -142,7 +166,9 @@ export default function RecentActivityCard() {
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 ${act.badgeColor}`}>
+                <span
+                  className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 ${act.badgeColor}`}
+                >
                   {act.badge}
                 </span>
                 <ArrowRight
@@ -163,7 +189,10 @@ export default function RecentActivityCard() {
             <span className="w-1.5 h-1.5 rounded-full bg-osmo-lime animate-pulse" />
             <span>Realtime Sync</span>
           </div>
-          <Link href="/chat" className="text-osmo-lime hover:underline font-bold uppercase tracking-wider">
+          <Link
+            href="/chat"
+            className="text-osmo-lime hover:underline font-bold uppercase tracking-wider"
+          >
             <TextRoll>View All ↗</TextRoll>
           </Link>
         </div>

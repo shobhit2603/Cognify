@@ -280,7 +280,10 @@ export default function ChatCanvas({ chatId: propChatId }) {
               const newChatId = payload.chat._id;
               streamChatId = newChatId;
               streamChatIdRef.current = newChatId;
-              setConversations((prev) => [payload.chat, ...prev]);
+              setConversations((prev) => {
+                if (prev.some((c) => c._id === payload.chat._id)) return prev;
+                return [payload.chat, ...prev];
+              });
               router.push(`/chat/${newChatId}`);
             }
             if (payload.message) {
@@ -369,11 +372,10 @@ export default function ChatCanvas({ chatId: propChatId }) {
     const pending = sessionStorage.getItem("cognify_pending_prompt");
     if (!pending?.trim()) return;
 
-    // Clear immediately so it doesn't re-fire on future renders
-    sessionStorage.removeItem("cognify_pending_prompt");
-
     // Small delay so the canvas is fully mounted before streaming starts
     const timer = setTimeout(() => {
+      // Clear immediately before firing so it doesn't re-fire on future renders
+      sessionStorage.removeItem("cognify_pending_prompt");
       handleSend(pending.trim());
     }, 150);
 
