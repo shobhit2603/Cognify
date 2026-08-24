@@ -12,14 +12,15 @@ export default function AIChatEngineCard() {
   const handleSend = () => {
     const trimmed = prompt.trim();
     if (!trimmed) return;
-    setPrompt(""); // Clear immediately to prevent double submissions
-    // Store the pending prompt so the chat page can auto-fire it
+    
     try {
       sessionStorage.setItem("cognify_pending_prompt", trimmed);
-    } catch {
-      // ignore storage errors (e.g. private mode restrictions)
+      setPrompt(""); // Clear immediately upon success
+      router.push("/chat");
+    } catch (e) {
+      console.warn("Failed to save pending prompt to session storage", e);
+      // Do not navigate if storage fails, per review comments
     }
-    router.push("/chat");
   };
 
   const handleKeyDown = (e) => {

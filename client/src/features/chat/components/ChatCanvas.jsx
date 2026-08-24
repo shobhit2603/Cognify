@@ -369,13 +369,24 @@ export default function ChatCanvas({ chatId: propChatId }) {
     if (chatId) return;
     if (typeof window === "undefined") return;
 
-    const pending = sessionStorage.getItem("cognify_pending_prompt");
+    let pending;
+    try {
+      pending = sessionStorage.getItem("cognify_pending_prompt");
+    } catch (e) {
+      console.warn("Failed to read from session storage", e);
+      return;
+    }
     if (!pending?.trim()) return;
 
     // Small delay so the canvas is fully mounted before streaming starts
     const timer = setTimeout(() => {
       // Clear immediately before firing so it doesn't re-fire on future renders
-      sessionStorage.removeItem("cognify_pending_prompt");
+      try {
+        sessionStorage.removeItem("cognify_pending_prompt");
+      } catch (e) {
+        console.warn("Failed to remove pending prompt from session storage", e);
+        return;
+      }
       handleSend(pending.trim());
     }, 150);
 
