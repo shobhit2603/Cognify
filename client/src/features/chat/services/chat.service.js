@@ -63,7 +63,7 @@ function getAuthToken() {
  * @param {function}    callbacks.onError     - Fired on error; receives an Error object.
  * @param {AbortSignal} [signal]  - Optional AbortSignal to cancel the stream mid-flight.
  */
-export const streamMessage = async (content, chatId, callbacks, signal) => {
+export const streamMessage = async (content, chatId, callbacks, signal, extra = {}) => {
   // Build the correct endpoint URL
   const path = chatId
     ? `/api/v1/messages/stream/${chatId}`
@@ -87,7 +87,7 @@ export const streamMessage = async (content, chatId, callbacks, signal) => {
       },
       // Include cookies for cookie-based auth as a fallback
       credentials: "include",
-      body: JSON.stringify({ role: "user", content }),
+      body: JSON.stringify({ role: "user", content, ...extra }),
       signal, // AbortController signal — undefined is fine if not provided
     });
 
