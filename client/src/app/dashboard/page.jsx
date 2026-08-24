@@ -2,12 +2,7 @@
 import React, { useRef } from "react";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
-import {
-  FilePdf,
-  BriefcaseMetal,
-  PenNib,
-  Graph,
-} from "@phosphor-icons/react";
+import { FilePdf, BriefcaseMetal, PenNib, Graph } from "@phosphor-icons/react";
 
 import GreetingTimeCard from "../../features/dashboard/components/GreetingTimeCard";
 import AIChatEngineCard from "../../features/dashboard/components/AIChatEngineCard";
@@ -95,13 +90,12 @@ export default function DashboardPage() {
       className="w-full h-full flex-1 min-h-0 flex flex-col overflow-hidden select-none"
     >
       {/* TOP ROW: Horizontal Greeting + Clock Banner */}
-      <div className="bento-card-animate shrink-0" style={{ height: "56px" }}>
+      <div className="bento-card-animate shrink-0" style={{ height: "75px" }}>
         <GreetingTimeCard />
       </div>
 
       {/* BOTTOM AREA: 3 columns */}
       <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12">
-
         {/* LEFT COLUMN: AI Chat Engine Card (bottom-left) */}
         <div className="md:col-span-3 bento-card-animate h-full min-h-0">
           <AIChatEngineCard />

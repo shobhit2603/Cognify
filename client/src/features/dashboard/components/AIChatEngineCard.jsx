@@ -29,8 +29,8 @@ export default function AIChatEngineCard() {
   };
 
   return (
-    <div className="group relative w-full h-full overflow-hidden transition-colors duration-300 ease-out bg-[#151414] hover:bg-osmo-purple">
-      <div className="w-full h-full bg-[#151414] border border-white/[0.08] text-white p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none transition-all duration-300 ease-out group-hover:scale-[0.96] active:scale-[0.92] group-hover:rounded-3xl group-hover:bg-black">
+    <div className="relative w-full h-full overflow-hidden bg-[#151414]">
+      <div className="w-full h-full bg-[#151414] border border-white/[0.08] text-white p-4 lg:p-5 flex flex-col justify-between overflow-hidden select-none">
 
         {/* Top: Icon + number + arrow */}
         <div className="flex items-center justify-between">
@@ -46,7 +46,7 @@ export default function AIChatEngineCard() {
           </div>
           <button
             onClick={() => router.push("/chat")}
-            className="text-white/30 hover:text-white transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 cursor-pointer"
+            className="text-white/30 cursor-pointer"
             title="Open AI Chat"
           >
             <ArrowUpRight size={18} weight="bold" />
@@ -58,7 +58,7 @@ export default function AIChatEngineCard() {
           <h3 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-white uppercase leading-tight">
             AI Chat Engine
           </h3>
-          <p className="text-md font-caveat text-white/50 group-hover:text-white/80 transition-colors mt-0.5">
+          <p className="text-md font-caveat text-white/50 mt-0.5">
             Reasoning Core
           </p>
         </div>
@@ -69,7 +69,7 @@ export default function AIChatEngineCard() {
             className={`flex items-center gap-2 bg-white/[0.04] border rounded-xl px-3 py-2 transition-all duration-200 ${
               isFocused
                 ? "border-osmo-purple/60 bg-osmo-purple/5 shadow-[0_0_0_3px_rgba(139,92,246,0.08)]"
-                : "border-white/10 hover:border-white/20"
+                : "border-white/10"
             }`}
             onClick={() => inputRef.current?.focus()}
           >
@@ -94,7 +94,7 @@ export default function AIChatEngineCard() {
               disabled={!prompt.trim()}
               className={`shrink-0 p-1 rounded-lg transition-all duration-200 cursor-pointer ${
                 prompt.trim()
-                  ? "bg-osmo-purple text-white hover:bg-osmo-purple/80 scale-100"
+                  ? "bg-osmo-purple text-white scale-100"
                   : "bg-white/5 text-white/20 scale-90 pointer-events-none"
               }`}
               title="Send prompt"

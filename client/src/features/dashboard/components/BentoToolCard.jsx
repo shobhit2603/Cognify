@@ -19,11 +19,11 @@ export default function BentoToolCard({
 }) {
   return (
     <div
-      className={`group relative w-full h-full overflow-hidden transition-colors duration-300 ease-out bg-[#151414] ${hoverBgClass} ${className}`}
+      className={`relative w-full h-full overflow-hidden bg-[#151414] ${className}`}
     >
       <Link
         href={href}
-        className={`w-full h-full flex flex-col justify-between p-5 lg:p-6 transition-all duration-300 ease-out group-hover:scale-[0.96] active:scale-[0.92] group-hover:rounded-3xl group-hover:bg-black select-none ${bgClass}`}
+        className={`w-full h-full flex flex-col justify-between p-5 lg:p-6 select-none ${bgClass}`}
       >
         {/* Top Bar: Naked Icon + Number on left, Single Arrow on right */}
         <div className="flex items-center justify-between">
@@ -43,7 +43,7 @@ export default function BentoToolCard({
           <ArrowUpRight
             size={isHero ? 20 : 16}
             weight="bold"
-            className="text-white/30 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200"
+            className="text-white/30"
           />
         </div>
 
@@ -58,14 +58,14 @@ export default function BentoToolCard({
           >
             {title}
           </h3>
-          <p className="text-md sm:text-lg font-caveat text-white/50 group-hover:text-white/80 transition-colors mt-0.5">
+          <p className="text-md sm:text-lg font-caveat text-white/50 mt-0.5">
             {category}
           </p>
         </div>
 
         {/* Bottom: Minimal Quick Action Label */}
         <div className="pt-2 border-t border-white/8 flex items-center justify-between text-xs text-white/50">
-          <span className="font-bold text-white/70 group-hover:text-white transition-colors">
+          <span className="font-bold text-white/70">
             <TextRoll>{quickAction}</TextRoll>
           </span>
         </div>
