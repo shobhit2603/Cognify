@@ -2,31 +2,14 @@
 import React, { useRef } from "react";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
-import {
-  ChatTeardropDots,
-  FilePdf,
-  BriefcaseMetal,
-  PenNib,
-  Graph,
-} from "@phosphor-icons/react";
+import { FilePdf, BriefcaseMetal, PenNib, Graph } from "@phosphor-icons/react";
 
-import BrandProfileCard from "../../features/dashboard/components/BrandProfileCard";
-import LiveClockCard from "../../features/dashboard/components/LiveClockCard";
+import GreetingTimeCard from "../../features/dashboard/components/GreetingTimeCard";
+import AIChatEngineCard from "../../features/dashboard/components/AIChatEngineCard";
 import BentoToolCard from "../../features/dashboard/components/BentoToolCard";
 import RecentActivityCard from "../../features/dashboard/components/RecentActivityCard";
 
-const TOOL_MODULES = [
-  {
-    id: "chat",
-    number: "01",
-    title: "AI Chat Engine",
-    category: "Reasoning Core",
-    icon: ChatTeardropDots,
-    href: "/chat",
-    quickAction: "Start AI Thread",
-    bgClass: "bg-[#151414] text-white border border-white/[0.08]",
-    accentColor: "text-osmo-purple",
-  },
+const SUB_TOOL_MODULES = [
   {
     id: "documents",
     number: "02",
@@ -37,6 +20,7 @@ const TOOL_MODULES = [
     quickAction: "Upload PDF",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
     accentColor: "text-osmo-lime",
+    hoverBgClass: "hover:bg-osmo-lime",
   },
   {
     id: "resume",
@@ -48,6 +32,7 @@ const TOOL_MODULES = [
     quickAction: "Audit Resume",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
     accentColor: "text-[#ffbd2e]",
+    hoverBgClass: "hover:bg-[#ffbd2e]",
   },
   {
     id: "writing",
@@ -59,6 +44,7 @@ const TOOL_MODULES = [
     quickAction: "Draft Copy",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
     accentColor: "text-[#ff5f56]",
+    hoverBgClass: "hover:bg-[#ff5f56]",
   },
   {
     id: "notes",
@@ -70,6 +56,7 @@ const TOOL_MODULES = [
     quickAction: "Structure Note",
     bgClass: "bg-[#151414] text-white border border-white/[0.08]",
     accentColor: "text-[#00FFFF]",
+    hoverBgClass: "hover:bg-[#00FFFF]",
   },
 ];
 
@@ -97,43 +84,26 @@ export default function DashboardPage() {
     );
   }, []);
 
-  const chatTool = TOOL_MODULES.find((m) => m.id === "chat");
-  const subTools = TOOL_MODULES.filter((m) => m.id !== "chat");
-
   return (
     <main
       ref={containerRef}
-      className="w-full h-full flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-2 overflow-hidden select-none"
+      className="w-full h-full flex-1 min-h-0 flex flex-col overflow-hidden select-none"
     >
-      {/* LEFT COLUMN: Workspace Identity & Live Chrono */}
-      <div className="md:col-span-3 flex flex-col gap-2 h-full min-h-0">
-        <div className="bento-card-animate flex-2 min-h-0">
-          <BrandProfileCard />
-        </div>
-        <div className="bento-card-animate flex-1 min-h-0">
-          <LiveClockCard />
-        </div>
+      {/* TOP ROW: Horizontal Greeting + Clock Banner */}
+      <div className="bento-card-animate shrink-0" style={{ height: "75px" }}>
+        <GreetingTimeCard />
       </div>
 
-      {/* CENTER COLUMN: Hero Tool (AI Chat) + 2x2 Submodule Grid */}
-      <div className="md:col-span-6 flex flex-col gap-1 h-full min-h-0">
-        <div className="bento-card-animate h-[42%] min-h-0">
-          <BentoToolCard
-            number={chatTool.number}
-            title={chatTool.title}
-            category={chatTool.category}
-            icon={chatTool.icon}
-            href={chatTool.href}
-            quickAction={chatTool.quickAction}
-            bgClass={chatTool.bgClass}
-            accentColor={chatTool.accentColor}
-            isHero={true}
-            className="h-full"
-          />
+      {/* BOTTOM AREA: 3 columns */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12">
+        {/* LEFT COLUMN: AI Chat Engine Card (bottom-left) */}
+        <div className="md:col-span-3 bento-card-animate h-full min-h-0">
+          <AIChatEngineCard />
         </div>
 
-        <div className="flex-1 min-h-0 grid grid-cols-2 gap-1">
-          {subTools.map((tool) => (
+        {/* CENTER COLUMN: 2×2 Sub-tool Grid */}
+        <div className="md:col-span-6 flex-1 min-h-0 grid grid-cols-2">
+          {SUB_TOOL_MODULES.map((tool) => (
             <div key={tool.id} className="bento-card-animate h-full min-h-0">
               <BentoToolCard
                 number={tool.number}
@@ -144,16 +114,17 @@ export default function DashboardPage() {
                 quickAction={tool.quickAction}
                 bgClass={tool.bgClass}
                 accentColor={tool.accentColor}
+                hoverBgClass={tool.hoverBgClass}
                 className="h-full"
               />
             </div>
           ))}
         </div>
-      </div>
 
-      {/* RIGHT COLUMN: Realtime Session Activity */}
-      <div className="md:col-span-3 bento-card-animate h-full min-h-0">
-        <RecentActivityCard />
+        {/* RIGHT COLUMN: Recent Activity */}
+        <div className="md:col-span-3 bento-card-animate h-full min-h-0">
+          <RecentActivityCard />
+        </div>
       </div>
     </main>
   );

@@ -174,6 +174,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
     };
   }, []);
 
+
   // ─── Utility Actions ─────────────────────────────────────────────────────────
   const handleCopy = async (text, id) => {
     try {
@@ -306,7 +307,10 @@ export default function ChatCanvas({ chatId: propChatId }) {
               const newChatId = payload.chat._id;
               streamChatId = newChatId;
               streamChatIdRef.current = newChatId;
-              setConversations((prev) => [payload.chat, ...prev]);
+              setConversations((prev) => {
+                if (prev.some((c) => c._id === payload.chat._id)) return prev;
+                return [payload.chat, ...prev];
+              });
               router.push(`/chat/${newChatId}`);
             }
             if (payload.message) {
@@ -389,6 +393,37 @@ export default function ChatCanvas({ chatId: propChatId }) {
       setIsGenerating(false);
     }
   };
+
+  // ─── Auto-fire pending prompt from Dashboard quick-send ──────────────────────
+  useEffect(() => {
+    // Only auto-send when we're on a fresh /chat (no existing chatId)
+    if (chatId) return;
+    if (typeof window === "undefined") return;
+
+    let pending;
+    try {
+      pending = sessionStorage.getItem("cognify_pending_prompt");
+    } catch (e) {
+      console.warn("Failed to read from session storage", e);
+      return;
+    }
+    if (!pending?.trim()) return;
+
+    // Small delay so the canvas is fully mounted before streaming starts
+    const timer = setTimeout(() => {
+      // Clear immediately before firing so it doesn't re-fire on future renders
+      try {
+        sessionStorage.removeItem("cognify_pending_prompt");
+      } catch (e) {
+        console.warn("Failed to remove pending prompt from session storage", e);
+        return;
+      }
+      handleSend(pending.trim());
+    }, 150);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId]);
 
   // ─── Stop Generation ─────────────────────────────────────────────────────────
   const handleStop = () => {
