@@ -9,6 +9,12 @@ export function ChatProvider({ children }) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isTemporaryChat, setIsTemporaryChat] = useState(false);
+  const [newChatTrigger, setNewChatTrigger] = useState(0);
+
+  const triggerNewChat = useCallback(() => {
+    setNewChatTrigger((prev) => prev + 1);
+  }, []);
 
   // Initialize conversations
   useEffect(() => {
@@ -108,6 +114,10 @@ export function ChatProvider({ children }) {
     setConversations,
     isSidebarOpen,
     setIsSidebarOpen,
+    isTemporaryChat,
+    setIsTemporaryChat,
+    newChatTrigger,
+    triggerNewChat,
     refreshChatTitle,
     togglePinChat,
     deleteChat,
@@ -115,6 +125,9 @@ export function ChatProvider({ children }) {
   }), [
     conversations,
     isSidebarOpen,
+    isTemporaryChat,
+    newChatTrigger,
+    triggerNewChat,
     refreshChatTitle,
     togglePinChat,
     deleteChat,

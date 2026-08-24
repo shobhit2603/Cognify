@@ -22,6 +22,8 @@ export default function ChatCanvas({ chatId: propChatId }) {
     refreshChatTitle,
     conversations,
     setConversations,
+    isTemporaryChat,
+    newChatTrigger,
   } = useChatContext();
 
   const [messages, setMessages] = useState([]);
@@ -106,6 +108,20 @@ export default function ChatCanvas({ chatId: propChatId }) {
       clearTimeout(timerId);
     };
   }, [chatId]);
+
+  // ─── Handle New Chat Trigger ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (newChatTrigger > 0 && !chatId) {
+      if (isStreamingRef.current) {
+        abortControllerRef.current?.abort();
+        isStreamingRef.current = false;
+        setIsGenerating(false);
+        setStreamingMessageId(null);
+      }
+      setMessages([]);
+      setEditPromptText(null);
+    }
+  }, [newChatTrigger, chatId]);
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────────
   const handleScroll = useCallback(() => {
@@ -249,15 +265,23 @@ export default function ChatCanvas({ chatId: propChatId }) {
     const userMessageId = `user-${Date.now()}`;
     const assistantId = `assistant-${Date.now() + 1}`;
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: userMessageId,
-        role: "user",
-        content: textToSend.trim(),
-      },
-      { id: assistantId, role: "assistant", content: "" },
-    ]);
+    setMessages((prev) => {
+      // capture history before adding new messages, to send to backend if temporary
+      const historyToSend = prev.map((m) => ({ role: m.role, content: m.content }));
+      
+      const newMessages = [
+        ...prev,
+        {
+          id: userMessageId,
+          role: "user",
+          content: textToSend.trim(),
+        },
+        { id: assistantId, role: "assistant", content: "" },
+      ];
+      
+      return newMessages;
+    });
+
     setEditPromptText(null);
     setIsGenerating(true);
     setStreamingMessageId(assistantId);
@@ -271,12 +295,15 @@ export default function ChatCanvas({ chatId: propChatId }) {
     streamChatIdRef.current = chatId;
 
     try {
+      // Capture the current history to send if it's a temporary chat
+      const historyToSend = messages.map(m => ({ role: m.role, content: m.content }));
+      
       await chatService.streamMessage(
         textToSend.trim(),
         chatId,
         {
           onConnected: (payload) => {
-            if (isNewChat && payload.chat) {
+            if (isNewChat && payload.chat && !isTemporaryChat) {
               const newChatId = payload.chat._id;
               streamChatId = newChatId;
               streamChatIdRef.current = newChatId;
@@ -317,7 +344,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
                 ),
               );
             }
-            if (isNewChat && streamChatId) {
+            if (isNewChat && streamChatId && !isTemporaryChat) {
               refreshChatTitle(streamChatId);
             }
           },
@@ -339,6 +366,10 @@ export default function ChatCanvas({ chatId: propChatId }) {
           },
         },
         controller.signal,
+        {
+          isTemporary: isTemporaryChat,
+          history: isTemporaryChat ? historyToSend : [],
+        }
       );
     } catch (err) {
       if (err.name !== "AbortError") {
@@ -409,6 +440,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         activeChatTitle={activeChatTitle}
+        hasMessages={messages.length > 0}
       />
 
       {/* Scrollable Message History Area */}
