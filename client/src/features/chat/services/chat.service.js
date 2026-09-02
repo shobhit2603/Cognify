@@ -192,3 +192,106 @@ export const streamMessage = async (content, chatId, callbacks, signal, extra = 
     callbacks.onError?.(error);
   }
 };
+
+export const streamEditMessage = async (messageId, content, callbacks, signal, extra = {}) => {
+  const path = `/api/v1/messages/stream-edit/${messageId}`;
+  const apiBase = API_URL || "";
+  const baseUrl = apiBase.endsWith("/api/v1") ? apiBase.slice(0, -7) : apiBase;
+  const token = getAuthToken();
+
+  try {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
+      body: JSON.stringify({ role: "user", content, ...extra }),
+      signal,
+    });
+
+    if (!response.ok) {
+      let errMsg = `Server error ${response.status}`;
+      try {
+        const body = await response.json();
+        errMsg = body?.message || errMsg;
+      } catch { /* ignore */ }
+      throw new Error(errMsg);
+    }
+
+    if (!response.body) {
+      throw new Error("Response body is null");
+    }
+
+    let terminalReceived = false;
+    callbacks.onConnected?.({}); // Notify immediately
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // Keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const dataStr = line.slice(5).trimStart();
+        if (dataStr === "[DONE]") {
+          terminalReceived = true;
+          continue;
+        }
+
+        if (dataStr) {
+          try {
+            const parsed = JSON.parse(dataStr);
+            switch (parsed.event) {
+              case "connected":
+                callbacks.onConnected?.(parsed);
+                break;
+              case "chunk":
+                callbacks.onChunk?.(parsed.content);
+                break;
+              case "done":
+                terminalReceived = true;
+                callbacks.onDone?.(parsed);
+                break;
+              case "error":
+                terminalReceived = true;
+                callbacks.onError?.(new Error(parsed.error || "Stream error"));
+                break;
+            }
+          } catch (parseErr) {
+            console.warn("[SSE] Failed to parse frame data:", dataStr, parseErr);
+          }
+        }
+      }
+    }
+
+    buffer += decoder.decode();
+    if (buffer.trim()) {
+      for (const line of buffer.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const dataStr = line.slice(5).trimStart();
+        if (dataStr === "[DONE]") { terminalReceived = true; continue; }
+        try {
+          const parsed = JSON.parse(dataStr);
+          if (parsed.event === "done") { terminalReceived = true; callbacks.onDone?.(parsed); }
+          else if (parsed.event === "error") { terminalReceived = true; callbacks.onError?.(new Error(parsed.error || "Stream error")); }
+        } catch { /* ignore */ }
+      }
+    }
+
+    if (!terminalReceived) {
+      callbacks.onError?.(new Error("Stream ended unexpectedly"));
+    }
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    callbacks.onError?.(error);
+  }
+};

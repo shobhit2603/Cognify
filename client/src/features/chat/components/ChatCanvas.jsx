@@ -27,6 +27,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
   } = useChatContext();
 
   const [messages, setMessages] = useState([]);
+  const [editingMessageId, setEditingMessageId] = useState(null);
   const [editPromptText, setEditPromptText] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -394,6 +395,103 @@ export default function ChatCanvas({ chatId: propChatId }) {
     }
   };
 
+  // ─── Edit & Stream Message ───────────────────────────────────────────────────
+  const handleEditSubmit = async (messageIdToEdit, newContent) => {
+    if (!newContent.trim() || isGenerating) return;
+
+    // 1. Truncate local state to remove the edited message and all subsequent ones
+    const editIndex = messages.findIndex((m) => m.id === messageIdToEdit);
+    if (editIndex === -1) return;
+
+    const userMessageId = `user-${Date.now()}`;
+    const assistantId = `assistant-${Date.now() + 1}`;
+
+    setMessages((prev) => {
+      const truncated = prev.slice(0, editIndex);
+      return [
+        ...truncated,
+        { id: userMessageId, role: "user", content: newContent.trim() },
+        { id: assistantId, role: "assistant", content: "" },
+      ];
+    });
+
+    setEditingMessageId(null);
+    setIsGenerating(true);
+    setStreamingMessageId(assistantId);
+    isStreamingRef.current = true;
+    isUserScrolledUpRef.current = false;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      await chatService.streamEditMessage(
+        messageIdToEdit,
+        newContent.trim(),
+        {
+          onConnected: (payload) => {
+            if (payload.message) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === userMessageId ? { ...msg, id: payload.message._id } : msg
+                )
+              );
+            }
+          },
+          onChunk: (chunkText) => {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantId ? { ...msg, content: msg.content + chunkText } : msg
+              )
+            );
+          },
+          onDone: (payload) => {
+            if (payload?.message) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantId ? { ...msg, id: payload.message._id } : msg
+                )
+              );
+            }
+          },
+          onError: (err) => {
+            console.error("[Stream Edit] Error:", err);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantId
+                  ? {
+                      ...msg,
+                      content: msg.content || "Sorry, something went wrong while reasoning. Please try again.",
+                    }
+                  : msg
+              )
+            );
+          },
+        },
+        controller.signal
+      );
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        console.error("[Stream Edit] Promise rejected:", err);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId
+              ? {
+                  ...msg,
+                  content: msg.content || "Sorry, something went wrong. Please try again.",
+                }
+              : msg
+          )
+        );
+      }
+    } finally {
+      isStreamingRef.current = false;
+      setStreamingMessageId(null);
+      setIsGenerating(false);
+    }
+  };
+
+
   // ─── Auto-fire pending prompt from Dashboard quick-send ──────────────────────
   useEffect(() => {
     // Only auto-send when we're on a fresh /chat (no existing chatId)
@@ -461,6 +559,10 @@ export default function ChatCanvas({ chatId: propChatId }) {
               playingVoiceId={playingVoiceId}
               handleCopy={handleCopy}
               handleToggleVoice={handleToggleVoice}
+              editingMessageId={editingMessageId}
+              onStartEdit={(msgId) => setEditingMessageId(msgId)}
+              onCancelEdit={() => setEditingMessageId(null)}
+              onSubmitEdit={handleEditSubmit}
               onEditPrompt={(text) =>
                 setEditPromptText({ text, nonce: Date.now() })
               }
