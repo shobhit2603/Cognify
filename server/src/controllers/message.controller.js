@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
 import * as messageService from "../services/message.service.js";
 import * as chatService from "../services/chat.service.js";
@@ -7,6 +8,7 @@ import { paginationSchema } from "../validations/pagination.validation.js";
 
 // ─── Title generation deduplication ────────────────────────────────────────────
 const generatingTitles = new Set();
+const editingChats = new Set();
 
 /**
  * Generates a chat title asynchronously and persists it.
@@ -223,6 +225,110 @@ export const streamMessage = async (req, res, next) => {
     }
   }
 };
+
+export const streamEditMessage = async (req, res, next) => {
+  let messageId = req.params.messageId;
+  const userId = req.user._id;
+  const { role, content, isTemporary, history: clientHistory = [] } = req.body;
+
+  if (isTemporary) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Cannot edit temporary messages via this endpoint"));
+  }
+
+  try {
+    // 1. Fetch the original message to get its chatId and check its role
+    const originalMessage = await messageService.getMessageById(messageId, userId);
+    
+    if (originalMessage.role !== "user") {
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse(StatusCodes.FORBIDDEN, "Can only edit user messages"));
+    }
+    
+    const chatId = originalMessage.chatId;
+    const chatIdStr = chatId.toString();
+
+    // Serialize concurrent writes per chat
+    if (editingChats.has(chatIdStr)) {
+      return res.status(StatusCodes.CONFLICT).json(ApiResponse(StatusCodes.CONFLICT, "An edit is already in progress for this chat"));
+    }
+    editingChats.add(chatIdStr);
+
+    let userMessage;
+    let chat;
+
+    try {
+      const session = await mongoose.startSession();
+      await session.withTransaction(async () => {
+        // 2. Delete messages created at or after the original message's ID
+        await messageService.deleteMessagesFromId(chatId, originalMessage._id, userId, session);
+
+        // 3. Insert the new user message
+        userMessage = await messageService.addMessage(chatId, userId, "user", content, session);
+      });
+      session.endSession();
+
+      chat = await chatService.getChatById(chatId, userId);
+    } finally {
+      editingChats.delete(chatIdStr);
+    }
+
+    // 4. Setup SSE
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    res.write(`data: ${JSON.stringify({ event: "connected", chat, message: userMessage })}\n\n`);
+
+    let clientDisconnected = false;
+    req.on("close", () => {
+      clientDisconnected = true;
+    });
+
+    // 5. Fetch history (messages before the edited one)
+    const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+    const userMsgId = userMessage._id.toString();
+    const history = messages
+      .filter((m) => m._id.toString() !== userMsgId)
+      .map((m) => ({
+        role: m.role === "assistant" ? "ai" : m.role,
+        content: m.content,
+      }));
+
+    let fullResponse = "";
+    const events = aiService.getAIResponse({ content, history, chatId });
+
+    for await (const chunk of events) {
+      if (clientDisconnected) break;
+      if (chunk && chunk.content) {
+        fullResponse += chunk.content;
+        res.write(`data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`);
+        if (typeof res.flush === "function") res.flush();
+      }
+    }
+
+    if (!clientDisconnected) {
+      let assistantMessage = null;
+      if (fullResponse) {
+        assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+      }
+      res.write(`data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    console.error("[Stream Edit Error]:", error);
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ event: "error", error: "Failed to generate response." })}\n\n`);
+      res.end();
+    } else {
+      next(error);
+    }
+  }
+};
+
 
 export const getMessages = async (req, res, next) => {
   try {

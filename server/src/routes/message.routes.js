@@ -108,6 +108,49 @@ router.post(
   validate(addMessageSchema),
   messageController.addMessage,
 );
+
+/**
+ * @swagger
+ * /api/v1/messages/stream-edit/{messageId}:
+ *   post:
+ *     summary: Edit a user message and stream the new response
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the message to edit
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role
+ *               - content
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [user]
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Stream started for edited message
+ *       404:
+ *         description: Message not found
+ */
+router.post(
+  "/stream-edit/:messageId",
+  aiEndpointLimiter,
+  validate(addMessageSchema),
+  messageController.streamEditMessage,
+);
 /**
  * @swagger
  * /api/v1/messages:

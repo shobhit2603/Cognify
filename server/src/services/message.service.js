@@ -2,7 +2,7 @@ import * as messageRepository from "../repositories/message.repository.js";
 import * as chatService from "./chat.service.js";
 import ApiError from "../utils/apiError.util.js";
 
-export const addMessage = async (chatId, userId, role, content) => {
+export const addMessage = async (chatId, userId, role, content, session = null) => {
   // 1. Verify that the chat exists and belongs to the user
   await chatService.getChatById(chatId, userId);
 
@@ -11,7 +11,7 @@ export const addMessage = async (chatId, userId, role, content) => {
     chatId,
     role,
     content,
-  });
+  }, session);
 
   return message;
 };
@@ -36,6 +36,16 @@ export const getMessages = async (chatId, userId, page = 1, limit = 50) => {
       totalPages: Math.ceil(total / limit)
     }
   };
+};
+
+export const getMessageById = async (messageId, userId) => {
+  const message = await messageRepository.findMessageById(messageId);
+  if (!message) {
+    throw ApiError(404, "Message not found");
+  }
+  // Verify that the user owns the chat this message belongs to
+  await chatService.getChatById(message.chatId, userId);
+  return message;
 };
 
 export const updateMessage = async (messageId, userId, content) => {
@@ -66,3 +76,11 @@ export const deleteMessage = async (messageId, userId) => {
 
   return messageRepository.deleteMessage(messageId);
 };
+
+export const deleteMessagesFromId = async (chatId, messageId, userId, session = null) => {
+  // Verify that the user owns the chat
+  await chatService.getChatById(chatId, userId);
+
+  return messageRepository.deleteMessagesFromId(chatId, messageId, session);
+};
+
