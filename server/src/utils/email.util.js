@@ -2,15 +2,16 @@ import nodemailer from "nodemailer";
 import envConfig from "../config/env.config.js";
 
 // Create a reusable transporter object
-const transporter = envConfig.NODE_ENV === "test"
-  ? nodemailer.createTransport({ jsonTransport: true })
-  : nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: envConfig.SMTP_EMAIL || "test@gmail.com", // You'll need to set this in .env
-        pass: envConfig.SMTP_APP_PASSWORD || "testpassword", // You'll need to set this in .env
-      },
-    });
+const transporter =
+  envConfig.NODE_ENV === "test"
+    ? nodemailer.createTransport({ jsonTransport: true })
+    : nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: envConfig.SMTP_EMAIL || "test@gmail.com",
+          pass: envConfig.SMTP_APP_PASSWORD || "testpassword",
+        },
+      });
 
 /**
  * Send an email
