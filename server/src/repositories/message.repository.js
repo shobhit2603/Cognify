@@ -1,7 +1,7 @@
 import { Message } from "../models/message.model.js";
 
-export const createMessage = async (data) => {
-  return Message.create(data);
+export const createMessage = async (data, session = null) => {
+  return Message.create([data], { session }).then((docs) => docs[0]);
 };
 
 export const findMessagesByChatId = async (chatId, skip = 0, limit = 50) => {
@@ -32,9 +32,10 @@ export const deleteMessagesByChatId = async (chatId) => {
   return Message.deleteMany({ chatId }).lean();
 };
 
-export const deleteMessagesAfterTimestamp = async (chatId, timestamp) => {
+export const deleteMessagesFromId = async (chatId, messageId, session = null) => {
+  const options = session ? { session } : {};
   return Message.deleteMany({
     chatId,
-    createdAt: { $gte: timestamp }
-  }).lean();
+    _id: { $gte: messageId }
+  }, options).lean();
 };

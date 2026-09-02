@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
 import * as messageService from "../services/message.service.js";
 import * as chatService from "../services/chat.service.js";
@@ -7,6 +8,7 @@ import { paginationSchema } from "../validations/pagination.validation.js";
 
 // ─── Title generation deduplication ────────────────────────────────────────────
 const generatingTitles = new Set();
+const editingChats = new Set();
 
 /**
  * Generates a chat title asynchronously and persists it.
@@ -229,12 +231,6 @@ export const streamEditMessage = async (req, res, next) => {
   const userId = req.user._id;
   const { role, content, isTemporary, history: clientHistory = [] } = req.body;
 
-  if (role !== "user") {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Only user messages can initiate a stream"));
-  }
-
   if (isTemporary) {
     return res
       .status(StatusCodes.BAD_REQUEST)
@@ -242,16 +238,42 @@ export const streamEditMessage = async (req, res, next) => {
   }
 
   try {
-    // 1. Fetch the original message to get its chatId and createdAt timestamp
+    // 1. Fetch the original message to get its chatId and check its role
     const originalMessage = await messageService.getMessageById(messageId, userId);
+    
+    if (originalMessage.role !== "user") {
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse(StatusCodes.FORBIDDEN, "Can only edit user messages"));
+    }
+    
     const chatId = originalMessage.chatId;
+    const chatIdStr = chatId.toString();
 
-    // 2. Delete messages created at or after the original message's timestamp
-    await messageService.deleteMessagesAfterTimestamp(chatId, originalMessage.createdAt, userId);
+    // Serialize concurrent writes per chat
+    if (editingChats.has(chatIdStr)) {
+      return res.status(StatusCodes.CONFLICT).json(ApiResponse(StatusCodes.CONFLICT, "An edit is already in progress for this chat"));
+    }
+    editingChats.add(chatIdStr);
 
-    // 3. Insert the new user message
-    const userMessage = await messageService.addMessage(chatId, userId, role, content);
-    const chat = await chatService.getChatById(chatId, userId);
+    let userMessage;
+    let chat;
+
+    try {
+      const session = await mongoose.startSession();
+      await session.withTransaction(async () => {
+        // 2. Delete messages created at or after the original message's ID
+        await messageService.deleteMessagesFromId(chatId, originalMessage._id, userId, session);
+
+        // 3. Insert the new user message
+        userMessage = await messageService.addMessage(chatId, userId, "user", content, session);
+      });
+      session.endSession();
+
+      chat = await chatService.getChatById(chatId, userId);
+    } finally {
+      editingChats.delete(chatIdStr);
+    }
 
     // 4. Setup SSE
     res.setHeader("Content-Type", "text/event-stream");

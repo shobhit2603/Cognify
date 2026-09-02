@@ -113,7 +113,8 @@ export default function ChatMessageFeed({
                         <button
                           onClick={() => onSubmitEdit(msg.id, editText)}
                           disabled={
-                            !editText.trim() || editText === msg.content
+                            !editText.trim() ||
+                            editText.trim() === msg.content.trim()
                           }
                           className="px-4 py-2 text-sm bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors font-medium flex items-center gap-1.5"
                         >
