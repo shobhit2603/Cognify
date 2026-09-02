@@ -30,13 +30,15 @@ export default function ChatMessageFeed({
   onEditPrompt,
 }) {
   const [editText, setEditText] = React.useState("");
+  const [prevEditingId, setPrevEditingId] = React.useState(null);
 
-  React.useEffect(() => {
+  if (editingMessageId !== prevEditingId) {
+    setPrevEditingId(editingMessageId);
     if (editingMessageId) {
       const msg = messages.find((m) => m.id === editingMessageId);
       if (msg) setEditText(msg.content);
     }
-  }, [editingMessageId, messages]);
+  }
 
   return (
     <div className="flex flex-col gap-8 w-full">

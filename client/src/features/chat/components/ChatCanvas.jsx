@@ -116,11 +116,15 @@ export default function ChatCanvas({ chatId: propChatId }) {
       if (isStreamingRef.current) {
         abortControllerRef.current?.abort();
         isStreamingRef.current = false;
+      }
+      
+      // Delay state updates to avoid synchronous setState inside effect warning
+      setTimeout(() => {
         setIsGenerating(false);
         setStreamingMessageId(null);
-      }
-      setMessages([]);
-      setEditPromptText(null);
+        setMessages([]);
+        setEditPromptText(null);
+      }, 0);
     }
   }, [newChatTrigger, chatId]);
 
