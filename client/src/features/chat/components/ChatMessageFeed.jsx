@@ -56,7 +56,7 @@ export default function ChatMessageFeed({
             className={`flex gap-3.5 sm:gap-4 ${
               msg.role === "user"
                 ? editingMessageId === msg.id
-                  ? "w-full"
+                  ? "w-[95%] sm:w-[90%]"
                   : "max-w-[88%] sm:max-w-[82%]"
                 : "w-full"
             }`}
@@ -94,10 +94,16 @@ export default function ChatMessageFeed({
                       <textarea
                         value={editText}
                         onChange={(e) => setEditText(e.target.value)}
-                        className="w-full bg-transparent text-white/95 text-[16px] sm:text-[17px] leading-relaxed font-normal outline-none resize-none min-h-20"
+                        className="w-full bg-transparent text-white/95 text-[16px] sm:text-[17px] leading-relaxed font-normal outline-none resize-none min-h-10 sm:min-h-12"
                         autoFocus
+                        onFocus={(e) =>
+                          e.target.setSelectionRange(
+                            e.target.value.length,
+                            e.target.value.length,
+                          )
+                        }
                       />
-                      <div className="flex justify-end gap-2 mt-2">
+                      <div className="flex justify-end gap-2 ">
                         <button
                           onClick={onCancelEdit}
                           className="px-4 py-2 text-sm text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors font-medium flex items-center gap-1.5"
