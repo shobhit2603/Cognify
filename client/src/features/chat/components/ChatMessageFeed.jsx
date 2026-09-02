@@ -13,7 +13,7 @@ import {
   SpeakerHigh,
   SpeakerSlash,
   X,
-  PaperPlaneRight
+  PaperPlaneRight,
 } from "@phosphor-icons/react";
 
 export default function ChatMessageFeed({
@@ -33,11 +33,12 @@ export default function ChatMessageFeed({
 
   React.useEffect(() => {
     if (editingMessageId) {
-      const msg = messages.find(m => m.id === editingMessageId);
+      const msg = messages.find((m) => m.id === editingMessageId);
       if (msg) setEditText(msg.content);
     }
   }, [editingMessageId, messages]);
 
+  return (
     <div className="flex flex-col gap-8 w-full">
       {messages.map((msg) => (
         <motion.div
@@ -51,7 +52,11 @@ export default function ChatMessageFeed({
         >
           <div
             className={`flex gap-3.5 sm:gap-4 ${
-              msg.role === "user" ? "max-w-[88%] sm:max-w-[82%]" : "w-full"
+              msg.role === "user"
+                ? editingMessageId === msg.id
+                  ? "w-full"
+                  : "max-w-[88%] sm:max-w-[82%]"
+                : "w-full"
             }`}
           >
             {/* Assistant Avatar: Cognify Logo */}
@@ -70,18 +75,24 @@ export default function ChatMessageFeed({
             {/* Message Bubble & Content */}
             <div
               className={`flex flex-col gap-2 min-w-0 flex-1 ${
-                msg.role === "user" ? "items-end" : "items-start"
+                msg.role === "user"
+                  ? editingMessageId === msg.id
+                    ? "items-stretch"
+                    : "items-end"
+                  : "items-start"
               }`}
             >
               {msg.role === "user" ? (
                 /* User Bubble */
-                <div className={`text-white rounded-3xl rounded-tr-lg shadow-md ${editingMessageId === msg.id ? "bg-[#151414] border border-white/10 w-full p-4" : "bg-[#242121] px-5 py-3.5"}`}>
+                <div
+                  className={`text-white rounded-3xl rounded-tr-lg shadow-md ${editingMessageId === msg.id ? "bg-[#151414] border border-white/10 w-full p-4" : "bg-[#242121] px-5 py-3.5"}`}
+                >
                   {editingMessageId === msg.id ? (
                     <div className="flex flex-col gap-3 w-full">
                       <textarea
                         value={editText}
                         onChange={(e) => setEditText(e.target.value)}
-                        className="w-full bg-transparent text-white/95 text-[16px] sm:text-[17px] leading-relaxed font-normal outline-none resize-none min-h-[80px]"
+                        className="w-full bg-transparent text-white/95 text-[16px] sm:text-[17px] leading-relaxed font-normal outline-none resize-none min-h-20"
                         autoFocus
                       />
                       <div className="flex justify-end gap-2 mt-2">
@@ -93,7 +104,9 @@ export default function ChatMessageFeed({
                         </button>
                         <button
                           onClick={() => onSubmitEdit(msg.id, editText)}
-                          disabled={!editText.trim() || editText === msg.content}
+                          disabled={
+                            !editText.trim() || editText === msg.content
+                          }
                           className="px-4 py-2 text-sm bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors font-medium flex items-center gap-1.5"
                         >
                           Save & Submit
@@ -344,15 +357,17 @@ export default function ChatMessageFeed({
                   )}
                 </button>
 
-                {msg.role === "user" && onStartEdit && editingMessageId !== msg.id && (
-                  <button
-                    onClick={() => onStartEdit(msg.id)}
-                    className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm"
-                    title="Edit prompt"
-                  >
-                    <PencilSimple size={15} />
-                  </button>
-                )}
+                {msg.role === "user" &&
+                  onStartEdit &&
+                  editingMessageId !== msg.id && (
+                    <button
+                      onClick={() => onStartEdit(msg.id)}
+                      className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm"
+                      title="Edit prompt"
+                    >
+                      <PencilSimple size={15} />
+                    </button>
+                  )}
 
                 {msg.role === "assistant" && msg.content && (
                   <button
