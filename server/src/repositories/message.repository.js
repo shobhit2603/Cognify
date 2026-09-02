@@ -31,3 +31,10 @@ export const deleteMessage = async (id) => {
 export const deleteMessagesByChatId = async (chatId) => {
   return Message.deleteMany({ chatId }).lean();
 };
+
+export const deleteMessagesAfterTimestamp = async (chatId, timestamp) => {
+  return Message.deleteMany({
+    chatId,
+    createdAt: { $gte: timestamp }
+  }).lean();
+};

@@ -38,6 +38,16 @@ export const getMessages = async (chatId, userId, page = 1, limit = 50) => {
   };
 };
 
+export const getMessageById = async (messageId, userId) => {
+  const message = await messageRepository.findMessageById(messageId);
+  if (!message) {
+    throw ApiError(404, "Message not found");
+  }
+  // Verify that the user owns the chat this message belongs to
+  await chatService.getChatById(message.chatId, userId);
+  return message;
+};
+
 export const updateMessage = async (messageId, userId, content) => {
   const message = await messageRepository.findMessageById(messageId);
   if (!message) {
@@ -66,3 +76,11 @@ export const deleteMessage = async (messageId, userId) => {
 
   return messageRepository.deleteMessage(messageId);
 };
+
+export const deleteMessagesAfterTimestamp = async (chatId, timestamp, userId) => {
+  // Verify that the user owns the chat
+  await chatService.getChatById(chatId, userId);
+
+  return messageRepository.deleteMessagesAfterTimestamp(chatId, timestamp);
+};
+

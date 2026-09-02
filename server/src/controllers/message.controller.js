@@ -224,6 +224,90 @@ export const streamMessage = async (req, res, next) => {
   }
 };
 
+export const streamEditMessage = async (req, res, next) => {
+  let messageId = req.params.messageId;
+  const userId = req.user._id;
+  const { role, content, isTemporary, history: clientHistory = [] } = req.body;
+
+  if (role !== "user") {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Only user messages can initiate a stream"));
+  }
+
+  if (isTemporary) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Cannot edit temporary messages via this endpoint"));
+  }
+
+  try {
+    // 1. Fetch the original message to get its chatId and createdAt timestamp
+    const originalMessage = await messageService.getMessageById(messageId, userId);
+    const chatId = originalMessage.chatId;
+
+    // 2. Delete messages created at or after the original message's timestamp
+    await messageService.deleteMessagesAfterTimestamp(chatId, originalMessage.createdAt, userId);
+
+    // 3. Insert the new user message
+    const userMessage = await messageService.addMessage(chatId, userId, role, content);
+    const chat = await chatService.getChatById(chatId, userId);
+
+    // 4. Setup SSE
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    res.write(`data: ${JSON.stringify({ event: "connected", chat, message: userMessage })}\n\n`);
+
+    let clientDisconnected = false;
+    req.on("close", () => {
+      clientDisconnected = true;
+    });
+
+    // 5. Fetch history (messages before the edited one)
+    const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+    const userMsgId = userMessage._id.toString();
+    const history = messages
+      .filter((m) => m._id.toString() !== userMsgId)
+      .map((m) => ({
+        role: m.role === "assistant" ? "ai" : m.role,
+        content: m.content,
+      }));
+
+    let fullResponse = "";
+    const events = aiService.getAIResponse({ content, history, chatId });
+
+    for await (const chunk of events) {
+      if (clientDisconnected) break;
+      if (chunk && chunk.content) {
+        fullResponse += chunk.content;
+        res.write(`data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`);
+        if (typeof res.flush === "function") res.flush();
+      }
+    }
+
+    if (!clientDisconnected) {
+      let assistantMessage = null;
+      if (fullResponse) {
+        assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+      }
+      res.write(`data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    console.error("[Stream Edit Error]:", error);
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ event: "error", error: "Failed to generate response." })}\n\n`);
+      res.end();
+    } else {
+      next(error);
+    }
+  }
+};
+
+
 export const getMessages = async (req, res, next) => {
   try {
     const chatId = req.params.chatId;
