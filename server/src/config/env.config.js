@@ -25,6 +25,7 @@ const envConfig = Object.freeze({
   ACCESS_TOKEN_COOKIE_MAX_AGE: parseInt(process.env.ACCESS_TOKEN_COOKIE_MAX_AGE) || 15 * 60 * 1000, // 15 mins default
   REFRESH_TOKEN_COOKIE_MAX_AGE: parseInt(process.env.REFRESH_TOKEN_COOKIE_MAX_AGE) || 7 * 24 * 60 * 60 * 1000, // 7 days default
   MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
   SMTP_EMAIL: process.env.SMTP_EMAIL,

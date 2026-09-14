@@ -19,14 +19,20 @@ async function maybeGenerateTitle(chat, chatId, userId, content, messageCount) {
   if (
     (chat.title !== "New Chat" && chat.title !== "New Conversation") ||
     messageCount > 6
-  ) return;
+  )
+    return;
 
   if (generatingTitles.has(chatId)) return;
   generatingTitles.add(chatId);
 
-  aiService.getTitle({ message: content })
+  aiService
+    .getTitle({ message: content })
     .then(async ({ chatTitle }) => {
-      if (chatTitle && chatTitle !== "New Chat" && chatTitle !== "New Conversation") {
+      if (
+        chatTitle &&
+        chatTitle !== "New Chat" &&
+        chatTitle !== "New Conversation"
+      ) {
         await chatService.updateChat(chatId, userId, { title: chatTitle });
       }
     })
@@ -38,7 +44,12 @@ export const addMessage = async (req, res, next) => {
   try {
     let chatId = req.params.chatId;
     const userId = req.user._id;
-    const { role, content, isTemporary, history: clientHistory = [] } = req.body;
+    const {
+      role,
+      content,
+      isTemporary,
+      history: clientHistory = [],
+    } = req.body;
 
     let chat = null;
     let message = null;
@@ -52,22 +63,33 @@ export const addMessage = async (req, res, next) => {
       message = await messageService.addMessage(chatId, userId, role, content);
     } else {
       // Temporary chat: mock the message object
-      message = { _id: `temp-${Date.now()}`, role, content, createdAt: new Date() };
+      message = {
+        _id: `temp-${Date.now()}`,
+        role,
+        content,
+        createdAt: new Date(),
+      };
     }
 
     let assistantMessage = null;
 
     if (role === "user") {
       let history;
+      let messageCount = 0;
       if (!isTemporary) {
         // Get history for AI
-        const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+        const { messages } = await messageService.getMessages(
+          chatId,
+          userId,
+          1,
+          100,
+        );
 
         if (!chat) {
           chat = await chatService.getChatById(chatId, userId);
         }
 
-        maybeGenerateTitle(chat, chatId, userId, content, messages.length);
+        messageCount = messages.length;
 
         // Build history excluding the user's current message by its _id to
         // avoid relying on positional assumptions (slice(-1) is fragile when
@@ -89,7 +111,11 @@ export const addMessage = async (req, res, next) => {
 
       // Generate AI Response
       let fullResponse = "";
-      const events = aiService.getAIResponse({ content, history, chatId: chatId || 'temp' });
+      const events = aiService.getAIResponse({
+        content,
+        history,
+        chatId: chatId || "temp",
+      });
       for await (const chunk of events) {
         fullResponse += chunk.content;
       }
@@ -97,20 +123,35 @@ export const addMessage = async (req, res, next) => {
       // Save assistant message
       if (fullResponse) {
         if (!isTemporary) {
-          assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+          assistantMessage = await messageService.addMessage(
+            chatId,
+            userId,
+            "assistant",
+            fullResponse,
+          );
         } else {
-          assistantMessage = { _id: `temp-${Date.now()}`, role: "assistant", content: fullResponse, createdAt: new Date() };
+          assistantMessage = {
+            _id: `temp-${Date.now()}`,
+            role: "assistant",
+            content: fullResponse,
+            createdAt: new Date(),
+          };
         }
+      }
+
+      if (!isTemporary && chat) {
+        // Run title generation after main generation to prevent concurrent rate limiting
+        maybeGenerateTitle(chat, chatId, userId, content, messageCount);
       }
     }
 
-    res
-      .status(StatusCodes.CREATED)
-      .json(ApiResponse(StatusCodes.CREATED, "Message added successfully", {
+    res.status(StatusCodes.CREATED).json(
+      ApiResponse(StatusCodes.CREATED, "Message added successfully", {
         message,
         ...(assistantMessage && { assistantMessage }),
         ...(chat && { chat }),
-      }));
+      }),
+    );
   } catch (error) {
     next(error);
   }
@@ -124,7 +165,12 @@ export const streamMessage = async (req, res, next) => {
   if (role !== "user") {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Only user messages can initiate a stream"));
+      .json(
+        ApiResponse(
+          StatusCodes.BAD_REQUEST,
+          "Only user messages can initiate a stream",
+        ),
+      );
   }
 
   let chat = null;
@@ -141,9 +187,19 @@ export const streamMessage = async (req, res, next) => {
         chat = await chatService.getChatById(chatId, userId);
       }
 
-      userMessage = await messageService.addMessage(chatId, userId, role, content);
+      userMessage = await messageService.addMessage(
+        chatId,
+        userId,
+        role,
+        content,
+      );
     } else {
-      userMessage = { _id: `temp-${Date.now()}`, role, content, createdAt: new Date() };
+      userMessage = {
+        _id: `temp-${Date.now()}`,
+        role,
+        content,
+        createdAt: new Date(),
+      };
     }
 
     // ── 2. Now that setup succeeded, switch to SSE mode ──────────────────────
@@ -153,7 +209,9 @@ export const streamMessage = async (req, res, next) => {
     res.setHeader("X-Accel-Buffering", "no");
 
     // Send the initial "connected" frame immediately
-    res.write(`data: ${JSON.stringify({ event: "connected", chat, message: userMessage })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ event: "connected", chat, message: userMessage })}\n\n`,
+    );
 
     // ── 3. Track whether the client disconnects mid-stream ───────────────────
     let clientDisconnected = false;
@@ -162,11 +220,17 @@ export const streamMessage = async (req, res, next) => {
     });
 
     let history;
+    let messageCount = 0;
     if (!isTemporary) {
       // Get history for AI
-      const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+      const { messages } = await messageService.getMessages(
+        chatId,
+        userId,
+        1,
+        100,
+      );
 
-      maybeGenerateTitle(chat, chatId, userId, content, messages.length);
+      messageCount = messages.length;
 
       // Build history excluding the current user message by _id
       const userMsgId = userMessage._id.toString();
@@ -186,7 +250,11 @@ export const streamMessage = async (req, res, next) => {
     let fullResponse = "";
 
     // Generate AI Response and stream directly to client
-    const events = aiService.getAIResponse({ content, history, chatId: chatId || 'temp' });
+    const events = aiService.getAIResponse({
+      content,
+      history,
+      chatId: chatId || "temp",
+    });
 
     for await (const chunk of events) {
       // Stop consuming events if the client has already disconnected
@@ -194,7 +262,9 @@ export const streamMessage = async (req, res, next) => {
 
       if (chunk && chunk.content) {
         fullResponse += chunk.content;
-        res.write(`data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`,
+        );
         if (typeof res.flush === "function") res.flush();
       }
     }
@@ -204,20 +274,38 @@ export const streamMessage = async (req, res, next) => {
       let assistantMessage = null;
       if (fullResponse) {
         if (!isTemporary) {
-          assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+          assistantMessage = await messageService.addMessage(
+            chatId,
+            userId,
+            "assistant",
+            fullResponse,
+          );
         } else {
-          assistantMessage = { _id: `temp-ai-${Date.now()}`, role: "assistant", content: fullResponse, createdAt: new Date() };
+          assistantMessage = {
+            _id: `temp-ai-${Date.now()}`,
+            role: "assistant",
+            content: fullResponse,
+            createdAt: new Date(),
+          };
         }
       }
-      res.write(`data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`,
+      );
       res.end();
-    }
 
+      if (!isTemporary && chat) {
+        // Run title generation after main generation to prevent concurrent rate limiting
+        maybeGenerateTitle(chat, chatId, userId, content, messageCount);
+      }
+    }
   } catch (error) {
     console.error("[Stream Message Error]:", error);
     if (res.headersSent) {
       // SSE mode: send an error frame and close
-      res.write(`data: ${JSON.stringify({ event: "error", error: "Failed to generate response." })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ event: "error", error: "Failed to generate response." })}\n\n`,
+      );
       res.end();
     } else {
       // Headers not sent yet — delegate to the normal error handler
@@ -234,25 +322,42 @@ export const streamEditMessage = async (req, res, next) => {
   if (isTemporary) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json(ApiResponse(StatusCodes.BAD_REQUEST, "Cannot edit temporary messages via this endpoint"));
+      .json(
+        ApiResponse(
+          StatusCodes.BAD_REQUEST,
+          "Cannot edit temporary messages via this endpoint",
+        ),
+      );
   }
 
   try {
     // 1. Fetch the original message to get its chatId and check its role
-    const originalMessage = await messageService.getMessageById(messageId, userId);
-    
+    const originalMessage = await messageService.getMessageById(
+      messageId,
+      userId,
+    );
+
     if (originalMessage.role !== "user") {
       return res
         .status(StatusCodes.FORBIDDEN)
-        .json(ApiResponse(StatusCodes.FORBIDDEN, "Can only edit user messages"));
+        .json(
+          ApiResponse(StatusCodes.FORBIDDEN, "Can only edit user messages"),
+        );
     }
-    
+
     const chatId = originalMessage.chatId;
     const chatIdStr = chatId.toString();
 
     // Serialize concurrent writes per chat
     if (editingChats.has(chatIdStr)) {
-      return res.status(StatusCodes.CONFLICT).json(ApiResponse(StatusCodes.CONFLICT, "An edit is already in progress for this chat"));
+      return res
+        .status(StatusCodes.CONFLICT)
+        .json(
+          ApiResponse(
+            StatusCodes.CONFLICT,
+            "An edit is already in progress for this chat",
+          ),
+        );
     }
     editingChats.add(chatIdStr);
 
@@ -263,10 +368,21 @@ export const streamEditMessage = async (req, res, next) => {
       const session = await mongoose.startSession();
       await session.withTransaction(async () => {
         // 2. Delete messages created at or after the original message's ID
-        await messageService.deleteMessagesFromId(chatId, originalMessage._id, userId, session);
+        await messageService.deleteMessagesFromId(
+          chatId,
+          originalMessage._id,
+          userId,
+          session,
+        );
 
         // 3. Insert the new user message
-        userMessage = await messageService.addMessage(chatId, userId, "user", content, session);
+        userMessage = await messageService.addMessage(
+          chatId,
+          userId,
+          "user",
+          content,
+          session,
+        );
       });
       session.endSession();
 
@@ -281,7 +397,9 @@ export const streamEditMessage = async (req, res, next) => {
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
 
-    res.write(`data: ${JSON.stringify({ event: "connected", chat, message: userMessage })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ event: "connected", chat, message: userMessage })}\n\n`,
+    );
 
     let clientDisconnected = false;
     req.on("close", () => {
@@ -289,7 +407,12 @@ export const streamEditMessage = async (req, res, next) => {
     });
 
     // 5. Fetch history (messages before the edited one)
-    const { messages } = await messageService.getMessages(chatId, userId, 1, 100);
+    const { messages } = await messageService.getMessages(
+      chatId,
+      userId,
+      1,
+      100,
+    );
     const userMsgId = userMessage._id.toString();
     const history = messages
       .filter((m) => m._id.toString() !== userMsgId)
@@ -305,7 +428,9 @@ export const streamEditMessage = async (req, res, next) => {
       if (clientDisconnected) break;
       if (chunk && chunk.content) {
         fullResponse += chunk.content;
-        res.write(`data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`,
+        );
         if (typeof res.flush === "function") res.flush();
       }
     }
@@ -313,15 +438,24 @@ export const streamEditMessage = async (req, res, next) => {
     if (!clientDisconnected) {
       let assistantMessage = null;
       if (fullResponse) {
-        assistantMessage = await messageService.addMessage(chatId, userId, "assistant", fullResponse);
+        assistantMessage = await messageService.addMessage(
+          chatId,
+          userId,
+          "assistant",
+          fullResponse,
+        );
       }
-      res.write(`data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`,
+      );
       res.end();
     }
   } catch (error) {
     console.error("[Stream Edit Error]:", error);
     if (res.headersSent) {
-      res.write(`data: ${JSON.stringify({ event: "error", error: "Failed to generate response." })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ event: "error", error: "Failed to generate response." })}\n\n`,
+      );
       res.end();
     } else {
       next(error);
@@ -329,18 +463,24 @@ export const streamEditMessage = async (req, res, next) => {
   }
 };
 
-
 export const getMessages = async (req, res, next) => {
   try {
     const chatId = req.params.chatId;
     const userId = req.user._id;
     const { page, limit } = paginationSchema.parse(req.query);
 
-    const result = await messageService.getMessages(chatId, userId, page, limit);
+    const result = await messageService.getMessages(
+      chatId,
+      userId,
+      page,
+      limit,
+    );
 
     res
       .status(StatusCodes.OK)
-      .json(ApiResponse(StatusCodes.OK, "Messages retrieved successfully", result));
+      .json(
+        ApiResponse(StatusCodes.OK, "Messages retrieved successfully", result),
+      );
   } catch (error) {
     next(error);
   }
@@ -352,11 +492,19 @@ export const updateMessage = async (req, res, next) => {
     const userId = req.user._id;
     const { content } = req.body;
 
-    const message = await messageService.updateMessage(messageId, userId, content);
+    const message = await messageService.updateMessage(
+      messageId,
+      userId,
+      content,
+    );
 
     res
       .status(StatusCodes.OK)
-      .json(ApiResponse(StatusCodes.OK, "Message updated successfully", { message }));
+      .json(
+        ApiResponse(StatusCodes.OK, "Message updated successfully", {
+          message,
+        }),
+      );
   } catch (error) {
     next(error);
   }

@@ -1,114 +1,122 @@
-import { ChatMistralAI } from "@langchain/mistralai";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const { createToolCallingAgent, AgentExecutor } = require("@langchain/classic/agents");
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
-import { tool } from "@langchain/core/tools";
-import { z } from "zod";
-import { defaultMistralModel } from "../providers/mistral.provider.js";
-import getMistralModel from "../providers/mistral.provider.js";
+import { defaultGroqModel } from "../providers/groq.provider.js";
+import getGroqModel from "../providers/groq.provider.js";
 import { ragSearch } from "../tools/rag.tool.js";
-import { searchTool } from "../tools/search.tool.js";
-import envConfig from "../config/env.config.js";
+import { search } from "../tools/search.tool.js";
 
-// Define the precise prompt for the agent
-const prompt = ChatPromptTemplate.fromMessages([
-  ["system", "{system_prompt}"],
-  new MessagesPlaceholder("chat_history"),
-  ["human", "{input}"],
-  new MessagesPlaceholder("agent_scratchpad"), // Crucial for tool calling memory
-]);
+// ─── System Prompt ────────────────────────────────────────────────────────────
+const DEFAULT_SYSTEM_PROMPT = `You are Cognify, a highly intelligent, helpful, and friendly AI assistant.
+Provide concise, clear, and accurate answers.`;
 
-const DEFAULT_SYSTEM_PROMPT = `You are Cognify, a highly intelligent, helpful, and friendly AI assistant. 
-When a user asks about a document or PDF, you MUST use the 'rag_tool' to fetch the context. 
-If the answer is not found in the retrieved document context, state clearly that the document does not contain the information rather than making it up. Provide concise, clear, and accurate answers.`;
+// ─── Intent Detection ─────────────────────────────────────────────────────────
+// Simple heuristic — avoids an extra LLM call to decide which tools to invoke.
 
+function needsWebSearch(message) {
+  const webKeywords = [
+    /latest|current|today|news|price|weather|stock|trending/i,
+    /what (is|are) .*(in \d{4}|right now|currently)/i,
+    /who (won|is|are|did)/i,
+    /when (did|is|was|will)/i,
+    /how (much|many|do i|does|to)/i,
+  ];
+  return webKeywords.some((re) => re.test(message));
+}
+
+function needsRagSearch(message) {
+  const ragKeywords = [
+    /document|pdf|file|upload|internship|resume|cv|report/i,
+    /according to|in the (doc|file|pdf)/i,
+    /what (does the|is in the)/i,
+  ];
+  return ragKeywords.some((re) => re.test(message));
+}
+
+// ─── Context Builder ──────────────────────────────────────────────────────────
+// Max characters per web result — keeps total prompt within Groq's token limit.
+const MAX_WEB_RESULT_CHARS = 2000;
+const MAX_WEB_RESULTS = 3;
+
+async function buildContext(content, chatId) {
+  const context = [];
+
+  const ragNeeded = needsRagSearch(content);
+  const webNeeded = needsWebSearch(content);
+
+  // Run non-conflicting searches in parallel
+  const [ragResult, webResult] = await Promise.allSettled([
+    ragNeeded ? ragSearch({ query: content, chatId }) : Promise.resolve(null),
+    webNeeded ? search({ query: content }) : Promise.resolve(null),
+  ]);
+
+  if (
+    ragNeeded &&
+    ragResult.status === "fulfilled" &&
+    ragResult.value &&
+    ragResult.value !== "No relevant information found in the documents."
+  ) {
+    context.push(`--- Document Context ---\n${ragResult.value}`);
+  }
+
+  if (
+    webNeeded &&
+    webResult.status === "fulfilled" &&
+    webResult.value &&
+    webResult.value !== "Failed to fetch web results."
+  ) {
+    // Truncate each result and cap the total number to avoid exceeding token limits
+    const rawResults = webResult.value.split("\n\n --- \n\n");
+    const truncated = rawResults
+      .slice(0, MAX_WEB_RESULTS)
+      .map((r) => (r.length > MAX_WEB_RESULT_CHARS ? r.slice(0, MAX_WEB_RESULT_CHARS) + "…" : r))
+      .join("\n\n --- \n\n");
+    context.push(`--- Web Search Results ---\n${truncated}`);
+  }
+
+  return context.join("\n\n");
+}
+
+// ─── Main AI Response (Streaming) ────────────────────────────────────────────
 export async function* getAIResponse({ content, history = [], systemPrompt = null, chatId = null }) {
   try {
     if (!chatId) {
       throw new Error("chatId is required for AI context scoping.");
     }
-    const normalizedChatId = String(chatId);
 
     if (!content && (!history || history.length === 0)) {
       throw new Error("Content or conversation history is required.");
     }
 
-    // 1. Format System Prompt
-    const finalSystemPrompt = `${systemPrompt || DEFAULT_SYSTEM_PROMPT}\nCurrent date and time: ${new Date().toLocaleString()}`;
+    // 1. Gather context from RAG / web search
+    const retrievedContext = await buildContext(content, String(chatId));
 
-    // 2. Format Conversation History into LangChain Message objects
-    const formattedHistory = history.map((msg) => {
+    // 2. Build the system prompt (inject context if any)
+    let finalSystemPrompt = `${systemPrompt || DEFAULT_SYSTEM_PROMPT}\nCurrent date and time: ${new Date().toLocaleString()}`;
+    if (retrievedContext) {
+      finalSystemPrompt += `\n\nUse the following retrieved context to answer the user's question. If the context does not contain the answer, say so clearly.\n\n${retrievedContext}`;
+    }
+
+    // 3. Format conversation history
+    const messages = [new SystemMessage(finalSystemPrompt)];
+    for (const msg of history) {
       const role = msg.role === "ai" ? "assistant" : msg.role;
-      if (role === "system") return new SystemMessage(msg.content);
-      return role === "assistant"
-        ? new AIMessage(msg.content)
-        : new HumanMessage(msg.content);
-    });
-
-    // 3. Create dynamic tool to inject chatId
-    const dynamic_rag_tool = tool(
-      async ({ query }) => ragSearch({ query, chatId: normalizedChatId }),
-      {
-        name: "rag_tool",
-        description:
-          "MANDATORY tool to use when the user asks questions about their uploaded PDFs, documents, or internship details. Searches the vector database.",
-        schema: z.object({
-          query: z.string().describe("The specific query to search in the vector database"),
-        }),
+      if (role === "assistant") {
+        messages.push(new AIMessage(msg.content));
+      } else if (role === "user") {
+        messages.push(new HumanMessage(msg.content));
       }
-    );
+    }
+    messages.push(new HumanMessage(content || "Continue"));
 
-    const dynamicTools = [searchTool, dynamic_rag_tool];
+    // 4. Stream the response directly — no agent, no tool calling
+    const stream = await defaultGroqModel.stream(messages);
 
-    const dynamicAgent = createToolCallingAgent({
-      llm: defaultMistralModel,
-      tools: dynamicTools,
-      prompt,
-    });
-
-    const dynamicExecutor = new AgentExecutor({
-      agent: dynamicAgent,
-      tools: dynamicTools,
-      verbose: false, // Disabled to prevent console spam during generation
-    });
-
-    // 4. Execute the agent and stream events
-    const events = dynamicExecutor.streamEvents(
-      {
-        input: content || "Continue",
-        chat_history: formattedHistory,
-        system_prompt: finalSystemPrompt,
-      },
-      { version: "v2" }
-    );
-
-    // Counter tracking concurrent tool executions. Incremented on on_tool_start,
-    // decremented on on_tool_end and on_tool_error (clamped to ≥ 0).
-    // Text chunks are forwarded only while the counter is exactly zero.
-    let toolCallDepth = 0;
-
-    for await (const event of events) {
-      if (event.event === "on_tool_start") {
-        toolCallDepth += 1;
-        continue;
-      }
-      if (event.event === "on_tool_end" || event.event === "on_tool_error") {
-        toolCallDepth = Math.max(0, toolCallDepth - 1);
-        continue;
-      }
-
-      // Stream text chunks from the chat model — both direct responses
-      // and the final synthesis step that follows tool execution.
-      if (event.event === "on_chat_model_stream" && toolCallDepth === 0) {
-        const chunkContent = event.data?.chunk?.content;
-
-        // content can be a string (text token) or an array (tool-call delta) —
-        // we only forward plain text strings to avoid leaking internal JSON.
-        if (chunkContent && typeof chunkContent === "string") {
-          yield { content: chunkContent };
-        }
+    for await (const chunk of stream) {
+      const chunkContent = chunk.content;
+      if (chunkContent && typeof chunkContent === "string") {
+        yield { content: chunkContent };
       }
     }
   } catch (error) {
@@ -117,11 +125,12 @@ export async function* getAIResponse({ content, history = [], systemPrompt = nul
   }
 }
 
+// ─── Title Generation ─────────────────────────────────────────────────────────
 export async function getTitle({ message }) {
   try {
     if (!message) throw new Error("Message is required to generate a title.");
 
-    const titleModel = getMistralModel({ temperature: 0.2, maxRetries: 2 });
+    const titleModel = getGroqModel({ temperature: 0.2, maxRetries: 2 });
 
     const response = await titleModel.invoke([
       [
@@ -131,7 +140,7 @@ export async function getTitle({ message }) {
       ["user", `Generate a title for: "${message}"`],
     ]);
 
-    const cleanTitle = response.content.replace(/["']/g, "").trim();
+    const cleanTitle = response.content.replace(/[\"']/g, "").trim();
     return { chatTitle: cleanTitle || "New Chat" };
   } catch (error) {
     console.error("[AI Service Error] getTitle failed:", error.message);
