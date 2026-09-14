@@ -59,7 +59,7 @@ export async function ragSearch({ query, chatId }) {
       return "No relevant information found in the documents.";
     }
     console.error("[RAG Tool] Unexpected error in ragSearch:", error.message);
-    return "No relevant information found in the documents.";
+    throw error;
   }
 }
 

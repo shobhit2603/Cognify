@@ -13,6 +13,6 @@ const getGroqModel = (options = {}) => {
   });
 };
 
-export const defaultGroqModel = getGroqModel();
+export const getGroqModelInstance = () => getGroqModel();
 
 export default getGroqModel;

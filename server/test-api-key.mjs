@@ -77,9 +77,9 @@ const req = https.request(options, (res) => {
       console.log(`   Tokens used    : ${parsed.usage?.total_tokens}\n`);
       console.log("👉  Add this to your .env:");
       if (provider === "groq") {
-        console.log(`   GROQ_API_KEY=${apiKey}\n`);
+        console.log(`   GROQ_API_KEY=<YOUR_API_KEY>\n`);
       } else {
-        console.log(`   MISTRAL_API_KEY=${apiKey}\n`);
+        console.log(`   MISTRAL_API_KEY=<YOUR_API_KEY>\n`);
       }
     } else {
       const errMsg = parsed.error?.message || parsed.message || "Unknown error";

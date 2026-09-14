@@ -293,11 +293,11 @@ export const streamMessage = async (req, res, next) => {
         `data: ${JSON.stringify({ event: "done", message: assistantMessage })}\n\n`,
       );
       res.end();
+    }
 
-      if (!isTemporary && chat) {
-        // Run title generation after main generation to prevent concurrent rate limiting
-        maybeGenerateTitle(chat, chatId, userId, content, messageCount);
-      }
+    if (!isTemporary && chat) {
+      // Run title generation after main generation to prevent concurrent rate limiting
+      maybeGenerateTitle(chat, chatId, userId, content, messageCount);
     }
   } catch (error) {
     console.error("[Stream Message Error]:", error);
