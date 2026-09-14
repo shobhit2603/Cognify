@@ -19,34 +19,46 @@ export async function ragSearch({ query, chatId }) {
     if (!chatId) throw new Error("chatId is required for RAG search.");
     const normalizedChatId = String(chatId);
     const reqId = uuidv4();
-    
+
     console.log(`[RAG Tool] Request ${reqId} started.`);
     const startTime = Date.now();
 
-    const index = pinecone.Index("cognify-rag"); // Assuming 'cognify-rag' is your target index name
+    const index = pinecone.Index("cognify-rag");
     const vector = await embeddings.embedQuery(query);
 
     const queryOptions = {
       vector,
       topK: 4,
       includeMetadata: true,
-      filter: { chatId: { $eq: normalizedChatId } }
+      filter: { chatId: { $eq: normalizedChatId } },
     };
 
     const queryResult = await index.query(queryOptions);
 
-    console.log(`[RAG Tool] Request ${reqId} completed. Found ${queryResult.matches?.length || 0} matches in ${Date.now() - startTime}ms.`);
+    console.log(
+      `[RAG Tool] Request ${reqId} completed. Found ${queryResult.matches?.length || 0} matches in ${Date.now() - startTime}ms.`
+    );
 
     if (queryResult.matches && queryResult.matches.length > 0) {
-      const resultText = queryResult.matches.map((match) => {
-        return match.metadata?.text || JSON.stringify(match.metadata);
-      });
+      const resultText = queryResult.matches.map(
+        (match) => match.metadata?.text || JSON.stringify(match.metadata)
+      );
       return resultText.join("\n\n --- \n\n");
     }
 
     return "No relevant information found in the documents.";
   } catch (error) {
-    console.error("Error in ragSearch:", error);
+    // Handle missing index gracefully — Pinecone free tier deletes indexes
+    // after ~7 days of inactivity. Don't crash the AI pipeline.
+    if (error?.name === "PineconeNotFoundError" || error?.status === 404) {
+      console.warn(
+        "[RAG Tool] Pinecone index 'cognify-rag' not found (404). " +
+        "It may have been deleted due to free-tier inactivity. " +
+        "Re-create it at https://app.pinecone.io"
+      );
+      return "No relevant information found in the documents.";
+    }
+    console.error("[RAG Tool] Unexpected error in ragSearch:", error.message);
     throw error;
   }
 }

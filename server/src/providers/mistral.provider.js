@@ -4,7 +4,7 @@ import envConfig from "../config/env.config.js";
 // Production ready model configuration
 const getMistralModel = (options = {}) => {
   return new ChatMistralAI({
-    model: options.model || "mistral-medium-latest",
+    model: options.model || "mistral-small-latest",
     apiKey: envConfig.MISTRAL_API_KEY,
     temperature: options.temperature || 0.7,
     maxRetries: options.maxRetries || 3,
