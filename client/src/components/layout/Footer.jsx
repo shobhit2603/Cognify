@@ -138,7 +138,7 @@ export default function Footer() {
         <div className="p-6 lg:px-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-white/10">
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 relative">
-              <Image src="/Cognify-Logo.png" alt="Cognify Logo" fill className="object-contain" />
+              <Image src="/Cognify-Logo.png" alt="Cognify Logo" fill sizes="32px" className="object-contain" />
             </div>
             <span className="font-display font-bold text-xl tracking-tighter text-white">
               COGNIFY<span className="text-osmo-lime">.</span>
