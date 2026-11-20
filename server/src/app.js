@@ -14,6 +14,7 @@ import { configurePassport } from "./config/passport.config.js";
 import authRoutes from "./routes/auth.routes.js";
 import chatRoutes from "./routes/chat.routes.js";
 import messageRoutes from "./routes/message.routes.js";
+import documentRoutes from "./routes/document.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.config.js";
 import { globalLimiter } from "./middlewares/rateLimiter.middleware.js";
@@ -75,6 +76,7 @@ if (envConfig.NODE_ENV === "development") {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/chats", chatRoutes);
 app.use("/api/v1/messages", messageRoutes);
+app.use("/api/v1/documents", documentRoutes);
 
 // ─── API Documentation ───────────────────────────────────
 
