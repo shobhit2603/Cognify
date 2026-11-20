@@ -68,6 +68,12 @@ const documentSchema = new Schema(
     processingJobId: {
       type: String,
     },
+    summary: {
+      type: String,
+    },
+    keyInsights: [{
+      type: String,
+    }],
     chunks: [chunkMetadataSchema],
   },
   { timestamps: true }
