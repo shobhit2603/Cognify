@@ -2,6 +2,7 @@ import app from './src/app.js';
 import envConfig from './src/config/env.config.js';
 import { connectDatabase } from './src/config/db.config.js';
 import * as s3Storage from './src/services/storage/s3.storage.js';
+import { startDocumentWorker } from './src/services/queue/document.worker.js';
 
 const startServer = async () => {
   try {
@@ -16,6 +17,9 @@ const startServer = async () => {
       console.log(`   URL         : http://localhost:${envConfig.PORT}`);
       console.log(`   Health      : http://localhost:${envConfig.PORT}/api/v1/health\n`);
     });
+
+    // Start BullMQ Worker for background document processing
+    startDocumentWorker();
 
     // Ensure S3 bucket has browser upload CORS enabled
     s3Storage.configureBucketCors().catch((err) => {

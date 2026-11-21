@@ -33,9 +33,13 @@ export const getDocumentQueue = () => {
 
 // Listen on redisClient ready event to initialize queue
 if (redisClient) {
-  redisClient.on("ready", () => {
+  if (redisClient.status === "ready") {
     getDocumentQueue();
-  });
+  } else {
+    redisClient.on("ready", () => {
+      getDocumentQueue();
+    });
+  }
 }
 
 /**

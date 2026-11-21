@@ -291,8 +291,9 @@ export let documentWorker = null;
 export const startDocumentWorker = () => {
   if (!documentWorker && redisClient && redisClient.status === "ready") {
     try {
+      const workerConnection = redisClient.duplicate({ maxRetriesPerRequest: null });
       documentWorker = new Worker("document-processing", processDocumentJob, {
-        connection: redisClient,
+        connection: workerConnection,
         concurrency: 2,
       });
 

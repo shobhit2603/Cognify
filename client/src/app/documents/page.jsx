@@ -84,47 +84,66 @@ export default function DocumentsPage() {
     };
   }, [currentPage, searchQuery]);
 
+  const hasProcessing = documents.some(
+    (d) => d.status !== "READY" && d.status !== "FAILED"
+  );
+
   // Polling for processing documents
   useEffect(() => {
-    const hasProcessing = documents.some(
-      (d) => d.status !== "READY" && d.status !== "FAILED"
-    );
-
-    if (hasProcessing) {
-      pollingRef.current = setInterval(() => {
-        const currentReqId = searchRequestIdRef.current;
-        docService
-          .getDocuments(currentPage, 12, searchQuery)
-          .then((data) => {
-            // Guard against stale response if search/page changed during poll
-            if (currentReqId !== searchRequestIdRef.current) return;
-            if (data?.documents) {
-              setDocuments(data.documents);
-              // If the selected document is open, update it while preserving its downloadUrl
-              setSelectedDocument((prev) => {
-                if (!prev) return null;
-                const updated = data.documents.find((d) => d._id === prev._id);
-                return updated
-                  ? { ...updated, downloadUrl: prev.downloadUrl || updated.downloadUrl }
-                  : prev;
-              });
-            }
-            if (data?.pagination) {
-              setPagination(data.pagination);
-            }
-          })
-          .catch(() => {
-            // Suppress background poll errors while backend is restarting
-          });
-      }, 3000);
-    } else {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+    if (!hasProcessing) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      return;
     }
 
+    let pollCount = 0;
+    const maxPolls = 60; // Max ~3 minutes of polling before pausing to prevent infinite background loops
+
+    pollingRef.current = setInterval(() => {
+      pollCount++;
+      if (pollCount > maxPolls) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+        return;
+      }
+
+      const currentReqId = searchRequestIdRef.current;
+      docService
+        .getDocuments(currentPage, 12, searchQuery)
+        .then((data) => {
+          // Guard against stale response if search/page changed during poll
+          if (currentReqId !== searchRequestIdRef.current) return;
+          if (data?.documents) {
+            setDocuments(data.documents);
+            // If the selected document is open, update it while preserving its downloadUrl
+            setSelectedDocument((prev) => {
+              if (!prev) return null;
+              const updated = data.documents.find((d) => d._id === prev._id);
+              return updated
+                ? { ...updated, downloadUrl: prev.downloadUrl || updated.downloadUrl }
+                : prev;
+            });
+          }
+          if (data?.pagination) {
+            setPagination(data.pagination);
+          }
+        })
+        .catch(() => {
+          // Suppress background poll errors while backend is restarting
+        });
+    }, 3000);
+
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     };
-  }, [documents, searchQuery, currentPage]);
+  }, [hasProcessing, searchQuery, currentPage]);
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this document?")) return;
