@@ -125,6 +125,7 @@ export const streamAskDocument = async (documentId, question, callbacks, signal)
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
+    let receivedDone = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -145,8 +146,10 @@ export const streamAskDocument = async (documentId, question, callbacks, signal)
             } else if (parsed.type === "chunk" && callbacks.onChunk) {
               callbacks.onChunk(parsed.content);
             } else if (parsed.type === "done" && callbacks.onDone) {
+              receivedDone = true;
               callbacks.onDone();
             } else if (parsed.type === "error" && callbacks.onError) {
+              receivedDone = true;
               callbacks.onError(new Error(parsed.error));
             }
           } catch (parseErr) {
@@ -154,6 +157,10 @@ export const streamAskDocument = async (documentId, question, callbacks, signal)
           }
         }
       }
+    }
+
+    if (!receivedDone && callbacks.onError) {
+      callbacks.onError(new Error("Stream connection closed unexpectedly before completion"));
     }
   } catch (err) {
     if (callbacks.onError) callbacks.onError(err);

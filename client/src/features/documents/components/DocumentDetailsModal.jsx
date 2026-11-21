@@ -13,6 +13,7 @@ import {
   BookmarkSimple,
   Clock,
   SpinnerGap,
+  WarningCircle,
 } from "@phosphor-icons/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -32,6 +33,8 @@ export default function DocumentDetailsModal({
   const [copiedSummary, setCopiedSummary] = useState(false);
   const messagesEndRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -40,15 +43,30 @@ export default function DocumentDetailsModal({
     }
   }, [messages, activeTab]);
 
-  // Lock background body scroll while modal is open
+  // Lock background body scroll and manage focus while modal is open
   useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    previousFocusRef.current = document.activeElement;
+    modalRef.current?.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      if (previousFocusRef.current?.focus) {
+        previousFocusRef.current.focus();
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !doc) return null;
 
@@ -154,8 +172,13 @@ export default function DocumentDetailsModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
     >
       <div
+        ref={modalRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="doc-details-title"
         data-lenis-prevent
-        className="relative w-full max-w-4xl h-[88vh] bg-[#161515] border border-white/[0.1] rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+        className="relative w-full max-w-4xl h-[88vh] bg-[#161515] border border-white/[0.1] rounded-3xl shadow-2xl flex flex-col overflow-hidden focus:outline-none"
       >
         {/* Top Header */}
         <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-[#191818]">
@@ -164,7 +187,7 @@ export default function DocumentDetailsModal({
               <FilePdf size={22} weight="bold" className="text-red-400" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base font-semibold text-white truncate max-w-md sm:max-w-xl">
+              <h2 id="doc-details-title" className="text-base font-semibold text-white truncate max-w-md sm:max-w-xl">
                 {doc.originalName}
               </h2>
               <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
@@ -236,8 +259,20 @@ export default function DocumentDetailsModal({
         >
           {activeTab === "summary" ? (
             <div className="max-w-3xl mx-auto flex flex-col gap-6">
-              {/* Status processing banner if not ready */}
-              {doc.status !== "READY" && (
+              {/* Status processing or failure banner */}
+              {doc.status === "FAILED" && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 text-red-300 text-sm">
+                  <WarningCircle size={22} className="shrink-0 text-red-400" />
+                  <div>
+                    <p className="font-semibold">Document Analysis Failed</p>
+                    <p className="text-xs text-red-300/70 mt-0.5">
+                      {doc.error || "An error occurred while parsing this document. Please delete and upload it again."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {doc.status !== "READY" && doc.status !== "FAILED" && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 text-amber-300 text-sm">
                   <SpinnerGap size={20} className="animate-spin shrink-0" />
                   <div>

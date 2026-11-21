@@ -99,8 +99,12 @@ export default function DocumentUploadModal({ isOpen, onClose, onUploaded }) {
       toast.success("Document uploaded successfully! Analysis in progress.");
 
       setTimeout(() => {
+        setIsUploading(false);
+        setFile(null);
+        setProgress(0);
+        setStatusText("");
         onUploaded(document);
-        handleClose();
+        onClose();
       }, 700);
     } catch (err) {
       console.error("Upload error:", err);
@@ -158,11 +162,19 @@ export default function DocumentUploadModal({ isOpen, onClose, onUploaded }) {
         {/* Dropzone */}
         {!file ? (
           <div
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 ${
+            className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer focus:outline-none focus:border-osmo-lime transition-all duration-200 ${
               isDragOver
                 ? "border-osmo-lime bg-osmo-lime/5"
                 : "border-white/[0.12] hover:border-white/[0.25] bg-white/[0.02]"
