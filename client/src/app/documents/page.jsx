@@ -7,6 +7,8 @@ import {
   ArrowClockwise,
   FolderOpen,
   Sparkle,
+  CaretLeft,
+  CaretRight,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import ProtectedRoute from "../../components/layout/ProtectedRoute";
@@ -19,41 +21,68 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 12 });
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const pollingRef = useRef(null);
+  const searchRequestIdRef = useRef(0);
 
-  const fetchDocuments = useCallback(async (search = "") => {
+  const fetchDocuments = useCallback(async (page = 1, search = "") => {
+    const requestId = ++searchRequestIdRef.current;
     try {
-      const data = await docService.getDocuments(1, 50, search);
+      const data = await docService.getDocuments(page, 12, search);
+      // Invalidate if a newer search/page request has already been issued
+      if (requestId !== searchRequestIdRef.current) return;
       if (data?.documents) {
         setDocuments(data.documents);
       }
+      if (data?.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (err) {
-      console.error("Failed to load documents:", err);
+      if (requestId === searchRequestIdRef.current) {
+        console.error("Failed to load documents:", err);
+      }
     } finally {
-      setIsLoading(false);
+      if (requestId === searchRequestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
+  // Fetch documents on search query or page change
   useEffect(() => {
     let active = true;
-    docService.getDocuments(1, 50, searchQuery)
+    const reqId = ++searchRequestIdRef.current;
+
+    docService
+      .getDocuments(currentPage, 12, searchQuery)
       .then((data) => {
-        if (active && data?.documents) {
+        if (!active || reqId !== searchRequestIdRef.current) return;
+        if (data?.documents) {
           setDocuments(data.documents);
         }
+        if (data?.pagination) {
+          setPagination(data.pagination);
+        }
       })
-      .catch((err) => console.error("Failed to load documents:", err))
+      .catch((err) => {
+        if (active && reqId === searchRequestIdRef.current) {
+          console.error("Failed to load documents:", err);
+        }
+      })
       .finally(() => {
-        if (active) setIsLoading(false);
+        if (active && reqId === searchRequestIdRef.current) {
+          setIsLoading(false);
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [searchQuery]);
+  }, [currentPage, searchQuery]);
 
   // Polling for processing documents
   useEffect(() => {
@@ -63,21 +92,29 @@ export default function DocumentsPage() {
 
     if (hasProcessing) {
       pollingRef.current = setInterval(() => {
+        const currentReqId = searchRequestIdRef.current;
         docService
-          .getDocuments(1, 50, searchQuery)
+          .getDocuments(currentPage, 12, searchQuery)
           .then((data) => {
+            // Guard against stale response if search/page changed during poll
+            if (currentReqId !== searchRequestIdRef.current) return;
             if (data?.documents) {
               setDocuments(data.documents);
-              // If the selected document is open, update it too
+              // If the selected document is open, update it while preserving its downloadUrl
               setSelectedDocument((prev) => {
                 if (!prev) return null;
                 const updated = data.documents.find((d) => d._id === prev._id);
-                return updated || prev;
+                return updated
+                  ? { ...updated, downloadUrl: prev.downloadUrl || updated.downloadUrl }
+                  : prev;
               });
+            }
+            if (data?.pagination) {
+              setPagination(data.pagination);
             }
           })
           .catch(() => {
-            // Suppress background poll errors while backend is processing or restarting
+            // Suppress background poll errors while backend is restarting
           });
       }, 3000);
     } else {
@@ -87,7 +124,7 @@ export default function DocumentsPage() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [documents, searchQuery]);
+  }, [documents, searchQuery, currentPage]);
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this document?")) return;
@@ -100,120 +137,153 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleSelectDocument = (doc) => {
+  const handleSelectDocument = async (doc) => {
     setSelectedDocument(doc);
     setIsDetailsOpen(true);
+
+    try {
+      const full = await docService.getDocumentById(doc._id);
+      if (full?.document) {
+        setSelectedDocument(full.document);
+      }
+    } catch (err) {
+      console.warn("Could not pre-fetch full document details:", err.message);
+    }
   };
 
   const handleDocumentUploaded = (newDoc) => {
     setDocuments((prev) => [newDoc, ...prev]);
-    fetchDocuments();
+    fetchDocuments(1, searchQuery);
   };
 
   return (
     <ProtectedRoute>
       <main className="w-full flex-1 min-h-[calc(100vh-64px)] bg-[#121111] text-white p-4 sm:p-8 lg:p-12">
         <div className="max-w-7xl mx-auto flex flex-col gap-8">
-          {/* Top Banner */}
+          {/* Top Bar / Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-display text-xs font-bold text-white/30 tracking-widest uppercase">
-                  MODULE 02
-                </span>
-                <span className="text-white/20">•</span>
-                <span className="text-xs font-caveat text-osmo-lime text-base">
-                  Deep PDF Synthesis
+              <div className="flex items-center gap-2 text-osmo-lime mb-1">
+                <Sparkle size={18} weight="bold" />
+                <span className="text-xs font-mono font-bold tracking-widest uppercase">
+                  AI Contextual Workspace
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium uppercase tracking-tight text-white mt-1">
-                Document Analysis
+              <h1 className="text-2xl sm:text-3xl font-display font-semibold tracking-tight text-white">
+                Document Analysis &amp; RAG
               </h1>
-              <p className="text-xs sm:text-sm text-white/50 mt-1 max-w-xl">
-                Upload dense technical papers, financial statements, and reports. Extract structured summaries, key takeaways, and chat with your files using vector retrieval.
+              <p className="text-xs text-white/50 mt-1 font-caveat text-sm">
+                Upload PDFs for instant executive summaries, key takeaway extraction, and grounded vector Q&amp;A
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => fetchDocuments(searchQuery)}
-                className="p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white/70 hover:text-white transition-colors"
-                title="Refresh documents"
-              >
-                <ArrowClockwise size={18} weight="bold" />
-              </button>
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-osmo-lime text-osmo-dark font-semibold text-xs tracking-wider uppercase hover:bg-osmo-lime/90 transition-all shadow-lg shadow-osmo-lime/10"
-              >
-                <Plus size={16} weight="bold" />
-                Upload PDF
-              </button>
-            </div>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-osmo-lime text-osmo-dark font-semibold text-xs tracking-wider uppercase hover:bg-osmo-lime/90 active:scale-95 transition-all shadow-lg shadow-osmo-lime/10 shrink-0 cursor-pointer"
+            >
+              <Plus size={16} weight="bold" />
+              Upload PDF
+            </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-md">
+          {/* Search & Actions Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="relative w-full sm:w-80">
               <MagnifyingGlass
-                size={18}
-                weight="bold"
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
+                size={16}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40"
               />
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search documents by name..."
-                className="w-full bg-[#181717] border border-white/[0.08] rounded-2xl pl-11 pr-4 py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:outline-none focus:border-osmo-lime transition-colors"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // reset to page 1 on new search
+                }}
+                className="w-full pl-10 pr-4 py-2 bg-white/[0.03] border border-white/[0.08] rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-osmo-lime/50 transition-colors"
               />
             </div>
+
+            <button
+              onClick={() => fetchDocuments(currentPage, searchQuery)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-white/60 hover:text-white bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] transition-colors self-end sm:self-auto cursor-pointer"
+              title="Refresh document list"
+            >
+              <ArrowClockwise size={14} weight="bold" />
+              Refresh
+            </button>
           </div>
 
-          {/* Documents Grid */}
+          {/* Document Grid / Empty States */}
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="h-48 rounded-2xl bg-[#181717]/60 border border-white/[0.04] animate-pulse"
-                />
-              ))}
+            <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
+              <div className="w-8 h-8 rounded-full border-2 border-osmo-lime/20 border-t-osmo-lime animate-spin" />
+              <p className="text-xs text-white/40 font-mono tracking-widest uppercase">
+                Loading Knowledge Base...
+              </p>
             </div>
           ) : documents.length === 0 ? (
-            <div className="border border-dashed border-white/[0.12] rounded-3xl p-12 flex flex-col items-center justify-center text-center gap-4 my-8">
-              <div className="w-16 h-16 rounded-2xl bg-osmo-lime/10 flex items-center justify-center">
-                <FolderOpen size={32} weight="bold" className="text-osmo-lime" />
+            <div className="flex flex-col items-center justify-center min-h-[40vh] text-center p-8 bg-white/[0.01] border border-white/[0.06] rounded-3xl gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center">
+                <FolderOpen size={32} weight="light" className="text-white/30" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">
-                  No documents found
+              <div className="max-w-sm">
+                <h3 className="text-base font-semibold text-white">
+                  {searchQuery ? "No matching documents" : "No documents uploaded yet"}
                 </h3>
-                <p className="text-xs sm:text-sm text-white/40 mt-1 max-w-sm">
+                <p className="text-xs text-white/40 mt-1">
                   {searchQuery
-                    ? "No documents matched your search filter."
-                    : "Upload your first PDF document to experience vector-grounded analysis and Q&A."}
+                    ? `No PDFs match "${searchQuery}". Clear your search query to see all documents.`
+                    : "Upload a PDF document to begin automated summarization and AI question answering."}
                 </p>
               </div>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-lime text-osmo-dark font-semibold text-xs tracking-wider uppercase hover:bg-osmo-lime/90 transition-all shadow-lg shadow-osmo-lime/10 mt-2"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-lime text-osmo-dark font-semibold text-xs tracking-wider uppercase hover:bg-osmo-lime/90 transition-all shadow-lg shadow-osmo-lime/10 mt-2 cursor-pointer"
               >
                 <Plus size={16} weight="bold" />
                 Upload Your First PDF
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {documents.map((doc) => (
-                <DocumentCard
-                  key={doc._id}
-                  document={doc}
-                  onSelect={handleSelectDocument}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {documents.map((doc) => (
+                  <DocumentCard
+                    key={doc._id}
+                    document={doc}
+                    onSelect={handleSelectDocument}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination Bar */}
+              {pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-white/[0.08] pt-6 text-xs text-white/50">
+                  <span>
+                    Showing page {pagination.page} of {pagination.totalPages} ({pagination.total} documents)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage <= 1}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                    >
+                      <CaretLeft size={14} weight="bold" /> Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
+                      disabled={currentPage >= pagination.totalPages}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                    >
+                      Next <CaretRight size={14} weight="bold" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -224,15 +294,16 @@ export default function DocumentsPage() {
           onUploaded={handleDocumentUploaded}
         />
 
-        {/* Details & Q&A Modal */}
+        {/* Details & Q&A Modal: Keyed by stable document ID to reset conversation state when switching documents */}
         <DocumentDetailsModal
+          key={selectedDocument?._id || "none"}
           document={selectedDocument}
           isOpen={isDetailsOpen}
           onClose={() => {
             setIsDetailsOpen(false);
             setSelectedDocument(null);
           }}
-          onRefresh={() => fetchDocuments(searchQuery)}
+          onRefresh={() => fetchDocuments(currentPage, searchQuery)}
         />
       </main>
     </ProtectedRoute>
