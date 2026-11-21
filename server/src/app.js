@@ -21,6 +21,9 @@ import { globalLimiter } from "./middlewares/rateLimiter.middleware.js";
 
 const app = express();
 
+// Enable trust proxy for reverse proxies (Render, Heroku, Vercel)
+app.set("trust proxy", 1);
+
 // Initialize Passport
 configurePassport();
 app.use(passport.initialize());
