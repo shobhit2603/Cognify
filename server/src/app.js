@@ -55,6 +55,29 @@ app.use(
   }),
 );
 
+// Block state-changing requests from disallowed cross-origins before auth/routing executes
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || ["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    return next();
+  }
+
+  const isDevLocal =
+    envConfig.NODE_ENV === "development" &&
+    /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin);
+  const allowedOrigins = Array.isArray(envConfig.ALLOWED_ORIGINS)
+    ? envConfig.ALLOWED_ORIGINS
+    : [envConfig.ALLOWED_ORIGINS];
+
+  if (isDevLocal || allowedOrigins.includes(origin)) {
+    return next();
+  }
+
+  return res
+    .status(StatusCodes.FORBIDDEN)
+    .json(ApiResponse(StatusCodes.FORBIDDEN, "Cross-origin request blocked by security policy"));
+});
+
 // Security middleware configured to permit cross-origin resource sharing from client
 app.use(
   helmet({

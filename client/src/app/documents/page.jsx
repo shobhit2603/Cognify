@@ -28,6 +28,7 @@ export default function DocumentsPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const pollingRef = useRef(null);
   const searchRequestIdRef = useRef(0);
+  const prefetchRequestIdRef = useRef(0);
 
   const fetchDocuments = useCallback(async (page = 1, search = "") => {
     const requestId = ++searchRequestIdRef.current;
@@ -149,30 +150,54 @@ export default function DocumentsPage() {
     if (!confirm("Are you sure you want to delete this document?")) return;
     try {
       await docService.deleteDocument(id);
-      setDocuments((prev) => prev.filter((d) => d._id !== id));
       toast.success("Document deleted successfully");
+
+      // If deleting the last item on later page, step back to preceding page
+      if (documents.length === 1 && currentPage > 1) {
+        setCurrentPage((p) => p - 1);
+      } else {
+        setDocuments((prev) => prev.filter((d) => d._id !== id));
+        fetchDocuments(currentPage, searchQuery);
+      }
     } catch (err) {
       toast.error(err.message || "Failed to delete document");
     }
   };
 
   const handleSelectDocument = async (doc) => {
+    const requestId = ++prefetchRequestIdRef.current;
     setSelectedDocument(doc);
     setIsDetailsOpen(true);
 
     try {
       const full = await docService.getDocumentById(doc._id);
-      if (full?.document) {
-        setSelectedDocument(full.document);
+      // Guard against stale response if selection changed or modal closed
+      if (requestId === prefetchRequestIdRef.current && full?.document) {
+        setSelectedDocument((prev) => {
+          if (!prev || prev._id !== doc._id) return prev;
+          return { ...prev, ...full.document };
+        });
       }
     } catch (err) {
-      console.warn("Could not pre-fetch full document details:", err.message);
+      if (requestId === prefetchRequestIdRef.current) {
+        console.warn("Could not pre-fetch full document details:", err.message);
+      }
     }
   };
 
+  const handleCloseDetails = useCallback(() => {
+    prefetchRequestIdRef.current++;
+    setIsDetailsOpen(false);
+    setSelectedDocument(null);
+  }, []);
+
   const handleDocumentUploaded = (newDoc) => {
     setDocuments((prev) => [newDoc, ...prev]);
-    fetchDocuments(1, searchQuery);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      fetchDocuments(1, searchQuery);
+    }
   };
 
   return (
@@ -318,10 +343,7 @@ export default function DocumentsPage() {
           key={selectedDocument?._id || "none"}
           document={selectedDocument}
           isOpen={isDetailsOpen}
-          onClose={() => {
-            setIsDetailsOpen(false);
-            setSelectedDocument(null);
-          }}
+          onClose={handleCloseDetails}
           onRefresh={() => fetchDocuments(currentPage, searchQuery)}
         />
       </main>
