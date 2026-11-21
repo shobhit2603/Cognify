@@ -13,6 +13,14 @@ export const handleLocalStorageUpload = async (req, res, next) => {
         .json(ApiResponse(StatusCodes.BAD_REQUEST, "Missing storage key parameter"));
     }
 
+    // Verify key belongs strictly to authenticated user's prefix
+    const expectedPrefix = `documents/${req.user._id}/`;
+    if (!storageKey.startsWith(expectedPrefix)) {
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse(StatusCodes.FORBIDDEN, "Access denied: unauthorized storage key prefix"));
+    }
+
     const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || "");
     if (!buffer || buffer.length === 0) {
       return res
@@ -37,6 +45,14 @@ export const handleLocalStorageDownload = async (req, res, next) => {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json(ApiResponse(StatusCodes.BAD_REQUEST, "Missing storage key parameter"));
+    }
+
+    // Verify key belongs strictly to authenticated user's prefix
+    const expectedPrefix = `documents/${req.user._id}/`;
+    if (!storageKey.startsWith(expectedPrefix)) {
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse(StatusCodes.FORBIDDEN, "Access denied: unauthorized storage key prefix"));
     }
 
     const buffer = await s3Storage.getObjectBuffer(storageKey);

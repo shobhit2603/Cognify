@@ -26,16 +26,27 @@ const isLocalMode = () => {
 const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
 /**
- * Saves a binary buffer to local disk
+ * Resolves a local file path safely within UPLOADS_DIR, rejecting path traversal attempts.
+ */
+export const resolveSafeLocalPath = (storageKey) => {
+  const safePath = path.resolve(UPLOADS_DIR, storageKey);
+  if (!safePath.startsWith(UPLOADS_DIR)) {
+    throw new Error("Invalid storage key: path traversal detected");
+  }
+  return safePath;
+};
+
+/**
+ * Saves a binary buffer to local disk safely
  */
 export const saveLocalBuffer = async (storageKey, buffer) => {
-  const fullPath = path.join(UPLOADS_DIR, storageKey);
+  const fullPath = resolveSafeLocalPath(storageKey);
   await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
   await fs.promises.writeFile(fullPath, buffer);
   return fullPath;
 };
 
-export const generatePresignedUrl = async (userId, fileName, mimeType) => {
+export const generatePresignedUrl = async (userId, fileName, mimeType, size = null) => {
   const documentId = uuidv4();
   const ext = path.extname(fileName) || "";
   const storageKey = `documents/${userId}/${documentId}/original${ext}`;
@@ -50,12 +61,17 @@ export const generatePresignedUrl = async (userId, fileName, mimeType) => {
     };
   }
 
-  const command = new PutObjectCommand({
+  const putParams = {
     Bucket: envConfig.AWS_S3_BUCKET_NAME,
     Key: storageKey,
     ContentType: mimeType,
-  });
+  };
 
+  if (size && typeof size === "number") {
+    putParams.ContentLength = size;
+  }
+
+  const command = new PutObjectCommand(putParams);
   const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
 
   return {
@@ -69,7 +85,7 @@ export const generatePresignedUrl = async (userId, fileName, mimeType) => {
  * Downloads the object as a Buffer (checks local storage first, then S3)
  */
 export const getObjectBuffer = async (storageKey) => {
-  const localPath = path.join(UPLOADS_DIR, storageKey);
+  const localPath = resolveSafeLocalPath(storageKey);
   if (fs.existsSync(localPath)) {
     return await fs.promises.readFile(localPath);
   }
@@ -92,7 +108,7 @@ export const getObjectBuffer = async (storageKey) => {
  * Generates a presigned download URL for viewing/downloading the PDF
  */
 export const generatePresignedDownloadUrl = async (storageKey) => {
-  const localPath = path.join(UPLOADS_DIR, storageKey);
+  const localPath = resolveSafeLocalPath(storageKey);
   if (isLocalMode() || fs.existsSync(localPath)) {
     const serverUrl = process.env.SERVER_URL || `http://localhost:${envConfig.PORT || 5000}`;
     return `${serverUrl}/api/v1/documents/local-storage/file?key=${encodeURIComponent(storageKey)}`;
@@ -111,7 +127,7 @@ export const generatePresignedDownloadUrl = async (storageKey) => {
  */
 export const deleteObjectFromS3 = async (storageKey) => {
   try {
-    const localPath = path.join(UPLOADS_DIR, storageKey);
+    const localPath = resolveSafeLocalPath(storageKey);
     if (fs.existsSync(localPath)) {
       await fs.promises.unlink(localPath);
     }
@@ -120,16 +136,12 @@ export const deleteObjectFromS3 = async (storageKey) => {
   }
 
   if (!isLocalMode()) {
-    try {
-      const command = new DeleteObjectCommand({
-        Bucket: envConfig.AWS_S3_BUCKET_NAME,
-        Key: storageKey,
-      });
-      await s3Client.send(command);
-    } catch (error) {
-      console.error(`[S3 Storage] Failed to delete object ${storageKey}:`, error.message);
-      return false;
-    }
+    const command = new DeleteObjectCommand({
+      Bucket: envConfig.AWS_S3_BUCKET_NAME,
+      Key: storageKey,
+    });
+    // Propagate S3 deletion errors so callers can handle or retry
+    await s3Client.send(command);
   }
   return true;
 };
