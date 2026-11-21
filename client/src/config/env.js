@@ -1,15 +1,25 @@
 /**
  * Centralized environment variable configuration for the client.
  */
-export const env = {
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+const isProduction = process.env.NODE_ENV === 'production';
+
+const resolveApiUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (isProduction) {
+    // In production, route via first-party relative proxy unless a custom relative endpoint is specified
+    if (!envUrl || envUrl.includes('onrender.com') || envUrl === '/api/v1') {
+      return '/api/v1';
+    }
+    return envUrl;
+  }
+  return envUrl || 'http://localhost:5000/api/v1';
 };
 
-// Log a warning if the API URL is missing so developers know immediately
-if (!env.NEXT_PUBLIC_API_URL) {
-  console.warn("⚠️ NEXT_PUBLIC_API_URL is missing. Please check your .env file.");
-}
+export const API_URL = resolveApiUrl();
 
-// Ensure there is always a fallback to prevent catastrophic errors in dev, 
-// though ideally it should be provided by .env
-export const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+export const env = {
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  API_URL,
+  isProduction,
+  isDevelopment: !isProduction,
+};

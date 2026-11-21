@@ -18,7 +18,7 @@ export const register = async (req, res, next) => {
       ipAddress,
     });
 
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, accessToken, refreshToken, req);
 
     res
       .status(StatusCodes.CREATED)
@@ -45,7 +45,7 @@ export const login = async (req, res, next) => {
       ipAddress,
     );
 
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, accessToken, refreshToken, req);
 
     res
       .status(StatusCodes.OK)
@@ -73,13 +73,13 @@ export const refresh = async (req, res, next) => {
       user,
     } = await authService.refreshTokens(refreshToken, userAgent, ipAddress);
 
-    setCookies(res, accessToken, newRefreshToken);
+    setCookies(res, accessToken, newRefreshToken, req);
 
     res
       .status(StatusCodes.OK)
       .json(ApiResponse(StatusCodes.OK, "Tokens refreshed", { user }));
   } catch (error) {
-    clearCookies(res);
+    clearCookies(res, req);
     next(error);
   }
 };
@@ -89,7 +89,7 @@ export const logout = async (req, res, next) => {
     const { refreshToken } = req.cookies;
     await authService.logout(refreshToken);
 
-    clearCookies(res);
+    clearCookies(res, req);
 
     res
       .status(StatusCodes.OK)
@@ -121,7 +121,7 @@ export const googleCallback = async (req, res, next) => {
       ipAddress,
     );
 
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, accessToken, refreshToken, req);
 
     res.redirect(`${envConfig.CLIENT_URL}/dashboard`);
   } catch (error) {

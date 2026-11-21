@@ -43,11 +43,14 @@ app.use(
       ) {
         return callback(null, true);
       }
-      // Check against configured allowed origins
-      const allowedOrigins = Array.isArray(envConfig.ALLOWED_ORIGINS)
+      // Check against configured allowed origins (normalized for trailing slashes)
+      const allowedOrigins = (Array.isArray(envConfig.ALLOWED_ORIGINS)
         ? envConfig.ALLOWED_ORIGINS
-        : [envConfig.ALLOWED_ORIGINS];
-      if (allowedOrigins.includes(origin)) {
+        : [envConfig.ALLOWED_ORIGINS]
+      ).map((o) => (typeof o === "string" ? o.trim().replace(/\/+$/, "") : o));
+      const normalizedOrigin = typeof origin === "string" ? origin.trim().replace(/\/+$/, "") : origin;
+
+      if (allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
       return callback(null, false);
@@ -68,11 +71,13 @@ app.use((req, res, next) => {
   const isDevLocal =
     envConfig.NODE_ENV === "development" &&
     /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin);
-  const allowedOrigins = Array.isArray(envConfig.ALLOWED_ORIGINS)
+  const allowedOrigins = (Array.isArray(envConfig.ALLOWED_ORIGINS)
     ? envConfig.ALLOWED_ORIGINS
-    : [envConfig.ALLOWED_ORIGINS];
+    : [envConfig.ALLOWED_ORIGINS]
+  ).map((o) => (typeof o === "string" ? o.trim().replace(/\/+$/, "") : o));
+  const normalizedOrigin = typeof origin === "string" ? origin.trim().replace(/\/+$/, "") : origin;
 
-  if (isDevLocal || allowedOrigins.includes(origin)) {
+  if (isDevLocal || allowedOrigins.includes(normalizedOrigin)) {
     return next();
   }
 

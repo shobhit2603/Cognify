@@ -16,8 +16,8 @@ const envConfig = Object.freeze({
   MONGO_URI: process.env.MONGO_URI,
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(",") 
-    : [process.env.CLIENT_URL || "http://localhost:3000"],
+    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()) 
+    : [process.env.CLIENT_URL ? process.env.CLIENT_URL.trim() : "http://localhost:3000"],
   JWT_SECRET: process.env.JWT_SECRET,
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
   ACCESS_TOKEN_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY || "15m",

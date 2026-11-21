@@ -1,17 +1,16 @@
 import envConfig from "../config/env.config.js";
 
-const getCookieOptions = (req) => {
+const getCookieOptions = (req = null) => {
   const isProd = envConfig.NODE_ENV === "production";
   const baseOptions = {
     httpOnly: true,
     secure: isProd,
     sameSite: "lax",
+    path: "/",
   };
 
   // If a request object is passed and origin doesn't match the server's own origin/localhost,
-  // we might be cross-site. Since the API handles CORS based on ALLOWED_ORIGINS,
-  // if ALLOWED_ORIGINS does not match the server's domain in production, it's cross-site.
-  // For safety and compatibility with cross-site setups (like frontend on Vercel, backend on Render):
+  // or cross-site is explicitly forced in production:
   if (isProd && process.env.IS_CROSS_SITE === "true") {
     return {
       ...baseOptions,

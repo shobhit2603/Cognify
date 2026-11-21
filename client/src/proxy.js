@@ -47,6 +47,9 @@ export function proxy(request) {
   return NextResponse.next();
 }
 
+export const middleware = proxy;
+export default proxy;
+
 export const config = {
   /*
    * Match only paths that actually need middleware protection/redirection

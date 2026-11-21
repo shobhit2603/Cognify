@@ -8,7 +8,7 @@ export const configurePassport = () => {
       {
         clientID: process.env.GOOGLE_CLIENT_ID || "temp-client-id",
         clientSecret: process.env.GOOGLE_CLIENT_SECRET || "temp-client-secret",
-        callbackURL: "/api/v1/auth/google/callback",
+        callbackURL: process.env.GOOGLE_CALLBACK_URL || "/api/v1/auth/google/callback",
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
