@@ -43,11 +43,15 @@ export const uploadFileToS3 = async (uploadUrl, file, onProgress = null) => {
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(true);
       } else {
+        console.error(`[Upload] Upload failed with status ${xhr.status}: ${xhr.statusText}`, xhr.responseText);
         reject(new Error(`Failed to upload to storage: status ${xhr.status}`));
       }
     };
 
-    xhr.onerror = () => reject(new Error("Network error during file upload"));
+    xhr.onerror = () => {
+      console.error("[Upload] Network error during upload:", xhr.status, xhr.statusText, xhr.responseText);
+      reject(new Error("Network error during file upload"));
+    };
     xhr.send(file);
   });
 };

@@ -12,6 +12,8 @@ const s3Client = new S3Client({
     accessKeyId: envConfig.AWS_ACCESS_KEY_ID || "dummy",
     secretAccessKey: envConfig.AWS_SECRET_ACCESS_KEY || "dummy",
   },
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 });
 
 const isLocalMode = () => {
@@ -61,17 +63,11 @@ export const generatePresignedUrl = async (userId, fileName, mimeType, size = nu
     };
   }
 
-  const putParams = {
+  const command = new PutObjectCommand({
     Bucket: envConfig.AWS_S3_BUCKET_NAME,
     Key: storageKey,
     ContentType: mimeType,
-  };
-
-  if (size && typeof size === "number") {
-    putParams.ContentLength = size;
-  }
-
-  const command = new PutObjectCommand(putParams);
+  });
   const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
 
   return {
