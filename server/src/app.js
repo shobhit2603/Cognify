@@ -27,34 +27,43 @@ app.use(passport.initialize());
 
 // ─── Global Middlewares ──────────────────────────────────
 
-// Security middleware
-app.use(helmet());
-
-// Apply global rate limiter
-app.use(globalLimiter);
-
-// CORS configuration
+// CORS configuration (must precede helmet and rate limiters to properly handle preflight OPTIONS)
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       // Allow localhost or local network IPs for development
-      if (envConfig.NODE_ENV === "development" && /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+      if (
+        envConfig.NODE_ENV === "development" &&
+        /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin)
+      ) {
         return callback(null, true);
       }
       // Check against configured allowed origins
-      const allowedOrigins = Array.isArray(envConfig.ALLOWED_ORIGINS) ? envConfig.ALLOWED_ORIGINS : [envConfig.ALLOWED_ORIGINS];
+      const allowedOrigins = Array.isArray(envConfig.ALLOWED_ORIGINS)
+        ? envConfig.ALLOWED_ORIGINS
+        : [envConfig.ALLOWED_ORIGINS];
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("Not allowed by CORS"));
+      return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
   }),
 );
+
+// Security middleware configured to permit cross-origin resource sharing from client
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+
+// Apply global rate limiter
+app.use(globalLimiter);
 
 // Parse JSON request bodies
 app.use(express.json({ limit: "16kb" }));

@@ -73,20 +73,25 @@ export default function DocumentUploadModal({ isOpen, onClose, onUploaded }) {
 
     try {
       // 1. Get Presigned S3 URL & create document record
-      const { document, uploadUrl } = await docService.getUploadUrl({
+      const { document, uploadUrl, storageKey } = await docService.getUploadUrl({
         fileName: file.name,
-        mimeType: file.type || "application/pdf",
+        mimeType: "application/pdf",
         size: file.size,
       });
 
       setProgress(20);
       setStatusText("Uploading document to storage...");
 
-      // 2. Direct upload to S3 with progress tracking
-      await docService.uploadFileToS3(uploadUrl, file, (percent) => {
-        const scaled = Math.min(80, 20 + Math.round(percent * 0.6));
-        setProgress(scaled);
-      });
+      // 2. Direct upload to S3 with progress tracking (with server fallback if direct S3 blocked)
+      await docService.uploadFileToS3(
+        uploadUrl,
+        file,
+        (percent) => {
+          const scaled = Math.min(80, 20 + Math.round(percent * 0.6));
+          setProgress(scaled);
+        },
+        document?.storageKey || storageKey
+      );
 
       setProgress(85);
       setStatusText("Enqueuing document for AI extraction & indexing...");

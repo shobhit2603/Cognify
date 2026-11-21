@@ -16,7 +16,7 @@ const s3Client = new S3Client({
   responseChecksumValidation: "WHEN_REQUIRED",
 });
 
-const isLocalMode = () => {
+export const isLocalMode = () => {
   return (
     !envConfig.AWS_S3_BUCKET_NAME ||
     envConfig.AWS_S3_BUCKET_NAME === "dummy_bucket_name" ||
@@ -132,12 +132,68 @@ export const deleteObjectFromS3 = async (storageKey) => {
   }
 
   if (!isLocalMode()) {
-    const command = new DeleteObjectCommand({
-      Bucket: envConfig.AWS_S3_BUCKET_NAME,
-      Key: storageKey,
-    });
-    // Propagate S3 deletion errors so callers can handle or retry
-    await s3Client.send(command);
+    try {
+      const command = new DeleteObjectCommand({
+        Bucket: envConfig.AWS_S3_BUCKET_NAME,
+        Key: storageKey,
+      });
+      await s3Client.send(command);
+    } catch (s3Err) {
+      const isNotFound =
+        s3Err?.name === "NoSuchKey" ||
+        s3Err?.name === "NotFound" ||
+        s3Err?.$metadata?.httpStatusCode === 404 ||
+        (typeof s3Err?.message === "string" && s3Err.message.toLowerCase().includes("not found"));
+
+      if (isNotFound) {
+        console.warn(`[Storage] S3 object ${storageKey} already absent, continuing deletion:`, s3Err.message);
+      } else {
+        throw s3Err;
+      }
+    }
   }
   return true;
+};
+
+/**
+ * Directly uploads a buffer to AWS S3 (used for server-assisted upload fallback)
+ */
+export const uploadBufferToS3 = async (storageKey, buffer, mimeType = "application/pdf") => {
+  if (isLocalMode()) return false;
+  const command = new PutObjectCommand({
+    Bucket: envConfig.AWS_S3_BUCKET_NAME,
+    Key: storageKey,
+    Body: buffer,
+    ContentType: mimeType,
+  });
+  await s3Client.send(command);
+  return true;
+};
+
+/**
+ * Ensures the S3 bucket has the CORS policy configured for browser PUT uploads
+ */
+export const configureBucketCors = async () => {
+  if (isLocalMode()) return;
+  try {
+    const { PutBucketCorsCommand } = await import("@aws-sdk/client-s3");
+    const command = new PutBucketCorsCommand({
+      Bucket: envConfig.AWS_S3_BUCKET_NAME,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedHeaders: ["*"],
+            AllowedMethods: ["PUT", "POST", "GET", "HEAD", "DELETE"],
+            AllowedOrigins: ["*"],
+            ExposeHeaders: ["ETag"],
+            MaxAgeSeconds: 3000,
+          },
+        ],
+      },
+    });
+    await s3Client.send(command);
+    console.log("[Storage] S3 Bucket CORS configured successfully.");
+  } catch (err) {
+    console.warn("[Storage] Could not update S3 CORS automatically:", err.message);
+  }
 };

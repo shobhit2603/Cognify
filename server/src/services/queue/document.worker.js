@@ -148,7 +148,7 @@ export const processDocumentJob = async (job) => {
     await documentRepository.deleteChunksByDocumentId(documentId);
     if (pinecone && envConfig.PINECONE_API_KEY) {
       try {
-        const index = pinecone.Index("cognify-rag");
+        const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
         await index.deleteMany({
           filter: { documentId: { $eq: String(documentId) } },
         });
@@ -201,7 +201,7 @@ export const processDocumentJob = async (job) => {
           },
         }));
 
-        const index = pinecone.Index("cognify-rag");
+        const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
         const batchSize = 100;
         for (let b = 0; b < pineconeRecords.length; b += batchSize) {
           const batch = pineconeRecords.slice(b, b + batchSize);

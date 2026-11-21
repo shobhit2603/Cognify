@@ -30,9 +30,17 @@ export const handleLocalStorageUpload = async (req, res, next) => {
 
     await s3Storage.saveLocalBuffer(storageKey, buffer);
 
+    if (!s3Storage.isLocalMode()) {
+      try {
+        await s3Storage.uploadBufferToS3(storageKey, buffer, "application/pdf");
+      } catch (s3SyncErr) {
+        console.warn("[Storage] S3 buffer sync notice (local copy available):", s3SyncErr.message);
+      }
+    }
+
     res
       .status(StatusCodes.OK)
-      .json(ApiResponse(StatusCodes.OK, "File stored locally successfully"));
+      .json(ApiResponse(StatusCodes.OK, "File stored successfully"));
   } catch (error) {
     next(error);
   }

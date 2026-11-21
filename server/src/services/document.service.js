@@ -46,6 +46,7 @@ export const requestUploadUrl = async (userId, { fileName, mimeType, size }) => 
   return {
     document,
     uploadUrl,
+    storageKey,
   };
 };
 
@@ -138,7 +139,7 @@ async function retrieveDocumentContext(documentId, question) {
   // 1. Try vector retrieval from Pinecone
   if (envConfig.PINECONE_API_KEY && envConfig.MISTRAL_API_KEY) {
     try {
-      const index = pinecone.Index("cognify-rag");
+      const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
       const vector = await embeddings.embedQuery(question);
 
       const queryResult = await index.query({
@@ -301,24 +302,49 @@ export const deleteDocument = async (documentId, userId) => {
     throw ApiError(403, "You do not have permission to delete this document");
   }
 
-  // 1. Delete vectors from Pinecone using vector chunk IDs and metadata filter
+  // 1. Delete vectors from Pinecone using vector chunk IDs
   if (envConfig.NODE_ENV !== "test" && pinecone && envConfig.PINECONE_API_KEY) {
     try {
       const chunks = await documentRepository.findChunksByDocumentId(documentId);
       const vectorIds = chunks.map((c) => c.chunkId).filter(Boolean);
-      const index = pinecone.Index("cognify-rag");
+      const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
 
+      // Only attempt Pinecone delete if there are indexed vector IDs
+      // (Pinecone Serverless indexes reject delete-by-filter with 400 Bad Request)
       if (vectorIds.length > 0) {
         await index.deleteMany(vectorIds);
-      } else {
-        await index.deleteMany({
-          filter: { documentId: { $eq: String(documentId) } },
-        });
       }
     } catch (vectorErr) {
-      console.error("[Document Service] Failed to delete Pinecone vectors:", vectorErr.message);
-      // Propagate error to leave document record available for retry
-      throw ApiError(500, `Failed to clean up vector embeddings: ${vectorErr.message}`);
+      const isNotFound =
+        vectorErr?.status === 404 ||
+        vectorErr?.statusCode === 404 ||
+        vectorErr?.response?.status === 404 ||
+        vectorErr?.cause?.status === 404 ||
+        vectorErr?.name === "PineconeNotFoundError" ||
+        vectorErr?.name === "NotFoundError" ||
+        (typeof vectorErr?.message === "string" &&
+          (vectorErr.message.includes("404") ||
+           vectorErr.message.toLowerCase().includes("not found") ||
+           vectorErr.message.toLowerCase().includes("index not found")));
+
+      if (isNotFound) {
+        console.warn(
+          "[Document Service] Pinecone index or vectors not found (404), proceeding with document deletion:",
+          vectorErr.message
+        );
+      } else if (
+        typeof vectorErr?.message === "string" &&
+        vectorErr.message.toLowerCase().includes("filter")
+      ) {
+        console.warn(
+          "[Document Service] Pinecone filter delete unsupported on serverless index, proceeding:",
+          vectorErr.message
+        );
+      } else {
+        console.error("[Document Service] Failed to delete Pinecone vectors:", vectorErr.message);
+        // Propagate error to leave document record available for retry
+        throw ApiError(500, `Failed to clean up vector embeddings: ${vectorErr.message}`);
+      }
     }
   }
 
