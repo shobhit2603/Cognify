@@ -1,32 +1,47 @@
 import { Queue } from "bullmq";
-import redisClient, { isRedisAvailable } from "../../config/redis.config.js";
+import redisClient from "../../config/redis.config.js";
 
-// Initialize BullMQ Queue only if Redis is confirmed active
+// BullMQ Queue instance
 export let documentQueue = null;
 
-if (redisClient && isRedisAvailable) {
-  try {
-    documentQueue = new Queue("document-processing", {
-      connection: redisClient,
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 3000,
+export const getDocumentQueue = () => {
+  if (!documentQueue && redisClient && redisClient.status === "ready") {
+    try {
+      documentQueue = new Queue("document-processing", {
+        connection: redisClient,
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 3000,
+          },
+          removeOnComplete: true,
+          removeOnFail: false,
         },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    });
+      });
 
-    documentQueue.on("error", (err) => {
-      console.warn("[BullMQ Queue Notice]:", err.message);
-    });
-  } catch (error) {
-    console.warn("⚠️ Failed to initialize document processing BullMQ queue:", error.message);
-    documentQueue = null;
+      documentQueue.on("error", (err) => {
+        console.warn("[BullMQ Queue Notice]:", err.message);
+      });
+    } catch (error) {
+      console.warn("⚠️ Failed to initialize BullMQ queue:", error.message);
+      documentQueue = null;
+    }
   }
+  return documentQueue;
+};
+
+// Listen on redisClient ready event to initialize queue
+if (redisClient) {
+  redisClient.on("ready", () => {
+    getDocumentQueue();
+  });
 }
+
+/**
+ * In-memory set of currently running processing tasks (for deduplication in fallback path)
+ */
+const activeProcessingSet = new Set();
 
 /**
  * Enqueue a document for processing
@@ -35,19 +50,35 @@ if (redisClient && isRedisAvailable) {
  * @param {string} storageKey - The S3 storage key of the document
  */
 export const enqueueDocumentProcessing = async (documentId, userId, storageKey) => {
-  // If Redis is online and ready, use BullMQ
-  if (documentQueue && redisClient && redisClient.status === "ready") {
+  const queue = getDocumentQueue();
+
+  // If Redis is online and ready, use BullMQ with deterministic jobId to deduplicate
+  if (queue && redisClient && redisClient.status === "ready") {
     try {
-      const job = await documentQueue.add("process-document", {
-        documentId,
-        userId,
-        storageKey,
-      });
+      const jobId = `doc-${documentId}`;
+      const job = await queue.add(
+        "process-document",
+        {
+          documentId,
+          userId,
+          storageKey,
+        },
+        {
+          jobId, // Prevents duplicate jobs from being queued simultaneously
+        }
+      );
       return { queued: true, jobId: job.id };
     } catch (err) {
       console.warn("[BullMQ] Failed to enqueue job, falling back to direct async worker:", err.message);
     }
   }
+
+  // Deduplicate direct in-process processing
+  const docKey = String(documentId);
+  if (activeProcessingSet.has(docKey)) {
+    return { queued: true, direct: true, alreadyRunning: true };
+  }
+  activeProcessingSet.add(docKey);
 
   // Direct Async Fallback: runs safely in-process without blocking HTTP requests
   import("./document.worker.js")
@@ -60,10 +91,15 @@ export const enqueueDocumentProcessing = async (documentId, userId, storageKey) 
           });
         } catch (err) {
           console.error("[Async Document Worker Fallback Error]:", err.message);
+        } finally {
+          activeProcessingSet.delete(docKey);
         }
       });
     })
-    .catch((err) => console.error("Worker import error:", err));
+    .catch((err) => {
+      activeProcessingSet.delete(docKey);
+      console.error("Worker import error:", err);
+    });
 
   return { queued: true, direct: true };
 };

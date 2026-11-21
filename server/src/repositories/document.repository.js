@@ -1,6 +1,18 @@
 import { Document } from "../models/document.model.js";
 import { DocumentChunk } from "../models/documentChunk.model.js";
 
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildDocumentQuery(userId, search = "") {
+  const query = { userId };
+  if (search && search.trim()) {
+    query.originalName = { $regex: escapeRegex(search.trim()), $options: "i" };
+  }
+  return query;
+}
+
 export const createDocument = async (data, session = null) => {
   const [document] = await Document.create([data], { session });
   return document;
@@ -11,10 +23,7 @@ export const findDocumentById = async (id) => {
 };
 
 export const findDocumentsByUserId = async (userId, skip = 0, limit = 10, search = "") => {
-  const query = { userId };
-  if (search && search.trim()) {
-    query.originalName = { $regex: search.trim(), $options: "i" };
-  }
+  const query = buildDocumentQuery(userId, search);
   return Document.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -23,10 +32,7 @@ export const findDocumentsByUserId = async (userId, skip = 0, limit = 10, search
 };
 
 export const countDocumentsByUserId = async (userId, search = "") => {
-  const query = { userId };
-  if (search && search.trim()) {
-    query.originalName = { $regex: search.trim(), $options: "i" };
-  }
+  const query = buildDocumentQuery(userId, search);
   return Document.countDocuments(query);
 };
 

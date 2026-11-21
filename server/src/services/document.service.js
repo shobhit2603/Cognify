@@ -8,14 +8,18 @@ import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { getGroqModelInstance } from "../providers/groq.provider.js";
 
-const embeddings = new MistralAIEmbeddings({
-  apiKey: envConfig.MISTRAL_API_KEY,
-  model: "mistral-embed",
-});
+const embeddings = envConfig.MISTRAL_API_KEY
+  ? new MistralAIEmbeddings({
+      apiKey: envConfig.MISTRAL_API_KEY,
+      model: "mistral-embed",
+    })
+  : null;
 
-const pinecone = new PineconeClient({
-  apiKey: envConfig.PINECONE_API_KEY,
-});
+const pinecone = envConfig.PINECONE_API_KEY
+  ? new PineconeClient({
+      apiKey: envConfig.PINECONE_API_KEY,
+    })
+  : null;
 
 /**
  * Initiates document upload by generating an S3 presigned URL
@@ -24,7 +28,8 @@ export const requestUploadUrl = async (userId, { fileName, mimeType, size }) => 
   const { storageKey, uploadUrl } = await s3Storage.generatePresignedUrl(
     userId,
     fileName,
-    mimeType
+    mimeType,
+    size
   );
 
   const document = await documentRepository.createDocument({
@@ -55,6 +60,15 @@ export const startProcessing = async (documentId, userId) => {
 
   if (document.userId.toString() !== userId.toString()) {
     throw ApiError(403, "You do not have permission to access this document");
+  }
+
+  // Deduplicate: If document is already queued or actively processing, return early
+  if (["QUEUED", "PARSING", "CHUNKING", "EMBEDDING", "INDEXING"].includes(document.status)) {
+    return {
+      success: true,
+      status: document.status,
+      message: "Document processing is already in progress",
+    };
   }
 
   await documentRepository.updateDocument(documentId, {
@@ -275,7 +289,7 @@ export async function* streamAskDocument(documentId, userId, question) {
 }
 
 /**
- * Deletes a document, its S3 file, and its chunks
+ * Deletes a document, its S3 file, vector embeddings, and chunk rows
  */
 export const deleteDocument = async (documentId, userId) => {
   const document = await documentRepository.findDocumentById(documentId);
@@ -287,13 +301,39 @@ export const deleteDocument = async (documentId, userId) => {
     throw ApiError(403, "You do not have permission to delete this document");
   }
 
-  // 1. Delete from S3
-  await s3Storage.deleteObjectFromS3(document.storageKey);
+  // 1. Delete vectors from Pinecone using vector chunk IDs and metadata filter
+  if (envConfig.NODE_ENV !== "test" && pinecone && envConfig.PINECONE_API_KEY) {
+    try {
+      const chunks = await documentRepository.findChunksByDocumentId(documentId);
+      const vectorIds = chunks.map((c) => c.chunkId).filter(Boolean);
+      const index = pinecone.Index("cognify-rag");
 
-  // 2. Delete chunks from MongoDB
+      if (vectorIds.length > 0) {
+        await index.deleteMany(vectorIds);
+      } else {
+        await index.deleteMany({
+          filter: { documentId: { $eq: String(documentId) } },
+        });
+      }
+    } catch (vectorErr) {
+      console.error("[Document Service] Failed to delete Pinecone vectors:", vectorErr.message);
+      // Propagate error to leave document record available for retry
+      throw ApiError(500, `Failed to clean up vector embeddings: ${vectorErr.message}`);
+    }
+  }
+
+  // 2. Delete from S3 storage (propagate failure to prevent orphaned DB deletions)
+  try {
+    await s3Storage.deleteObjectFromS3(document.storageKey);
+  } catch (storageErr) {
+    console.error("[Document Service] Failed to delete file from storage:", storageErr.message);
+    throw ApiError(500, `Failed to delete file from storage: ${storageErr.message}`);
+  }
+
+  // 3. Delete chunks from MongoDB
   await documentRepository.deleteChunksByDocumentId(documentId);
 
-  // 3. Delete document record
+  // 4. Delete document record
   await documentRepository.deleteDocument(documentId);
 
   return { success: true, message: "Document deleted successfully" };

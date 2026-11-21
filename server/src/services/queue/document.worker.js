@@ -12,15 +12,34 @@ import * as s3Storage from "../storage/s3.storage.js";
 import * as documentRepository from "../../repositories/document.repository.js";
 import { getGroqModelInstance } from "../../providers/groq.provider.js";
 
-// Initialize AI clients
-const embeddings = new MistralAIEmbeddings({
-  apiKey: envConfig.MISTRAL_API_KEY,
-  model: "mistral-embed",
-});
+// Initialize AI clients safely (only if respective API keys are present)
+const embeddings = envConfig.MISTRAL_API_KEY
+  ? new MistralAIEmbeddings({
+      apiKey: envConfig.MISTRAL_API_KEY,
+      model: "mistral-embed",
+    })
+  : null;
 
-const pinecone = new PineconeClient({
-  apiKey: envConfig.PINECONE_API_KEY,
-});
+const pinecone = envConfig.PINECONE_API_KEY
+  ? new PineconeClient({
+      apiKey: envConfig.PINECONE_API_KEY,
+    })
+  : null;
+
+/**
+ * Validates that a buffer has a valid PDF magic header (%PDF-)
+ */
+function isValidPdfBuffer(buffer) {
+  if (!buffer || buffer.length < 5) return false;
+  // %PDF- in ASCII is 0x25, 0x50, 0x44, 0x46, 0x2D
+  return (
+    buffer[0] === 0x25 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x44 &&
+    buffer[3] === 0x46 &&
+    buffer[4] === 0x2d
+  );
+}
 
 /**
  * Core document processing logic
@@ -46,6 +65,11 @@ export const processDocumentJob = async (job) => {
 
     console.log(`[Document Worker] Downloading document ${documentId} from S3 key: ${storageKey}`);
     const pdfBuffer = await s3Storage.getObjectBuffer(storageKey);
+
+    // Validate PDF signature before parsing
+    if (!isValidPdfBuffer(pdfBuffer)) {
+      throw new Error("Invalid file content: uploaded file is not a valid PDF document");
+    }
 
     // ── 2. Parse PDF text per page ──
     const parser = new PDFParse({ data: pdfBuffer });
@@ -113,6 +137,26 @@ export const processDocumentJob = async (job) => {
 
     console.log(`[Document Worker] Document ${documentId}: extracted ${pageCount} pages, created ${allChunks.length} chunks.`);
 
+    // ── Pre-persistence check: Guarantee document hasn't been deleted ──
+    const stillActive = await documentRepository.findDocumentById(documentId);
+    if (!stillActive) {
+      console.warn(`[Document Worker] Document ${documentId} was deleted during chunking. Aborting persistence.`);
+      return { success: false, reason: "Document deleted" };
+    }
+
+    // ── Idempotency: Clean up any prior chunks/vectors before inserting replacements ──
+    await documentRepository.deleteChunksByDocumentId(documentId);
+    if (pinecone && envConfig.PINECONE_API_KEY) {
+      try {
+        const index = pinecone.Index("cognify-rag");
+        await index.deleteMany({
+          filter: { documentId: { $eq: String(documentId) } },
+        });
+      } catch (cleanErr) {
+        console.warn("[Document Worker] Prior vector cleanup notice:", cleanErr.message);
+      }
+    }
+
     // ── 4. Embedding & Indexing ──
     await documentRepository.updateDocument(documentId, {
       status: "EMBEDDING",
@@ -121,18 +165,19 @@ export const processDocumentJob = async (job) => {
     });
     if (job.updateProgress) await job.updateProgress(55);
 
-    // Save chunks to MongoDB
+    // Save chunks to MongoDB with chunkId
     if (allChunks.length > 0) {
       await documentRepository.createDocumentChunks(
         allChunks.map((c) => ({
           documentId,
+          chunkId: c.chunkId,
           content: c.content,
           pageNumber: c.pageNumber,
         }))
       );
     }
 
-    // Upsert to Pinecone
+    // Upsert to Pinecone (passing options object with records field)
     try {
       await documentRepository.updateDocument(documentId, {
         status: "INDEXING",
@@ -140,7 +185,7 @@ export const processDocumentJob = async (job) => {
       });
       if (job.updateProgress) await job.updateProgress(75);
 
-      if (allChunks.length > 0 && envConfig.PINECONE_API_KEY && envConfig.MISTRAL_API_KEY) {
+      if (allChunks.length > 0 && pinecone && envConfig.PINECONE_API_KEY && embeddings) {
         const textsToEmbed = allChunks.map((c) => c.content);
         const vectors = await embeddings.embedDocuments(textsToEmbed);
 
@@ -160,7 +205,7 @@ export const processDocumentJob = async (job) => {
         const batchSize = 100;
         for (let b = 0; b < pineconeRecords.length; b += batchSize) {
           const batch = pineconeRecords.slice(b, b + batchSize);
-          await index.upsert(batch);
+          await index.upsert({ records: batch });
         }
         console.log(`[Document Worker] Successfully indexed ${pineconeRecords.length} vectors into Pinecone.`);
       }
@@ -198,69 +243,84 @@ export const processDocumentJob = async (job) => {
         summary = parsed.summary || "";
         keyInsights = Array.isArray(parsed.keyInsights) ? parsed.keyInsights : [];
       } else {
-        summary = raw.slice(0, 1000);
+        summary = raw;
       }
     } catch (summaryErr) {
       console.warn("[Document Worker] AI summary generation warning:", summaryErr.message);
-      summary = "Summary generation unavailable. Document text was successfully processed and indexed for Q&A.";
-      keyInsights = ["Document parsed and ready for questions."];
+      summary = "Summary generation failed or was unavailable.";
     }
 
-    // ── 6. Finalize Document Status ──
-    const duration = Date.now() - startTime;
+    // ── Final verification before completing ──
+    const finalDoc = await documentRepository.findDocumentById(documentId);
+    if (!finalDoc) {
+      console.warn(`[Document Worker] Document ${documentId} was removed before final update.`);
+      return { success: false, reason: "Document removed" };
+    }
+
+    // ── 6. Mark Document as READY ──
     await documentRepository.updateDocument(documentId, {
       status: "READY",
       progress: 100,
-      pageCount,
-      chunkCount: allChunks.length,
-      processingDurationMs: duration,
       summary,
       keyInsights,
-      chunks: allChunks.map((c) => ({
-        chunkId: c.chunkId,
-        pageNumber: c.pageNumber,
-        chunkIndex: c.chunkIndex,
-        contentType: c.contentType,
-        tokenCount: c.tokenCount,
-      })),
+      pageCount,
+      chunkCount: allChunks.length,
+      processedAt: new Date(),
     });
     if (job.updateProgress) await job.updateProgress(100);
 
+    const duration = Date.now() - startTime;
     console.log(`[Document Worker] Document ${documentId} processed successfully in ${duration}ms.`);
+
     return { success: true, pageCount, chunkCount: allChunks.length };
   } catch (error) {
     console.error(`[Document Worker] Error processing document ${documentId}:`, error);
-    await documentRepository.updateDocument(documentId, {
-      status: "FAILED",
-      error: error.message,
-    });
+    try {
+      await documentRepository.updateDocument(documentId, {
+        status: "FAILED",
+        error: error.message,
+      });
+    } catch {}
     throw error;
   }
 };
 
-// Start BullMQ Worker only if Redis is confirmed ready
+// Start BullMQ Worker when Redis is ready
 export let documentWorker = null;
 
-if (redisClient && redisClient.status === "ready") {
-  try {
-    documentWorker = new Worker("document-processing", processDocumentJob, {
-      connection: redisClient,
-      concurrency: 2,
-    });
+export const startDocumentWorker = () => {
+  if (!documentWorker && redisClient && redisClient.status === "ready") {
+    try {
+      documentWorker = new Worker("document-processing", processDocumentJob, {
+        connection: redisClient,
+        concurrency: 2,
+      });
 
-    documentWorker.on("completed", (job) => {
-      console.log(`[BullMQ Worker] Job ${job.id} completed.`);
-    });
+      documentWorker.on("completed", (job) => {
+        console.log(`[BullMQ Worker] Job ${job.id} completed.`);
+      });
 
-    documentWorker.on("failed", (job, err) => {
-      console.error(`[BullMQ Worker] Job ${job?.id} failed:`, err.message);
-    });
+      documentWorker.on("failed", (job, err) => {
+        console.error(`[BullMQ Worker] Job ${job?.id} failed:`, err.message);
+      });
 
-    documentWorker.on("error", (err) => {
-      console.warn("[BullMQ Worker Notice]:", err.message);
+      documentWorker.on("error", (err) => {
+        console.warn("[BullMQ Worker Notice]:", err.message);
+      });
+    } catch (workerErr) {
+      console.warn("⚠️ Failed to start BullMQ worker:", workerErr.message);
+      documentWorker = null;
+    }
+  }
+  return documentWorker;
+};
+
+if (redisClient) {
+  if (redisClient.status === "ready") {
+    startDocumentWorker();
+  } else {
+    redisClient.on("ready", () => {
+      startDocumentWorker();
     });
-  } catch (workerErr) {
-    console.warn("⚠️ Failed to start BullMQ worker:", workerErr.message);
-    documentWorker = null;
   }
 }

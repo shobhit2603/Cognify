@@ -5,6 +5,16 @@ import envConfig from "./env.config.js";
 let redisClient = null;
 let isRedisAvailable = false;
 
+// Mask credentials before logging
+const getMaskedRedisUrl = (rawUrl) => {
+  try {
+    const u = new URL(rawUrl);
+    return `${u.protocol}//${u.username ? u.username + "@" : ""}${u.host}`;
+  } catch {
+    return "configured endpoint";
+  }
+};
+
 if (envConfig.NODE_ENV !== "test" && envConfig.REDIS_URL && !envConfig.REDIS_URL.includes("dummy")) {
   try {
     let hasLoggedError = false;
@@ -17,7 +27,7 @@ if (envConfig.NODE_ENV !== "test" && envConfig.REDIS_URL && !envConfig.REDIS_URL
       retryStrategy(times) {
         if (times > 2) {
           if (!hasLoggedError) {
-            console.warn(`\n⚠️  [Redis Notice] Unable to connect to Redis at "${envConfig.REDIS_URL}".`);
+            console.warn(`\n⚠️  [Redis Notice] Unable to connect to Redis at "${getMaskedRedisUrl(envConfig.REDIS_URL)}".`);
             console.warn(`   • Document processing will use the built-in direct background worker!\n`);
             hasLoggedError = true;
           }
@@ -42,6 +52,10 @@ if (envConfig.NODE_ENV !== "test" && envConfig.REDIS_URL && !envConfig.REDIS_URL
       console.log("✅ Redis Connected Successfully");
     });
 
+    redisClient.on("ready", () => {
+      isRedisAvailable = true;
+    });
+
     // Attempt non-blocking connection
     redisClient.connect().catch(() => {
       isRedisAvailable = false;
@@ -55,5 +69,5 @@ if (envConfig.NODE_ENV !== "test" && envConfig.REDIS_URL && !envConfig.REDIS_URL
   console.log("ℹ️  REDIS_URL not configured. Using direct asynchronous worker for document processing.");
 }
 
-export { isRedisAvailable };
+export { isRedisAvailable, getMaskedRedisUrl };
 export default redisClient;

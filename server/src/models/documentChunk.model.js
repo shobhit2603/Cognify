@@ -8,6 +8,10 @@ const documentChunkSchema = new Schema(
       required: true,
       index: true,
     },
+    chunkId: {
+      type: String,
+      index: true,
+    },
     content: {
       type: String,
       required: true,
