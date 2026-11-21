@@ -6,7 +6,9 @@ import { User } from "../models/user.model.js";
 
 export const requireAuth = async (req, res, next) => {
   try {
-    const token = req.cookies?.accessToken;
+    const authHeader = req.headers?.authorization;
+    const bearerToken = authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
+    const token = req.cookies?.accessToken || bearerToken || req.query?.token;
 
     if (!token) {
       return res

@@ -6,11 +6,16 @@ import envConfig from "../config/env.config.js";
 
 /**
  * Global API Rate Limiter
- * Limits each IP to 100 requests per 15 minutes across all general routes.
+ * Limits each IP across general routes. In development, generous limit prevents false 429 lockouts
+ * during active polling or multi-tab usage.
  */
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: envConfig.NODE_ENV === "development" ? 2000 : 500, // Limit each IP per windowMs
+  skip: (req) => {
+    // Exclude read-only document polling requests from consuming the rate limit budget
+    return req.method === "GET" && (req.originalUrl?.includes("/api/v1/documents") || req.baseUrl?.includes("/documents"));
+  },
   handler: (req, res) => {
     res.status(StatusCodes.TOO_MANY_REQUESTS).json(
       ApiResponse(

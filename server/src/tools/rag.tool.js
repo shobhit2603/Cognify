@@ -23,7 +23,7 @@ export async function ragSearch({ query, chatId }) {
     console.log(`[RAG Tool] Request ${reqId} started.`);
     const startTime = Date.now();
 
-    const index = pinecone.Index("cognify-rag");
+    const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
     const vector = await embeddings.embedQuery(query);
 
     const queryOptions = {
@@ -104,7 +104,7 @@ export async function ingestPDF(pdfPath, chatId) {
       },
     }));
 
-    const index = pinecone.Index("cognify-rag");
+    const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
 
     // 5. Batch upsert
     const batchSize = 100;

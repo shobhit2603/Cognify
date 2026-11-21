@@ -57,6 +57,7 @@ export default function WhyCognifySection() {
                     src="/Cognify-Logo.png"
                     alt="Cognify"
                     fill
+                    sizes="32px"
                     className="object-contain"
                   />
                 </div>
