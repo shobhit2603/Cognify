@@ -22,6 +22,10 @@ export const findDocumentById = async (id) => {
   return Document.findById(id);
 };
 
+export const findDocumentByStorageKey = async (storageKey) => {
+  return Document.findOne({ storageKey });
+};
+
 export const findDocumentsByUserId = async (userId, skip = 0, limit = 10, search = "") => {
   const query = buildDocumentQuery(userId, search);
   return Document.find(query)

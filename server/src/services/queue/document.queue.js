@@ -60,6 +60,19 @@ export const enqueueDocumentProcessing = async (documentId, userId, storageKey) 
   if (queue && redisClient && redisClient.status === "ready") {
     try {
       const jobId = `doc-${documentId}`;
+
+      // Clean up existing terminal (failed or completed) jobs before adding replacement
+      const existingJob = await queue.getJob(jobId);
+      if (existingJob) {
+        const state = await existingJob.getState();
+        if (state === "failed" || state === "completed") {
+          await existingJob.remove();
+        } else {
+          // Active or waiting job already processing
+          return { queued: true, jobId: existingJob.id, alreadyRunning: true };
+        }
+      }
+
       const job = await queue.add(
         "process-document",
         {

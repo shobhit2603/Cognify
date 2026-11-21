@@ -35,6 +35,11 @@ export default function DocumentDetailsModal({
   const abortControllerRef = useRef(null);
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -54,7 +59,7 @@ export default function DocumentDetailsModal({
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        onCloseRef.current?.();
       }
     };
 
@@ -66,7 +71,7 @@ export default function DocumentDetailsModal({
         previousFocusRef.current.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !doc) return null;
 

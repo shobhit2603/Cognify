@@ -1,5 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import * as documentService from "../services/document.service.js";
+import * as documentRepository from "../repositories/document.repository.js";
 import * as s3Storage from "../services/storage/s3.storage.js";
 import ApiResponse from "../utils/apiResponse.util.js";
 import path from "path";
@@ -13,12 +14,27 @@ export const handleLocalStorageUpload = async (req, res, next) => {
         .json(ApiResponse(StatusCodes.BAD_REQUEST, "Missing storage key parameter"));
     }
 
+    // Reject path traversal components
+    if (storageKey.includes("..") || path.isAbsolute(storageKey)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json(ApiResponse(StatusCodes.BAD_REQUEST, "Invalid storage key: path traversal detected"));
+    }
+
     // Verify key belongs strictly to authenticated user's prefix
     const expectedPrefix = `documents/${req.user._id}/`;
     if (!storageKey.startsWith(expectedPrefix)) {
       return res
         .status(StatusCodes.FORBIDDEN)
         .json(ApiResponse(StatusCodes.FORBIDDEN, "Access denied: unauthorized storage key prefix"));
+    }
+
+    // Authorize specific storage object using a document record owned by authenticated user
+    const doc = await documentRepository.findDocumentByStorageKey(storageKey);
+    if (!doc || doc.userId.toString() !== req.user._id.toString()) {
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse(StatusCodes.FORBIDDEN, "Access denied: document ownership mismatch"));
     }
 
     const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || "");
@@ -55,12 +71,27 @@ export const handleLocalStorageDownload = async (req, res, next) => {
         .json(ApiResponse(StatusCodes.BAD_REQUEST, "Missing storage key parameter"));
     }
 
+    // Reject path traversal components
+    if (storageKey.includes("..") || path.isAbsolute(storageKey)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json(ApiResponse(StatusCodes.BAD_REQUEST, "Invalid storage key: path traversal detected"));
+    }
+
     // Verify key belongs strictly to authenticated user's prefix
     const expectedPrefix = `documents/${req.user._id}/`;
     if (!storageKey.startsWith(expectedPrefix)) {
       return res
         .status(StatusCodes.FORBIDDEN)
         .json(ApiResponse(StatusCodes.FORBIDDEN, "Access denied: unauthorized storage key prefix"));
+    }
+
+    // Authorize specific storage object using a document record owned by authenticated user
+    const doc = await documentRepository.findDocumentByStorageKey(storageKey);
+    if (!doc || doc.userId.toString() !== req.user._id.toString()) {
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse(StatusCodes.FORBIDDEN, "Access denied: document ownership mismatch"));
     }
 
     const buffer = await s3Storage.getObjectBuffer(storageKey);

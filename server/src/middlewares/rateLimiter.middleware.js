@@ -13,8 +13,10 @@ export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: envConfig.NODE_ENV === "development" ? 2000 : 500, // Limit each IP per windowMs
   skip: (req) => {
-    // Exclude read-only document polling requests from consuming the rate limit budget
-    return req.method === "GET" && (req.originalUrl?.includes("/api/v1/documents") || req.baseUrl?.includes("/documents"));
+    // Exclude read-only document polling requests from consuming the rate limit budget using exact route pathname
+    if (req.method !== "GET") return false;
+    const pathname = (req.baseUrl || "") + (req.path || "");
+    return pathname === "/api/v1/documents" || pathname.startsWith("/api/v1/documents/");
   },
   handler: (req, res) => {
     res.status(StatusCodes.TOO_MANY_REQUESTS).json(

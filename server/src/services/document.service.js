@@ -63,13 +63,21 @@ export const startProcessing = async (documentId, userId) => {
     throw ApiError(403, "You do not have permission to access this document");
   }
 
-  // Deduplicate: If document is already queued or actively processing, return early
-  if (["QUEUED", "PARSING", "CHUNKING", "EMBEDDING", "INDEXING"].includes(document.status)) {
-    return {
-      success: true,
-      status: document.status,
-      message: "Document processing is already in progress",
-    };
+  // Deduplicate active tasks; allow recovery if task lease has expired (>5 minutes without update)
+  const inProcessStatuses = ["QUEUED", "PARSING", "CHUNKING", "EMBEDDING", "INDEXING"];
+  if (inProcessStatuses.includes(document.status)) {
+    const isStale =
+      document.updatedAt &&
+      Date.now() - new Date(document.updatedAt).getTime() > 5 * 60 * 1000;
+
+    if (!isStale) {
+      return {
+        success: true,
+        status: document.status,
+        message: "Document processing is already in progress",
+      };
+    }
+    console.warn(`[Document Service] Document ${documentId} has stale processing state (${document.status}). Redispatching job.`);
   }
 
   await documentRepository.updateDocument(documentId, {
@@ -310,9 +318,9 @@ export const deleteDocument = async (documentId, userId) => {
       const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
 
       // Only attempt Pinecone delete if there are indexed vector IDs
-      // (Pinecone Serverless indexes reject delete-by-filter with 400 Bad Request)
+      // Pass options object containing ids array as required by the Pinecone SDK
       if (vectorIds.length > 0) {
-        await index.deleteMany(vectorIds);
+        await index.deleteMany({ ids: vectorIds });
       }
     } catch (vectorErr) {
       const isNotFound =
@@ -330,14 +338,6 @@ export const deleteDocument = async (documentId, userId) => {
       if (isNotFound) {
         console.warn(
           "[Document Service] Pinecone index or vectors not found (404), proceeding with document deletion:",
-          vectorErr.message
-        );
-      } else if (
-        typeof vectorErr?.message === "string" &&
-        vectorErr.message.toLowerCase().includes("filter")
-      ) {
-        console.warn(
-          "[Document Service] Pinecone filter delete unsupported on serverless index, proceeding:",
           vectorErr.message
         );
       } else {
