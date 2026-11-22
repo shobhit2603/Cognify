@@ -39,6 +39,16 @@ export const moveNoteSchema = z.object({
     .nullable(),
 });
 
+export const enhanceNoteSchema = z.object({
+  frameworkId: z.string().trim().nullable().optional(),
+  customInstructions: z
+    .string()
+    .trim()
+    .max(1000, "Custom instructions cannot exceed 1000 characters")
+    .nullable()
+    .optional(),
+});
+
 export const createFolderSchema = z.object({
   name: z
     .string({ required_error: "Folder name is required" })

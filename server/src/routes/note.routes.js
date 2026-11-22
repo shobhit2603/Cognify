@@ -6,6 +6,7 @@ import {
   createNoteSchema,
   updateNoteSchema,
   moveNoteSchema,
+  enhanceNoteSchema,
 } from "../validations/note.validation.js";
 
 const router = express.Router();
@@ -31,5 +32,6 @@ router.delete("/:id", noteController.deleteNote);
 router.patch("/:id/pin", noteController.togglePin);
 router.patch("/:id/move", validate(moveNoteSchema), noteController.moveNote);
 router.post("/:id/restore", noteController.restorePreviousEnhancement);
+router.post("/:id/enhance", validate(enhanceNoteSchema), noteController.enhanceNote);
 
 export default router;
