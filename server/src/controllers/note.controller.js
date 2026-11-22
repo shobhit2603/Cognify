@@ -151,9 +151,11 @@ export const enhanceNote = async (req, res, next) => {
     res.setHeader("X-Accel-Buffering", "no");
 
     let clientDisconnected = false;
-    req.on("close", () => {
-      clientDisconnected = true;
-    });
+    if (typeof req.on === "function") {
+      req.on("close", () => {
+        clientDisconnected = true;
+      });
+    }
 
     // Stage 1: Fast intent analysis event
     res.write(
