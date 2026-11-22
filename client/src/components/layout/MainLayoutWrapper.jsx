@@ -4,7 +4,10 @@ import { usePathname } from "next/navigation";
 
 export default function MainLayoutWrapper({ children }) {
   const pathname = usePathname();
-  const isAppRoute = pathname?.startsWith("/chat") || pathname?.startsWith("/dashboard");
+  const isAppRoute =
+    pathname?.startsWith("/chat") ||
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/notes");
 
   return (
     <main className={isAppRoute ? "w-full h-full min-h-0 flex flex-col" : "grow pt-28 sm:pt-32"}>

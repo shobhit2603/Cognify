@@ -206,7 +206,11 @@ export default function Navbar() {
     }
   }, [isOpen]);
 
-  if (pathname?.startsWith("/chat") || pathname?.startsWith("/dashboard"))
+  if (
+    pathname?.startsWith("/chat") ||
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/notes")
+  )
     return null;
 
   const newLocal = "w-5 rotate-45 translate-y-1.5";

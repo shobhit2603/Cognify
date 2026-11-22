@@ -1,21 +1,26 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, Sparkle, Trash } from "@phosphor-icons/react";
 
 export default function EditPresetModal({ isOpen, onClose, preset, onSave, onDelete, canDelete = true }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [instructions, setInstructions] = useState("");
-
-  useEffect(() => {
-    if (preset) {
-      setName(preset.name || "");
-      setDescription(preset.description || "");
-      setInstructions(preset.instructions || "");
-    }
-  }, [preset, isOpen]);
-
   if (!isOpen || !preset) return null;
+
+  return (
+    <EditPresetDialog
+      key={preset.id}
+      onClose={onClose}
+      preset={preset}
+      onSave={onSave}
+      onDelete={onDelete}
+      canDelete={canDelete}
+    />
+  );
+}
+
+function EditPresetDialog({ onClose, preset, onSave, onDelete, canDelete }) {
+  const [name, setName] = useState(preset.name || "");
+  const [description, setDescription] = useState(preset.description || "");
+  const [instructions, setInstructions] = useState(preset.instructions || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();

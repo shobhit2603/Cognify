@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, FolderSimple, Check } from "@phosphor-icons/react";
 
 const FOLDER_COLORS = [
@@ -12,21 +12,22 @@ const FOLDER_COLORS = [
 ];
 
 export default function CreateFolderModal({ isOpen, onClose, onSubmit, initialFolder = null }) {
-  const [name, setName] = useState("");
-  const [color, setColor] = useState(FOLDER_COLORS[0]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (initialFolder) {
-      setName(initialFolder.name || "");
-      setColor(initialFolder.color || FOLDER_COLORS[0]);
-    } else {
-      setName("");
-      setColor(FOLDER_COLORS[0]);
-    }
-  }, [initialFolder, isOpen]);
-
   if (!isOpen) return null;
+
+  return (
+    <CreateFolderDialog
+      key={initialFolder?._id || "new-folder"}
+      onClose={onClose}
+      onSubmit={onSubmit}
+      initialFolder={initialFolder}
+    />
+  );
+}
+
+function CreateFolderDialog({ onClose, onSubmit, initialFolder }) {
+  const [name, setName] = useState(initialFolder?.name || "");
+  const [color, setColor] = useState(initialFolder?.color || FOLDER_COLORS[0]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

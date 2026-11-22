@@ -1,0 +1,280 @@
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { SidebarSimple, Plus, FileText, ArrowLeft } from "@phosphor-icons/react";
+import { toast } from "sonner";
+import NotesDrawer from "./NotesDrawer";
+import RawNoteEditor from "./RawNoteEditor";
+import EnhanceActionBar from "./EnhanceActionBar";
+import EnhancedNotePane from "./EnhancedNotePane";
+import { useNotes, useNoteFolders, useNoteMutations } from "../hooks/useNotes";
+import { noteService } from "../services/note.service";
+
+export default function NotesStudio() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // State
+  const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedNoteId, setSelectedNoteId] = useState(null);
+
+  // Enhancement Streaming State
+  const [selectedFrameworkId, setSelectedFrameworkId] = useState(null); // null = Auto-Detect
+  const [customInstructions, setCustomInstructions] = useState("");
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhancementStage, setEnhancementStage] = useState(null);
+  const [streamedText, setStreamedText] = useState("");
+
+  const abortControllerRef = useRef(null);
+
+  // Queries
+  const { data: notes = [], isLoading: isLoadingNotes } = useNotes({
+    search: searchQuery,
+  });
+  const { data: folders = [] } = useNoteFolders();
+
+  // Mutations
+  const {
+    createNote,
+    updateNote,
+    deleteNote,
+    togglePin,
+    moveNote,
+    restorePreviousEnhancement,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+  } = useNoteMutations();
+
+  // Derived active note id and active note (no cascading setState in effect needed)
+  const urlId = searchParams.get("id");
+  const activeNoteId = selectedNoteId || urlId || (notes.length > 0 ? notes[0]._id : null);
+  const activeNote = notes.find((n) => n._id === activeNoteId) || null;
+
+  const handleSelectNote = (id) => {
+    if (isEnhancing && abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsEnhancing(false);
+      setEnhancementStage(null);
+      setStreamedText("");
+    }
+    setSelectedNoteId(id);
+    setStreamedText("");
+    setEnhancementStage(null);
+    router.replace(`/notes?id=${id}`, { scroll: false });
+  };
+
+  const handleCreateNote = async (initialData = {}) => {
+    try {
+      const newNote = await createNote(initialData);
+      if (newNote?._id) {
+        handleSelectNote(newNote._id);
+        toast.success("New note created");
+      }
+    } catch {
+      // Handled in mutation hook
+    }
+  };
+
+  const handleDeleteNote = async (id) => {
+    try {
+      await deleteNote(id);
+      if (activeNoteId === id) {
+        const remaining = notes.filter((n) => n._id !== id);
+        const nextId = remaining.length > 0 ? remaining[0]._id : null;
+        setSelectedNoteId(nextId);
+        if (nextId) router.replace(`/notes?id=${nextId}`, { scroll: false });
+        else router.replace("/notes", { scroll: false });
+      }
+    } catch {
+      // Handled
+    }
+  };
+
+  const handleDeleteFolder = async (folderId, noteCount) => {
+    // STRICT RULE: block deletion if notes exist
+    if (noteCount > 0) {
+      toast.error(
+        `Cannot delete folder because it contains ${noteCount} note(s). Please move or delete the notes inside first.`
+      );
+      return;
+    }
+
+    try {
+      await deleteFolder(folderId);
+    } catch {
+      // Handled
+    }
+  };
+
+  // Trigger SSE Enhancement Streaming
+  const handleEnhance = async () => {
+    if (!activeNote || !activeNote.originalContent?.trim() || isEnhancing) return;
+
+    setIsEnhancing(true);
+    setStreamedText("");
+    setEnhancementStage({ stage: "detecting", message: "Analyzing note intent..." });
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    try {
+      await noteService.streamNoteEnhancement(
+        activeNote._id,
+        {
+          frameworkId: selectedFrameworkId,
+          customInstructions: customInstructions.trim() || undefined,
+        },
+        {
+          signal: abortController.signal,
+          onStage: (data) => {
+            setEnhancementStage(data);
+          },
+          onChunk: (chunk) => {
+            setStreamedText((prev) => prev + chunk);
+          },
+          onDone: (data) => {
+            setIsEnhancing(false);
+            setEnhancementStage(null);
+            setStreamedText("");
+            toast.success(`Enhanced using ${data.frameworkUsed}!`);
+          },
+          onError: (err) => {
+            setIsEnhancing(false);
+            setEnhancementStage(null);
+            toast.error(err.message || "Enhancement failed. Please try again.");
+          },
+        }
+      );
+    } catch {
+      setIsEnhancing(false);
+      setEnhancementStage(null);
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full bg-[#0d0d0f] text-white overflow-hidden font-sans">
+      {/* ── Left Drawer ── */}
+      <NotesDrawer
+        notes={notes}
+        folders={folders}
+        activeNoteId={activeNoteId}
+        onSelectNote={handleSelectNote}
+        onCreateNote={handleCreateNote}
+        onDeleteNote={handleDeleteNote}
+        onTogglePin={(id) => togglePin(id)}
+        onMoveNote={(id, folderId) => moveNote({ id, folderId })}
+        onCreateFolder={(data) => createFolder(data)}
+        onUpdateFolder={(id, data) => updateFolder({ id, data })}
+        onDeleteFolder={handleDeleteFolder}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isOpen={isDrawerOpen}
+        onToggleDrawer={() => setIsDrawerOpen(!isDrawerOpen)}
+      />
+
+      {/* ── Main Workspace Area ── */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Navigation Bar / Workspace Top Bar */}
+        <header className="h-12 border-b border-white/10 bg-[#0e0e11] px-4 flex items-center justify-between shrink-0 select-none">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              title={isDrawerOpen ? "Collapse Drawer" : "Expand Drawer"}
+              className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <SidebarSimple size={18} weight={isDrawerOpen ? "fill" : "regular"} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors"
+            >
+              <ArrowLeft size={14} />
+              <span className="hidden sm:inline">Dashboard</span>
+            </button>
+
+            <span className="text-white/20">/</span>
+
+            <span className="text-xs font-semibold text-white/90 truncate max-w-[200px]">
+              {activeNote ? activeNote.title : "Notes Enhancer"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleCreateNote()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs border border-white/10 transition-colors"
+            >
+              <Plus size={13} weight="bold" />
+              <span>New Note</span>
+            </button>
+          </div>
+        </header>
+
+        {/* ── Split-Screen Studio ── */}
+        {activeNote ? (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+              {/* Left Pane: Raw Note Editor */}
+              <RawNoteEditor
+                key={activeNote._id}
+                note={activeNote}
+                onSave={(id, data) => updateNote({ id, data })}
+              />
+
+              {/* Right Pane: Live Enhanced Output */}
+              <EnhancedNotePane
+                note={activeNote}
+                isEnhancing={isEnhancing}
+                enhancementStage={enhancementStage}
+                streamedText={streamedText}
+                onUpdateEnhancedContent={(id, content) =>
+                  updateNote({ id, data: { enhancedContent: content } })
+                }
+                onRestorePrevious={(id) => restorePreviousEnhancement(id)}
+              />
+            </div>
+
+            {/* Bottom Floating Action Bar */}
+            <EnhanceActionBar
+              selectedFrameworkId={selectedFrameworkId}
+              onSelectFramework={setSelectedFrameworkId}
+              customInstructions={customInstructions}
+              setCustomInstructions={setCustomInstructions}
+              onEnhance={handleEnhance}
+              isEnhancing={isEnhancing}
+              rawContentLength={(activeNote.originalContent || "").trim().length}
+            />
+          </div>
+        ) : (
+          /* Empty Workspace (no notes in user account) */
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-osmo-lime mb-4 shadow-inner">
+              <FileText size={32} weight="duotone" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {isLoadingNotes ? "Loading Notes..." : "No Notes Found"}
+            </h3>
+            <p className="text-xs text-white/50 max-w-sm mb-6 leading-relaxed">
+              Create your first note to start jotting down rough ideas, meeting bullets,
+              or lecture concepts, and enhance them into structured blueprints.
+            </p>
+            <button
+              type="button"
+              onClick={() => handleCreateNote()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-lime text-black font-semibold text-xs hover:bg-osmo-lime/90 transition-all shadow-md shadow-osmo-lime/20"
+            >
+              <Plus size={15} weight="bold" />
+              <span>Create First Note</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

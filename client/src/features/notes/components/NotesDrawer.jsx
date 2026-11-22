@@ -11,7 +11,6 @@ import {
   CaretDown,
   Trash,
   PencilSimple,
-  FolderNotch,
   FileText,
 } from "@phosphor-icons/react";
 import CreateFolderModal from "./CreateFolderModal";
@@ -462,7 +461,7 @@ function NoteItem({
               }}
               className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-white/90"
             >
-              <FolderNotch size={13} />
+              <FolderSimple size={13} />
               <span>Move Note</span>
             </button>
             <div className="h-px bg-white/10 my-1" />

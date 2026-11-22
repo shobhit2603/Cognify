@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { X, FolderSimple, FolderNotch } from "@phosphor-icons/react";
+import { X, FolderSimple } from "@phosphor-icons/react";
 
 export default function MoveNoteModal({ isOpen, onClose, folders = [], currentFolderId = null, onMove }) {
   const [selectedFolderId, setSelectedFolderId] = useState(currentFolderId ?? "null");
@@ -26,7 +26,7 @@ export default function MoveNoteModal({ isOpen, onClose, folders = [], currentFo
       <div className="w-full max-w-sm bg-[#18181b] border border-white/10 rounded-2xl shadow-2xl p-5 text-white">
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <FolderNotch size={20} className="text-osmo-lime" weight="bold" />
+            <FolderSimple size={20} className="text-osmo-lime" weight="bold" />
             <h3 className="text-base font-semibold text-white">Move Note</h3>
           </div>
           <button

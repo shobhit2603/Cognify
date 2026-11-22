@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Lightning,
   Sparkle,
@@ -33,12 +33,11 @@ export default function EnhanceActionBar({
   isEnhancing = false,
   rawContentLength = 0,
 }) {
-  const [presets, setPresets] = useState([]);
+  const [presets, setPresets] = useState(() => {
+    if (typeof window === "undefined") return [];
+    return getStoredPresets();
+  });
   const [editingPreset, setEditingPreset] = useState(null);
-
-  useEffect(() => {
-    setPresets(getStoredPresets());
-  }, []);
 
   const handleSavePreset = (updated) => {
     const updatedList = presets.map((p) => (p.id === updated.id ? updated : p));
