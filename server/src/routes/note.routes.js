@@ -261,7 +261,7 @@ router.post("/:id/restore", noteController.restorePreviousEnhancement);
  *                 nullable: true
  *     responses:
  *       200:
- *         description: SSE event stream (events: stage, chunk, done, error)
+ *         description: "SSE event stream with events: stage, chunk, done, error"
  *         content:
  *           text/event-stream:
  *             schema:

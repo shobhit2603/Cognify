@@ -124,3 +124,29 @@ The Notes Enhancer is built as a **Split-Screen Studio**:
 | `POST` | `/api/v1/note-folders` | Create a new folder. |
 | `PATCH` | `/api/v1/note-folders/:id` | Rename or update folder. |
 | `DELETE` | `/api/v1/note-folders/:id` | Delete folder (**Blocked if folder contains any notes**). |
+
+---
+
+## 6. Frontend Architecture & State Management
+
+- **Routing:** `/notes` protected via Next.js Proxy Middleware and client-side `ProtectedRoute`.
+- **Query & Mutation Management:** TanStack React Query (`useNotes`, `useNoteFolders`, `useNoteMutations`) providing instant cache invalidation and responsive UI updates.
+- **SSE Stream Processing:** `note.service.js` uses a native `ReadableStream` reader with `TextDecoder` that flushes parsed server events:
+  - `onStage`: Updates UI progress banner (`detecting` $\rightarrow$ `synthesizing`).
+  - `onChunk`: Accumulates live Markdown tokens in the preview pane.
+  - `onDone`: Finalizes note state and triggers confirmation toast.
+  - `onError`: Handles network drops or abort signal cancellations gracefully.
+- **Cross-Module AI Chat Bridge:** Clicking **"Discuss in AI Chat"** injects the note title, framework attribution, and formatted markdown into `sessionStorage` and seamlessly preloads the conversational context into `/chat`.
+- **Clean PDF Generation:** Formatted HTML export with bespoke print stylesheet ensuring styled headings, code blocks, tables, and Cornell callouts.
+
+---
+
+## 7. Verification & Automated Test Coverage
+
+The Notes Enhancer suite is validated by comprehensive Jest integration tests (`server/src/tests/note.test.js`):
+- **Folder Protection:** Enforces non-empty folder deletion rejection with HTTP 400 and clear warning message.
+- **Folder Lifecycle:** Validates creation, listing with note counts, and renaming.
+- **Note Lifecycle:** Covers creation, debounced auto-save updates, full-text search, moving between folders, pinning/unpinning, and deletion.
+- **Version Safeguard:** Verifies atomic restoration of `previousEnhancedContent`.
+- **Enhancement Validation:** Verifies empty note validation rejection before model inference.
+- **Client Build:** Verified with Next.js Turbopack (`npm run build`) and ESLint with 0 errors or warnings.

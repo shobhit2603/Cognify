@@ -8,7 +8,7 @@ const errorHandler = (err, req, res, next) => {
   // Check if it's already an ApiError structure
   if (!(error.statusCode && error.success === false)) {
     const statusCode =
-      error.statusCode || error instanceof Error ? StatusCodes.BAD_REQUEST : StatusCodes.INTERNAL_SERVER_ERROR;
+      error.statusCode || (error instanceof Error ? StatusCodes.BAD_REQUEST : StatusCodes.INTERNAL_SERVER_ERROR);
     const message = error.message || "Something went wrong";
     error = ApiError(statusCode, message, error?.errors || [], err.stack);
   }

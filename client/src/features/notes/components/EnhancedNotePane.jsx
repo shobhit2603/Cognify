@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useRouter } from "next/navigation";
@@ -27,6 +27,7 @@ export default function EnhancedNotePane({
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
+  const markdownContainerRef = useRef(null);
 
   const activeContent = streamedText || note?.enhancedContent || "";
   const hasContent = !!activeContent.trim();
@@ -54,6 +55,10 @@ export default function EnhancedNotePane({
       day: "numeric",
     });
 
+    const renderedHtml = markdownContainerRef.current
+      ? markdownContainerRef.current.innerHTML
+      : activeContent;
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -61,56 +66,62 @@ export default function EnhancedNotePane({
           <title>${title} - Cognify Notes</title>
           <style>
             @media print {
-              body { margin: 0; padding: 20px; font-size: 12pt; }
+              @page { margin: 1.5cm; }
+              body { margin: 0; padding: 0; }
             }
             body {
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
               line-height: 1.7;
-              color: #1a1a1a;
-              max-width: 820px;
+              color: #111827;
+              background: #fff;
+              max-width: 840px;
               margin: 40px auto;
               padding: 0 24px;
             }
-            h1 { font-size: 26px; font-weight: 700; color: #0a0a0a; margin-bottom: 8px; }
-            h2 { font-size: 20px; font-weight: 600; color: #111; margin-top: 28px; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
-            h3 { font-size: 16px; font-weight: 600; color: #222; margin-top: 22px; margin-bottom: 8px; }
-            p { margin: 12px 0; color: #374151; }
-            ul, ol { padding-left: 24px; margin: 12px 0; }
-            li { margin-bottom: 6px; color: #374151; }
-            code { background: #f3f4f6; color: #1f2937; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: monospace; }
-            pre { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; overflow-x: auto; margin: 16px 0; }
-            pre code { background: none; padding: 0; }
-            blockquote { border-left: 4px solid #84cc16; margin: 16px 0; padding: 6px 16px; color: #4b5563; background: #f9fafb; border-radius: 0 8px 8px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-            th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 13px; }
-            th { background: #f9fafb; font-weight: 600; }
-            .meta { font-size: 12px; color: #6b7280; font-family: monospace; margin-bottom: 24px; }
-            .header-rule { border: none; border-top: 2px solid #84cc16; margin-bottom: 24px; }
+            .header-container {
+              border-bottom: 2px solid #84cc16;
+              padding-bottom: 16px;
+              margin-bottom: 24px;
+            }
+            h1 { font-size: 26px; font-weight: 800; color: #0a0a0a; margin: 0 0 8px 0; }
+            .meta { font-size: 12px; color: #6b7280; font-family: monospace; display: flex; gap: 16px; align-items: center; }
+            .badge { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+            h2 { font-size: 18px; font-weight: 700; color: #15803d; margin-top: 24px; margin-bottom: 10px; border-bottom: 1px solid #f3f4f6; padding-bottom: 4px; }
+            h3 { font-size: 15px; font-weight: 600; color: #1f2937; margin-top: 20px; margin-bottom: 8px; }
+            p { margin: 10px 0; color: #374151; font-size: 13.5px; }
+            ul, ol { padding-left: 20px; margin: 10px 0; font-size: 13.5px; color: #374151; }
+            li { margin-bottom: 4px; }
+            code { background: #f3f4f6; color: #0f172a; padding: 2px 5px; border-radius: 4px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+            pre { background: #0f172a; color: #4ade80; border-radius: 8px; padding: 12px; overflow-x: auto; margin: 14px 0; }
+            pre code { background: none; color: inherit; padding: 0; }
+            blockquote { border-left: 4px solid #84cc16; margin: 14px 0; padding: 8px 16px; color: #4b5563; background: #f9fafb; font-style: italic; }
+            table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+            th { background: #f8fafc; font-weight: 600; color: #1e293b; }
+            .footer-note { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; font-family: monospace; }
           </style>
         </head>
         <body>
-          <h1>${title}</h1>
-          <div class="meta">
-            ${frameworkName ? `Structured with: ${frameworkName} • ` : ""}
-            Cognify AI • Exported ${dateStr}
+          <div class="header-container">
+            <h1>${title}</h1>
+            <div class="meta">
+              ${frameworkName ? `<span class="badge">Structured with: ${frameworkName}</span>` : ""}
+              <span>Cognify AI Workspace</span>
+              <span>•</span>
+              <span>${dateStr}</span>
+            </div>
           </div>
-          <div class="header-rule"></div>
-          <div id="print-content"></div>
+          <div id="print-content">${renderedHtml}</div>
+          <div class="footer-note">Generated with Cognify AI Notes Enhancer</div>
         </body>
       </html>
     `);
-
-    // Render plain text fallback if formatting is raw
-    const bodyEl = printWindow.document.getElementById("print-content");
-    if (bodyEl) {
-      bodyEl.innerText = activeContent;
-    }
 
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
-    }, 300);
+    }, 400);
   };
 
   const handleDiscussInChat = () => {
@@ -244,7 +255,10 @@ Please give me a concise breakdown and let me know what questions you have or ho
             placeholder="Edit enhanced Markdown directly..."
           />
         ) : hasContent ? (
-          <div className="prose prose-invert max-w-none text-white/90 leading-relaxed font-sans select-text">
+          <div
+            ref={markdownContainerRef}
+            className="prose prose-invert max-w-none text-white/90 leading-relaxed font-sans select-text"
+          >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{

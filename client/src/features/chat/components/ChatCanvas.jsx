@@ -128,6 +128,22 @@ export default function ChatCanvas({ chatId: propChatId }) {
     }
   }, [newChatTrigger, chatId]);
 
+  // ─── Check for Pending Chat Prompt from Cross-Module Bridges (e.g. Notes) ────
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const pendingPrompt = sessionStorage.getItem("cognify_pending_chat_prompt");
+      if (pendingPrompt && !chatId) {
+        sessionStorage.removeItem("cognify_pending_chat_prompt");
+        setTimeout(() => {
+          setEditPromptText({ text: pendingPrompt, nonce: Date.now() });
+        }, 80);
+      }
+    } catch {
+      // ignore
+    }
+  }, [chatId]);
+
   // ─── Auto-scroll ────────────────────────────────────────────────────────────
   const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
