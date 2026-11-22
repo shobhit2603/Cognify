@@ -15,6 +15,8 @@ import authRoutes from "./routes/auth.routes.js";
 import chatRoutes from "./routes/chat.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import documentRoutes from "./routes/document.routes.js";
+import noteRoutes from "./routes/note.routes.js";
+import noteFolderRoutes from "./routes/noteFolder.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.config.js";
 import { globalLimiter } from "./middlewares/rateLimiter.middleware.js";
@@ -117,6 +119,8 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/chats", chatRoutes);
 app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/documents", documentRoutes);
+app.use("/api/v1/notes", noteRoutes);
+app.use("/api/v1/note-folders", noteFolderRoutes);
 
 // ─── API Documentation ───────────────────────────────────
 
