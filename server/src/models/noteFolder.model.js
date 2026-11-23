@@ -24,7 +24,10 @@ const noteFolderSchema = new Schema(
   }
 );
 
-// Compound index for user's folders sorted by name
-noteFolderSchema.index({ userId: 1, name: 1 });
+// Compound unique index for user's folders (case-insensitive name per user)
+noteFolderSchema.index(
+  { userId: 1, name: 1 },
+  { unique: true, collation: { locale: "en", strength: 2 } }
+);
 
 export const NoteFolder = mongoose.model("NoteFolder", noteFolderSchema);

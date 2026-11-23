@@ -7,6 +7,7 @@ export const useNotes = (filters = {}) => {
     queryKey: ["notes", filters],
     queryFn: () => noteService.getNotes(filters),
     select: (res) => res.data || [],
+    placeholderData: (previousData) => previousData,
   });
 };
 

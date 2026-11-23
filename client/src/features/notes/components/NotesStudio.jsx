@@ -8,8 +8,9 @@ import NotesDrawer from "./NotesDrawer";
 import RawNoteEditor from "./RawNoteEditor";
 import EnhanceActionBar from "./EnhanceActionBar";
 import EnhancedNotePane from "./EnhancedNotePane";
-import { useNotes, useNoteFolders, useNoteMutations } from "../hooks/useNotes";
+import { useNotes, useNote, useNoteFolders, useNoteMutations } from "../hooks/useNotes";
 import { noteService } from "../services/note.service";
+import { getAvailablePresets } from "../constants/presets";
 
 export default function NotesStudio() {
   const router = useRouter();
@@ -19,7 +20,16 @@ export default function NotesStudio() {
   // State
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedNoteId, setSelectedNoteId] = useState(null);
+
+  // Debounce search query to prevent unnecessary refetches and flickering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Split ratio: default 42% for raw editor, 58% for enhanced reading view
   const [splitPercent, setSplitPercent] = useState(() => {
@@ -85,7 +95,7 @@ export default function NotesStudio() {
 
   // Queries
   const { data: notes = [], isLoading: isLoadingNotes } = useNotes({
-    search: searchQuery,
+    search: debouncedSearchQuery,
   });
   const { data: folders = [] } = useNoteFolders();
 
@@ -102,10 +112,11 @@ export default function NotesStudio() {
     deleteFolder,
   } = useNoteMutations();
 
-  // Derived active note id and active note (no cascading setState in effect needed)
+  // Derived active note id and active note (decoupled from drawer search filtering)
   const urlId = searchParams.get("id");
   const activeNoteId = selectedNoteId || urlId || (notes.length > 0 ? notes[0]._id : null);
-  const activeNote = notes.find((n) => n._id === activeNoteId) || null;
+  const { data: singleNote } = useNote(activeNoteId);
+  const activeNote = singleNote || notes.find((n) => n._id === activeNoteId) || null;
 
   const handleSelectNote = (id) => {
     if (isEnhancing && abortControllerRef.current) {
@@ -122,7 +133,8 @@ export default function NotesStudio() {
 
   const handleCreateNote = async (initialData = {}) => {
     try {
-      const newNote = await createNote(initialData);
+      const res = await createNote(initialData);
+      const newNote = res?.data || res;
       if (newNote?._id) {
         handleSelectNote(newNote._id);
         toast.success("New note created");
@@ -175,12 +187,23 @@ export default function NotesStudio() {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
+    // Look up preset instructions if active
+    let presetInstructions;
+    if (selectedFrameworkId) {
+      const presets = getAvailablePresets();
+      const match = presets.find((p) => p.id === selectedFrameworkId);
+      if (match?.instructions?.trim()) {
+        presetInstructions = match.instructions.trim();
+      }
+    }
+
     try {
       await noteService.streamNoteEnhancement(
         activeNote._id,
         {
           frameworkId: selectedFrameworkId,
           customInstructions: customInstructions.trim() || undefined,
+          presetInstructions: presetInstructions || undefined,
         },
         {
           signal: abortController.signal,
@@ -285,6 +308,10 @@ export default function NotesStudio() {
     } catch {
       setIsEnhancing(false);
       setEnhancementStage(null);
+    } finally {
+      if (abortControllerRef.current === abortController) {
+        setIsEnhancing(false);
+      }
     }
   };
 
@@ -404,6 +431,7 @@ export default function NotesStudio() {
               className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden border-l border-white/10"
             >
               <EnhancedNotePane
+                key={activeNote._id}
                 note={activeNote}
                 isEnhancing={isEnhancing}
                 enhancementStage={enhancementStage}

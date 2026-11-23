@@ -33,7 +33,7 @@ export const DEFAULT_PRESETS = [
   },
 ];
 
-export const MAX_PRESETS = 6;
+export const MAX_CUSTOM_PRESETS = 6;
 const STORAGE_KEY = "cognify_custom_note_presets";
 
 export const getStoredPresets = () => {
@@ -42,7 +42,19 @@ export const getStoredPresets = () => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return DEFAULT_PRESETS;
     const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_PRESETS;
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_PRESETS;
+
+    const defaultMap = new Map(DEFAULT_PRESETS.map((p) => [p.id, p]));
+    const customPresets = [];
+
+    for (const item of parsed) {
+      if (defaultMap.has(item.id)) {
+        defaultMap.set(item.id, { ...defaultMap.get(item.id), ...item });
+      } else if (!item.isDefault && customPresets.length < MAX_CUSTOM_PRESETS) {
+        customPresets.push(item);
+      }
+    }
+    return [...defaultMap.values(), ...customPresets];
   } catch {
     return DEFAULT_PRESETS;
   }
@@ -51,8 +63,10 @@ export const getStoredPresets = () => {
 export const saveStoredPresets = (presets) => {
   if (typeof window === "undefined") return;
   try {
-    const limited = presets.slice(0, MAX_PRESETS);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
+    const defaultIds = new Set(DEFAULT_PRESETS.map((p) => p.id));
+    const customOnly = presets.filter((p) => !defaultIds.has(p.id)).slice(0, MAX_CUSTOM_PRESETS);
+    const defaults = presets.filter((p) => defaultIds.has(p.id));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...defaults, ...customOnly]));
   } catch (err) {
     console.error("[Presets] Failed to save presets:", err);
   }

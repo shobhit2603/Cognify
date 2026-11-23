@@ -194,28 +194,31 @@ export default function NotesDrawer({
                   return (
                     <div key={folder._id} className="space-y-0.5">
                       {/* Folder Row */}
-                      <div className="group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer text-xs">
-                        <div
-                          className="flex items-center gap-2 flex-1 truncate"
+                      <div className="group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-xs">
+                        <button
+                          type="button"
+                          aria-expanded={isExpanded}
                           onClick={() => toggleFolder(folder._id)}
+                          className="flex items-center gap-2 flex-1 truncate text-left focus:outline-none"
                         >
                           {isExpanded ? (
-                            <CaretDown size={13} className="text-white/40" />
+                            <CaretDown size={13} className="text-white/40 shrink-0" />
                           ) : (
-                            <CaretRight size={13} className="text-white/40" />
+                            <CaretRight size={13} className="text-white/40 shrink-0" />
                           )}
                           <FolderSimple
                             size={16}
                             weight="fill"
+                            className="shrink-0"
                             style={{ color: folder.color || "#84cc16" }}
                           />
                           <span className="truncate font-medium text-white/90">
                             {folder.name}
                           </span>
-                          <span className="text-[10px] font-mono text-white/40">
+                          <span className="text-[10px] font-mono text-white/40 shrink-0">
                             ({folderNotes.length})
                           </span>
-                        </div>
+                        </button>
 
                         {/* Folder Action Menu */}
                         <div className="relative">
@@ -352,17 +355,20 @@ export default function NotesDrawer({
         }}
       />
 
-      <MoveNoteModal
-        isOpen={!!noteToMove}
-        onClose={() => setNoteToMove(null)}
-        folders={folders}
-        currentFolderId={noteToMove?.folderId?._id || noteToMove?.folderId}
-        onMove={async (folderId) => {
-          if (noteToMove) {
-            await onMoveNote(noteToMove._id, folderId);
-          }
-        }}
-      />
+      {noteToMove && (
+        <MoveNoteModal
+          key={noteToMove._id}
+          isOpen={!!noteToMove}
+          onClose={() => setNoteToMove(null)}
+          folders={folders}
+          currentFolderId={noteToMove?.folderId?._id || noteToMove?.folderId}
+          onMove={async (folderId) => {
+            if (noteToMove) {
+              await onMoveNote(noteToMove._id, folderId);
+            }
+          }}
+        />
+      )}
     </>
   );
 }
@@ -381,14 +387,17 @@ function NoteItem({
 }) {
   return (
     <div
-      onClick={onSelect}
-      className={`group relative flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer ${
+      className={`group relative flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all ${
         isActive
           ? "bg-osmo-lime/10 border border-osmo-lime/40 text-white font-medium"
           : "hover:bg-white/5 border border-transparent text-white/80"
       }`}
     >
-      <div className="flex-1 truncate pr-2">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex-1 min-w-0 text-left truncate pr-2 focus:outline-none"
+      >
         <div className="flex items-center gap-1.5">
           {note.isPinned && (
             <PushPin size={12} weight="fill" className="text-amber-400 shrink-0" />
@@ -422,7 +431,7 @@ function NoteItem({
             </span>
           )}
         </div>
-      </div>
+      </button>
 
       {/* 3-Dot Dropdown Menu */}
       <div className="relative shrink-0">

@@ -1,10 +1,16 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, FolderSimple } from "@phosphor-icons/react";
 
 export default function MoveNoteModal({ isOpen, onClose, folders = [], currentFolderId = null, onMove }) {
   const [selectedFolderId, setSelectedFolderId] = useState(currentFolderId ?? "null");
+  const [prevFolderId, setPrevFolderId] = useState(currentFolderId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (currentFolderId !== prevFolderId) {
+    setPrevFolderId(currentFolderId);
+    setSelectedFolderId(currentFolderId ?? "null");
+  }
 
   if (!isOpen) return null;
 

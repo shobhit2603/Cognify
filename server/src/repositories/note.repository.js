@@ -44,9 +44,9 @@ export const countByFolderId = async (folderId, userId) => {
   return await Note.countDocuments({ folderId, userId });
 };
 
-export const update = async (id, userId, updateData) => {
+export const update = async (id, userId, updateData, extraConditions = {}) => {
   return await Note.findOneAndUpdate(
-    { _id: id, userId },
+    { _id: id, userId, ...extraConditions },
     { $set: updateData },
     { new: true, runValidators: true }
   ).populate("folderId", "name color");

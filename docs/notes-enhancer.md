@@ -100,6 +100,14 @@ The Notes Enhancer is built as a **Split-Screen Studio**:
 - **Save as PDF:** Clean, print-formatted PDF generation containing title and rendered markdown.
 - **Discuss in AI Chat:** Spawns a dedicated session in `/chat` preloaded with the enhanced note injected as context.
 
+### J. Resilience, Concurrency & Security Hardening
+- **Optimistic Concurrency & Safe Restores:** Enhancement restorations conditionally check snapshot content to prevent concurrent overwrite races.
+- **Atomic Folder Naming & Integrity:** Case-insensitive unique indexing prevents duplicate folder names per user (`collation: { locale: "en", strength: 2 }`), mapping conflicts to HTTP 409. Regex searches sanitize special characters.
+- **Sanitized PDF Export:** Custom HTML escaping and safe DOM creation prevent HTML sink injection during PDF compilation.
+- **Keyboard-Operable Semantic Navigation:** Drawer notes and folders use semantic `<button>` elements with `aria-expanded` and keyboard navigation support, decoupling action menus from selection clicks.
+- **Debounced Save Queue & Sequence Tracking:** Unsaved drafts are flushed on component unmount to prevent keystroke loss, while monotonically increasing request counters reject stale in-flight save responses.
+- **Custom Preset Instructions Injection:** Both built-in and user-defined preset instructions (`presetInstructions`) are validated and passed seamlessly into Groq model prompt templates.
+
 ---
 
 ## 4. Data Models

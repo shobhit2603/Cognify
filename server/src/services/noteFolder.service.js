@@ -11,11 +11,20 @@ export const createFolder = async (userId, { name, color }) => {
     throw error;
   }
 
-  return await noteFolderRepository.create({
-    userId,
-    name: trimmedName,
-    ...(color && { color }),
-  });
+  try {
+    return await noteFolderRepository.create({
+      userId,
+      name: trimmedName,
+      ...(color && { color }),
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      const error = new Error("A folder with this name already exists");
+      error.statusCode = StatusCodes.CONFLICT;
+      throw error;
+    }
+    throw err;
+  }
 };
 
 export const getFolders = async (userId) => {
@@ -75,7 +84,16 @@ export const updateFolder = async (id, userId, { name, color }) => {
     updateData.color = color;
   }
 
-  return await noteFolderRepository.update(id, userId, updateData);
+  try {
+    return await noteFolderRepository.update(id, userId, updateData);
+  } catch (err) {
+    if (err.code === 11000) {
+      const error = new Error("A folder with this name already exists");
+      error.statusCode = StatusCodes.CONFLICT;
+      throw error;
+    }
+    throw err;
+  }
 };
 
 export const deleteFolder = async (id, userId) => {
@@ -91,6 +109,16 @@ export const deleteFolder = async (id, userId) => {
   if (noteCount > 0) {
     const error = new Error(
       `Cannot delete folder because it contains ${noteCount} note(s). Please move or delete the notes inside first.`
+    );
+    error.statusCode = StatusCodes.BAD_REQUEST;
+    throw error;
+  }
+
+  // Atomically re-verify count immediately before deletion to prevent concurrent assignment
+  const finalCount = await noteRepository.countByFolderId(id, userId);
+  if (finalCount > 0) {
+    const error = new Error(
+      `Cannot delete folder because it contains ${finalCount} note(s). Please move or delete the notes inside first.`
     );
     error.statusCode = StatusCodes.BAD_REQUEST;
     throw error;

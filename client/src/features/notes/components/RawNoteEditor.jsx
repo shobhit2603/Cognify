@@ -13,27 +13,47 @@ export default function RawNoteEditor({
 
   const timerRef = useRef(null);
   const prevExternalTitleRef = useRef(note?.title);
+  const pendingPayloadRef = useRef(null);
+  const onSaveRef = useRef(onSave);
+  const saveVersionRef = useRef(0);
 
-  // Clear debounce timer on unmount
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
+  // Flush pending save and clear timer on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (pendingPayloadRef.current && note?._id) {
+        onSaveRef.current?.(note._id, pendingPayloadRef.current);
+      }
     };
-  }, []);
+  }, [note?._id]);
 
   // Sync external title updates (e.g. AI auto-title generation) without triggering auto-save
   useEffect(() => {
     if (note?.title && note.title !== prevExternalTitleRef.current) {
       prevExternalTitleRef.current = note.title;
       setTitle(note.title);
+      if (pendingPayloadRef.current) {
+        pendingPayloadRef.current.title = note.title;
+      }
       setSaveStatus("saved");
     }
   }, [note?.title]);
 
-  // Debounced auto-save trigger (800ms)
+  // Debounced auto-save trigger (800ms) with sequence check
   const triggerAutoSave = (newTitle, newContent) => {
     setSaveStatus("saving");
+    pendingPayloadRef.current = {
+      title: newTitle,
+      originalContent: newContent,
+    };
+
     if (timerRef.current) clearTimeout(timerRef.current);
+
+    const currentVersion = ++saveVersionRef.current;
 
     timerRef.current = setTimeout(async () => {
       try {
@@ -41,9 +61,14 @@ export default function RawNoteEditor({
           title: newTitle,
           originalContent: newContent,
         });
-        setSaveStatus("saved");
+        if (saveVersionRef.current === currentVersion) {
+          pendingPayloadRef.current = null;
+          setSaveStatus("saved");
+        }
       } catch {
-        setSaveStatus("error");
+        if (saveVersionRef.current === currentVersion) {
+          setSaveStatus("error");
+        }
       }
     }, 800);
   };

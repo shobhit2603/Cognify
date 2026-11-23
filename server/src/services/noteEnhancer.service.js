@@ -136,14 +136,28 @@ export const detectFramework = (content) => {
 
 // ─── 3. Prompt Builder ────────────────────────────────────────────────────────
 
-export const buildEnhancementPrompt = ({ rawContent, frameworkId = null, customInstructions = null }) => {
-  // If specific framework passed, validate or fall back to auto-detect
-  let framework = frameworkId ? FRAMEWORK_MAP[frameworkId] : null;
+export const buildEnhancementPrompt = ({
+  rawContent,
+  frameworkId = null,
+  customInstructions = null,
+  presetInstructions = null,
+}) => {
+  // If specific framework passed, validate own property or fall back to auto-detect
+  let framework =
+    frameworkId && Object.prototype.hasOwnProperty.call(FRAMEWORK_MAP, frameworkId)
+      ? FRAMEWORK_MAP[frameworkId]
+      : null;
   if (!framework) {
     framework = detectFramework(rawContent);
   }
 
   let systemPrompt = framework.systemPrompt;
+
+  // If preset has custom instructions from user overrides, incorporate them
+  if (presetInstructions && presetInstructions.trim()) {
+    systemPrompt += `\n\nCUSTOM FRAMEWORK GUIDELINES:
+${presetInstructions.trim().slice(0, 2000)}`;
+  }
 
   // If user provided custom natural-language instructions, augment the prompt
   if (customInstructions && customInstructions.trim()) {
@@ -170,11 +184,17 @@ Please enhance these notes now into clean, well-formatted Markdown following the
 
 // ─── 4. Streaming Inference Generator ─────────────────────────────────────────
 
-export async function* streamNoteEnhancement({ rawContent, frameworkId = null, customInstructions = null }) {
+export async function* streamNoteEnhancement({
+  rawContent,
+  frameworkId = null,
+  customInstructions = null,
+  presetInstructions = null,
+}) {
   const { framework, messages } = buildEnhancementPrompt({
     rawContent,
     frameworkId,
     customInstructions,
+    presetInstructions,
   });
 
   // Attempt Groq streaming first, fallback to Mistral if needed

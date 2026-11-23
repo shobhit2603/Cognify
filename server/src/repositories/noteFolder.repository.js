@@ -13,9 +13,11 @@ export const findAllByUserId = async (userId) => {
 };
 
 export const findByNameAndUserId = async (userId, name) => {
+  const trimmed = name.trim();
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return await NoteFolder.findOne({
     userId,
-    name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
+    name: { $regex: new RegExp(`^${escaped}$`, "i") },
   });
 };
 

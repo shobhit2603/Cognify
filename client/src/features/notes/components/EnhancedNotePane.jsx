@@ -27,12 +27,49 @@ export default function EnhancedNotePane({
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
+  const [editBaseline, setEditBaseline] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const markdownContainerRef = useRef(null);
 
   const activeContent = streamedText || note?.enhancedContent || "";
   const hasContent = !!activeContent.trim();
   const frameworkName =
     enhancementStage?.framework || note?.enhancedMetadata?.frameworkUsed;
+
+  const escapeHtml = (str) =>
+    String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  const handleToggleEdit = async () => {
+    if (!isEditing) {
+      setEditedContent(activeContent);
+      setEditBaseline(activeContent);
+      setIsEditing(true);
+      return;
+    }
+
+    // If unchanged, exit edit mode without a redundant network request
+    if (editedContent.trim() === editBaseline.trim()) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      await onUpdateEnhancedContent(note._id, editedContent);
+      setEditBaseline(editedContent);
+      setIsEditing(false);
+      toast.success("Enhanced note updated");
+    } catch {
+      toast.error("Failed to save changes. Please try again.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   const handleCopyMarkdown = () => {
     if (!activeContent) return;
@@ -55,15 +92,17 @@ export default function EnhancedNotePane({
       day: "numeric",
     });
 
+    const safeTitle = escapeHtml(title);
+    const safeFramework = escapeHtml(frameworkName || "Enhanced Note");
     const renderedHtml = markdownContainerRef.current
       ? markdownContainerRef.current.innerHTML
-      : activeContent;
+      : `<pre style="white-space: pre-wrap; font-family: monospace; font-size: 13px;">${escapeHtml(activeContent)}</pre>`;
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${title} - Cognify Notes</title>
+          <title>${safeTitle} - Cognify Notes</title>
           <style>
             @media print {
               @page { margin: 1.5cm; }
@@ -103,9 +142,9 @@ export default function EnhancedNotePane({
         </head>
         <body>
           <div class="header-container">
-            <h1>${title}</h1>
+            <h1>${safeTitle}</h1>
             <div class="meta">
-              ${frameworkName ? `<span class="badge">Structured with: ${frameworkName}</span>` : ""}
+              ${frameworkName ? `<span class="badge">Structured with: ${safeFramework}</span>` : ""}
               <span>Cognify AI Workspace</span>
               <span>•</span>
               <span>${dateStr}</span>
@@ -182,14 +221,9 @@ Please give me a concise breakdown and let me know what questions you have or ho
               {/* Preview vs Edit Toggle (Icon Only) */}
               <button
                 type="button"
-                onClick={() => {
-                  if (!isEditing) setEditedContent(activeContent);
-                  else if (editedContent !== activeContent) {
-                    onUpdateEnhancedContent(note._id, editedContent);
-                  }
-                  setIsEditing(!isEditing);
-                }}
-                className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                disabled={isSavingEdit}
+                onClick={handleToggleEdit}
+                className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
                 title={isEditing ? "Switch to Rendered Preview" : "Edit Enhanced Markdown"}
               >
                 {isEditing ? <Eye size={15} /> : <PencilSimple size={15} />}

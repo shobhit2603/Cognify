@@ -119,7 +119,7 @@ export const enhanceNote = async (req, res, next) => {
   try {
     const noteId = req.params.id;
     const userId = req.user._id;
-    const { frameworkId, customInstructions } = req.body || {};
+    const { frameworkId, customInstructions, presetInstructions } = req.body || {};
 
     const note = await noteRepository.findByIdAndUserId(noteId, userId);
     if (!note) {
@@ -140,7 +140,10 @@ export const enhanceNote = async (req, res, next) => {
     }
 
     // Resolve framework (specified or auto-detected)
-    let framework = frameworkId ? FRAMEWORK_MAP[frameworkId] : null;
+    let framework =
+      frameworkId && Object.prototype.hasOwnProperty.call(FRAMEWORK_MAP, frameworkId)
+        ? FRAMEWORK_MAP[frameworkId]
+        : null;
     if (!framework) {
       framework = detectFramework(note.originalContent);
     }
@@ -152,9 +155,11 @@ export const enhanceNote = async (req, res, next) => {
     res.setHeader("X-Accel-Buffering", "no");
 
     let clientDisconnected = false;
-    if (typeof req.on === "function") {
-      req.on("close", () => {
-        clientDisconnected = true;
+    if (typeof res.on === "function") {
+      res.on("close", () => {
+        if (!res.writableFinished) {
+          clientDisconnected = true;
+        }
       });
     }
 
@@ -168,17 +173,24 @@ export const enhanceNote = async (req, res, next) => {
     );
     if (typeof res.flush === "function") res.flush();
 
-    // Safely generate & persist title if note is untitled (handled in service layer)
-    const generatedTitle = await generateAndPersistTitleIfUntitled({ note, userId });
-    if (generatedTitle) {
-      res.write(
-        `data: ${JSON.stringify({
-          event: "title",
-          title: generatedTitle,
-        })}\n\n`
-      );
-      if (typeof res.flush === "function") res.flush();
-    }
+    // Safely generate & persist title concurrently if note is untitled
+    const titlePromise = generateAndPersistTitleIfUntitled({ note, userId })
+      .then((generatedTitle) => {
+        if (generatedTitle && !clientDisconnected && !res.writableFinished) {
+          res.write(
+            `data: ${JSON.stringify({
+              event: "title",
+              title: generatedTitle,
+            })}\n\n`
+          );
+          if (typeof res.flush === "function") res.flush();
+        }
+        return generatedTitle;
+      })
+      .catch((err) => {
+        console.warn("[Note Enhancer] Non-blocking auto-title generation failed:", err.message);
+        return null;
+      });
 
     // Stage 2: Synthesis transition event
     res.write(
@@ -198,6 +210,7 @@ export const enhanceNote = async (req, res, next) => {
       rawContent: note.originalContent,
       frameworkId: framework.id,
       customInstructions,
+      presetInstructions,
     })) {
       if (clientDisconnected) break;
       if (chunk.content) {
@@ -209,10 +222,17 @@ export const enhanceNote = async (req, res, next) => {
       }
     }
 
+    // Await title promise before closing response so persistence finishes cleanly
+    await titlePromise;
+
     if (!clientDisconnected) {
+      // Re-fetch current note state to accurately capture the predecessor content being replaced
+      const latestNote = await noteRepository.findByIdAndUserId(noteId, userId);
+      const replacedContent = latestNote?.enhancedContent || note.enhancedContent || null;
+
       // Auto-save enhanced output + archive previous enhancement as version safeguard
       const updatedNote = await noteRepository.update(noteId, userId, {
-        previousEnhancedContent: note.enhancedContent || null,
+        previousEnhancedContent: replacedContent,
         enhancedContent: fullEnhancedContent,
         enhancedMetadata: {
           frameworkUsed: framework.name,

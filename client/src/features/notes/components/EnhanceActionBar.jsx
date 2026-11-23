@@ -15,7 +15,7 @@ import {
 import {
   getStoredPresets,
   saveStoredPresets,
-  MAX_PRESETS,
+  MAX_CUSTOM_PRESETS,
 } from "../constants/presets";
 import EditPresetModal from "./EditPresetModal";
 
@@ -81,8 +81,10 @@ export default function EnhanceActionBar({
     }
   };
 
+  const customPresetsCount = presets.filter((p) => !p.isDefault).length;
+
   const handleCreateNewPreset = () => {
-    if (presets.length >= MAX_PRESETS) return;
+    if (customPresetsCount >= MAX_CUSTOM_PRESETS) return;
     const newPreset = {
       id: `custom-${Date.now()}`,
       name: "New Custom Preset",
@@ -233,10 +235,10 @@ export default function EnhanceActionBar({
               <div className="border-t border-white/10 pt-1">
                 <button
                   type="button"
-                  disabled={presets.length >= MAX_PRESETS}
+                  disabled={customPresetsCount >= MAX_CUSTOM_PRESETS}
                   onClick={handleCreateNewPreset}
                   className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl border border-dashed transition-all text-left ${
-                    presets.length >= MAX_PRESETS
+                    customPresetsCount >= MAX_CUSTOM_PRESETS
                       ? "border-white/5 text-white/30 cursor-not-allowed"
                       : "border-white/20 hover:border-osmo-lime/40 text-white/60 hover:text-white hover:bg-white/5"
                   }`}
@@ -246,7 +248,7 @@ export default function EnhanceActionBar({
                     <span>Custom Framework</span>
                   </span>
                   <span className="text-[10px] font-mono text-white/40">
-                    {presets.length}/{MAX_PRESETS}
+                    {customPresetsCount}/{MAX_CUSTOM_PRESETS}
                   </span>
                 </button>
               </div>

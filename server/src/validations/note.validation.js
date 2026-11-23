@@ -47,6 +47,12 @@ export const enhanceNoteSchema = z.object({
     .max(1000, "Custom instructions cannot exceed 1000 characters")
     .nullable()
     .optional(),
+  presetInstructions: z
+    .string()
+    .trim()
+    .max(2000, "Preset instructions cannot exceed 2000 characters")
+    .nullable()
+    .optional(),
 });
 
 export const createFolderSchema = z.object({

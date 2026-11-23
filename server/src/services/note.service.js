@@ -161,9 +161,25 @@ export const restorePreviousEnhancement = async (id, userId) => {
     throw error;
   }
 
-  // Swap current and previous enhanced content
-  return await noteRepository.update(id, userId, {
-    enhancedContent: note.previousEnhancedContent,
-    previousEnhancedContent: note.enhancedContent,
-  });
+  // Swap current and previous enhanced content conditionally on matching snapshot
+  const restored = await noteRepository.update(
+    id,
+    userId,
+    {
+      enhancedContent: note.previousEnhancedContent,
+      previousEnhancedContent: note.enhancedContent,
+    },
+    {
+      enhancedContent: note.enhancedContent,
+      previousEnhancedContent: note.previousEnhancedContent,
+    }
+  );
+
+  if (!restored) {
+    const error = new Error("Conflict: Note was modified concurrently");
+    error.statusCode = StatusCodes.CONFLICT;
+    throw error;
+  }
+
+  return restored;
 };
