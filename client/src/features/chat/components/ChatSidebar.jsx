@@ -14,6 +14,7 @@ import {
   SignOut,
   ChatDots,
   CubeIcon,
+  ArrowLeft,
 } from "@phosphor-icons/react";
 import { useAuth } from "../../auth/hooks/useAuth";
 
@@ -54,9 +55,9 @@ export default function ChatSidebar({
           {/* Brand Header */}
           <div className="flex items-center justify-between px-1 pt-1">
             <Link
-              href="/dashboard"
+              href="/"
               className="group/brand flex items-center gap-2.5 transition-transform active:scale-95"
-              title="Return to Dashboard"
+              title="Return to Home"
             >
               <div className="relative w-7 h-7 shrink-0 transition-transform duration-500 group-hover/brand:rotate-12 group-hover/brand:scale-105">
                 <Image
@@ -73,6 +74,19 @@ export default function ChatSidebar({
                   COGNIFY<span className="text-osmo-lime">.</span>
                 </span>
               </div>
+            </Link>
+
+            <Link
+              href="/dashboard"
+              className="group/dash flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white bg-white/[0.05] hover:bg-white/10 border border-white/[0.08] hover:border-white/20 px-3 py-1.5 rounded-xl transition-all duration-200 shadow-xs cursor-pointer"
+              title="Return to Dashboard"
+            >
+              <ArrowLeft
+                size={14}
+                weight="bold"
+                className="shrink-0 transition-transform duration-200 group-hover/dash:-translate-x-0.5 text-white/60 group-hover/dash:text-osmo-lime"
+              />
+              <span className="tracking-tight">Dashboard</span>
             </Link>
           </div>
 
