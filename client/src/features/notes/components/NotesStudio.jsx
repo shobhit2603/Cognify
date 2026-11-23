@@ -274,8 +274,6 @@ export default function NotesStudio() {
               queryKey: ["notes"],
               refetchType: "none",
             });
-
-            toast.success(`Enhanced using ${frameworkName}!`);
           },
           onError: (err) => {
             setIsEnhancing(false);
