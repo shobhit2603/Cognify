@@ -44,8 +44,8 @@ export default function ChatSidebar({
     <aside
       className={`h-full bg-[#151414] text-white rounded-2xl overflow-hidden select-none shrink-0 z-20 shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width,opacity,margin] ${
         isSidebarOpen
-          ? "w-72 sm:w-80 opacity-100"
-          : "w-0 opacity-0 pointer-events-none -mr-3"
+          ? "w-72 sm:w-80 opacity-100 mr-0"
+          : "w-0 opacity-0 pointer-events-none -mr-1"
       }`}
     >
       <div className="w-72 sm:w-80 h-full flex flex-col justify-between p-4 gap-4 shrink-0">
