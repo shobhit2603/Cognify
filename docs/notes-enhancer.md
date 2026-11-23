@@ -14,26 +14,25 @@ The **Notes Enhancer** is Cognify's smart synthesis studio designed for students
 The Notes Enhancer is built as a **Split-Screen Studio**:
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Cognify Notes Enhancer                                                                           │
-├────────────────────┬──────────────────────────────────────┬──────────────────────────────────────┤
-│ Left Drawer        │ Center-Left: Raw Note Canvas         │ Center-Right: Live Enhanced Output   │
-│                    │                                      │                                      │
-│ [🔍 Search Notes ] │ Title: [ Architectural Decisions   ] │ [⚡ Enhanced using: Tech Notes     ] │
-│ [+ Note] [+ Folder]│                                      │                                      │
-│                    │ Status: [• Saved]                    │ [Copy Markdown] [Save PDF] [Chat]    │
-│ 📌 PINNED          │                                      │ ──────────────────────────────────── │
-│ • Sprint Goals     │ Raw shorthand input:                 │ ### 1. Core Logic Breakdown          │
-│                    │ - switch to SSE for notes            │ • Server-Sent Events allow continuous│
-│ 📁 FOLDERS         │ - debounce autosave 800ms            │   token delivery without polling.    │
-│ ▼ Work (3)         │ - prevent empty folder delete        │                                      │
-│   • Sprint Goals   │                                      │ ### 2. Implementation Walkthrough   │
-│   • Architecture   │                                      │ ...                                  │
-│ ▶ College (2)      │                                      │                                      │
-│                    │ ──────────────────────────────────── │ [Restore Previous Version]           │
-│ 📝 UNCATEGORIZED   │ [Enhance Note]                       │                                      │
-│ • Random Idea      │ Preset: [Study Guide] [Tech Notes].. │ Toggle: [Preview] [Edit]             │
-└────────────────────┴──────────────────────────────────────┴──────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Top Bar: [Toggle Drawer] [← Dashboard] / [Note Title]               [+ New Note (only if drawer shut)] │
+├────────────────┬───────────────────────────────────────┬───┬───────────────────────────────────────────┤
+│ Left Drawer    │ Center: Raw Notes Panel               │ ⁝ │ Right: Enhanced Notes Panel               │
+│ Compact        │ (Default ~42% width, resizable 25–65%)│   │ (Default ~58% width, fills remaining)     │
+│ [230px]        │                                       │ D │                                           │
+│                │ ┌───────────────────────────────────┐ │ R │ ┌───────────────────────────────────────┐ │
+│ [Search Notes] │ │ Title & Debounced Auto-Save Dot   │ │ A │ │ [Enhanced] [Mode Pill]   [👁][📋][📄][💬]│ │
+│ [+ Note] [+Dir]│ ├───────────────────────────────────┤ │ G │ ├───────────────────────────────────────┤ │
+│                │ │                                   │ │   │ │                                       │ │
+│ 📌 Pinned      │ │ Raw Notes Textarea Canvas         │ │ D │ │ Enhanced Markdown Reading View        │ │
+│ 📁 Folders     │ │ (Independent scrollbar)           │ │ I │ │ (Independent scrollbar, extends to    │ │
+│ 📝 General     │ │                                   │ │ V │ │  bottom of viewport)                  │ │
+│                │ ├───────────────────────────────────┤ │ I │ │                                       │ │
+│                │ │ Scoped Bottom Action Bar          │ │ D │ │ • Full table wrapping (no clipping)   │ │
+│                │ │ [Mode Chips (horizontal scroll)]  │ │ E │ │ • Clean inline `code` vs ``` blocks   │ │
+│                │ │ [Custom Prompt Input] [Enhance]   │ │ R │ │ • Proportional, concise output       │ │
+│                │ └───────────────────────────────────┘ │   │ └───────────────────────────────────────┘ │
+└────────────────┴───────────────────────────────────────┴───┴───────────────────────────────────────────┘
 ```
 
 ---
