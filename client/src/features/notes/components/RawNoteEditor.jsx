@@ -99,15 +99,13 @@ export default function RawNoteEditor({
       </div>
 
       {/* ── Raw Textarea Canvas ── */}
-      <div
-        data-lenis-prevent
-        className="flex-1 min-h-0 p-6 overflow-y-auto custom-scrollbar"
-      >
+      <div className="flex-1 min-h-0 overflow-hidden relative">
         <textarea
+          data-lenis-prevent
           value={content}
           onChange={handleContentChange}
           placeholder="Start typing your rough thoughts, meeting bullets, code ideas, or lecture notes here...&#10;&#10;When ready, pick a preset below or click 'Enhance Note' to transform them into a structured blueprint."
-          className="w-full h-full bg-transparent border-none outline-none resize-none text-white/90 placeholder-white/20 text-sm leading-relaxed font-sans focus:ring-0"
+          className="w-full h-full p-6 bg-transparent border-none outline-none resize-none text-white/90 placeholder-white/20 text-sm leading-relaxed font-sans focus:ring-0 overflow-y-auto custom-scrollbar block"
         />
       </div>
 

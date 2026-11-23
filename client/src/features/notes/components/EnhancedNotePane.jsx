@@ -246,13 +246,17 @@ Please give me a concise breakdown and let me know what questions you have or ho
       {/* ── Main Canvas ── */}
       <div
         data-lenis-prevent
-        className="flex-1 min-h-0 p-6 overflow-y-auto custom-scrollbar select-text"
+        className={`flex-1 min-h-0 select-text ${
+          isEditing
+            ? "overflow-hidden relative"
+            : "p-6 overflow-y-auto custom-scrollbar"
+        }`}
       >
         {isEditing ? (
           <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full h-full bg-transparent border-none outline-none resize-none text-white/90 text-sm leading-relaxed font-mono focus:ring-0 custom-scrollbar"
+            className="w-full h-full p-6 bg-transparent border-none outline-none resize-none text-white/90 text-sm leading-relaxed font-mono focus:ring-0 overflow-y-auto custom-scrollbar block"
             placeholder="Edit enhanced Markdown directly..."
           />
         ) : hasContent ? (
@@ -314,7 +318,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 },
                 pre({ children }) {
                   return (
-                    <pre className="p-3.5 my-3 rounded-xl bg-black/60 border border-white/10 overflow-x-auto text-xs font-mono text-emerald-400">
+                    <pre className="p-3.5 my-3 rounded-xl bg-black/60 border border-white/10 overflow-x-auto custom-scrollbar text-xs font-mono text-emerald-400">
                       {children}
                     </pre>
                   );
@@ -339,7 +343,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 },
                 table({ children }) {
                   return (
-                    <div className="my-4 w-full overflow-x-auto rounded-xl border border-white/10">
+                    <div className="my-4 w-full overflow-x-auto custom-scrollbar rounded-xl border border-white/10">
                       <table className="w-full border-collapse text-left text-xs text-white/80">
                         {children}
                       </table>
