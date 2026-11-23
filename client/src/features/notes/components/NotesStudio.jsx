@@ -79,6 +79,7 @@ export default function NotesStudio() {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementStage, setEnhancementStage] = useState(null);
   const [streamedText, setStreamedText] = useState("");
+  const accumulatedTextRef = useRef("");
 
   const abortControllerRef = useRef(null);
 
@@ -167,6 +168,7 @@ export default function NotesStudio() {
     if (!activeNote || !activeNote.originalContent?.trim() || isEnhancing) return;
 
     setIsEnhancing(true);
+    accumulatedTextRef.current = "";
     setStreamedText("");
     setEnhancementStage({ stage: "detecting", message: "Analyzing note intent..." });
 
@@ -187,27 +189,93 @@ export default function NotesStudio() {
           },
           onTitle: (generatedTitle) => {
             if (generatedTitle) {
-              queryClient.setQueryData(["notes"], (oldNotes) => {
-                if (!Array.isArray(oldNotes)) return oldNotes;
-                return oldNotes.map((n) =>
-                  n._id === activeNote._id ? { ...n, title: generatedTitle } : n
-                );
+              queryClient.setQueriesData({ queryKey: ["notes"] }, (oldNotes) => {
+                if (!oldNotes) return oldNotes;
+                if (Array.isArray(oldNotes.data)) {
+                  return {
+                    ...oldNotes,
+                    data: oldNotes.data.map((n) =>
+                      n._id === activeNote._id ? { ...n, title: generatedTitle } : n
+                    ),
+                  };
+                }
+                if (Array.isArray(oldNotes)) {
+                  return oldNotes.map((n) =>
+                    n._id === activeNote._id ? { ...n, title: generatedTitle } : n
+                  );
+                }
+                return oldNotes;
               });
               queryClient.setQueryData(["note", activeNote._id], (oldNote) => {
                 if (!oldNote) return oldNote;
+                if (oldNote.data) {
+                  return { ...oldNote, data: { ...oldNote.data, title: generatedTitle } };
+                }
                 return { ...oldNote, title: generatedTitle };
               });
             }
           },
           onChunk: (chunk) => {
-            setStreamedText((prev) => prev + chunk);
+            accumulatedTextRef.current += chunk;
+            setStreamedText(accumulatedTextRef.current);
           },
           onDone: (data) => {
+            const finalContent = accumulatedTextRef.current || "";
+            const frameworkName = data?.frameworkUsed || "Enhanced Blueprint";
+            const targetNoteId = activeNote._id;
+
+            const updatedFields = {
+              ...(data?.note || {}),
+              enhancedContent: data?.note?.enhancedContent || finalContent,
+              previousEnhancedContent:
+                data?.note?.previousEnhancedContent !== undefined
+                  ? data.note.previousEnhancedContent
+                  : activeNote.enhancedContent || null,
+              enhancedMetadata: data?.note?.enhancedMetadata || {
+                frameworkUsed: frameworkName,
+                enhancedAt: new Date().toISOString(),
+              },
+            };
+
+            // 1. Synchronously update TanStack Query cache before clearing streaming text
+            queryClient.setQueriesData({ queryKey: ["notes"] }, (old) => {
+              if (!old) return old;
+              if (Array.isArray(old.data)) {
+                return {
+                  ...old,
+                  data: old.data.map((n) =>
+                    n._id === targetNoteId ? { ...n, ...updatedFields } : n
+                  ),
+                };
+              }
+              if (Array.isArray(old)) {
+                return old.map((n) =>
+                  n._id === targetNoteId ? { ...n, ...updatedFields } : n
+                );
+              }
+              return old;
+            });
+
+            queryClient.setQueryData(["note", targetNoteId], (old) => {
+              if (!old) return { success: true, data: { ...activeNote, ...updatedFields } };
+              if (old.data) {
+                return { ...old, data: { ...old.data, ...updatedFields } };
+              }
+              return { ...old, ...updatedFields };
+            });
+
+            // 2. Clear streaming state now that cache is populated
             setIsEnhancing(false);
             setEnhancementStage(null);
             setStreamedText("");
-            queryClient.invalidateQueries({ queryKey: ["notes"] });
-            toast.success(`Enhanced using ${data.frameworkUsed}!`);
+
+            // 3. Mark query stale in background without dropping cache or unmounting
+            queryClient.invalidateQueries({
+              queryKey: ["notes"],
+              refetchType: "none",
+            });
+
+            toast.success(`Enhanced using ${frameworkName}!`);
           },
           onError: (err) => {
             setIsEnhancing(false);
