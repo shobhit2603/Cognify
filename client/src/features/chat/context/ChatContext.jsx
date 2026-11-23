@@ -8,7 +8,26 @@ const ChatContext = createContext();
 export function ChatProvider({ children }) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, _setIsSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cognify_chat_sidebar_open");
+      if (saved !== null) return saved === "true";
+    }
+    return true;
+  });
+
+  const setIsSidebarOpen = useCallback((valueOrFn) => {
+    _setIsSidebarOpen((prev) => {
+      const next = typeof valueOrFn === "function" ? valueOrFn(prev) : valueOrFn;
+      try {
+        localStorage.setItem("cognify_chat_sidebar_open", String(next));
+      } catch (e) {
+        console.warn("Failed to persist chat sidebar state", e);
+      }
+      return next;
+    });
+  }, []);
+
   const [isTemporaryChat, setIsTemporaryChat] = useState(false);
   const [newChatTrigger, setNewChatTrigger] = useState(0);
 
@@ -125,6 +144,7 @@ export function ChatProvider({ children }) {
   }), [
     conversations,
     isSidebarOpen,
+    setIsSidebarOpen,
     isTemporaryChat,
     newChatTrigger,
     triggerNewChat,

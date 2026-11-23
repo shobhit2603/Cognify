@@ -18,7 +18,26 @@ export default function NotesStudio() {
   const queryClient = useQueryClient();
 
   // State
-  const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cognify_notes_drawer_open");
+      if (saved !== null) return saved === "true";
+    }
+    return true;
+  });
+
+  const handleToggleDrawer = () => {
+    setIsDrawerOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("cognify_notes_drawer_open", String(next));
+      } catch (e) {
+        console.warn("Failed to persist notes drawer state", e);
+      }
+      return next;
+    });
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedNoteId, setSelectedNoteId] = useState(null);
@@ -333,7 +352,7 @@ export default function NotesStudio() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         isOpen={isDrawerOpen}
-        onToggleDrawer={() => setIsDrawerOpen(!isDrawerOpen)}
+        onToggleDrawer={handleToggleDrawer}
       />
 
       {/* ── Main Workspace Area ── */}
@@ -343,7 +362,7 @@ export default function NotesStudio() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              onClick={handleToggleDrawer}
               title={isDrawerOpen ? "Collapse Drawer" : "Expand Drawer"}
               className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
             >
