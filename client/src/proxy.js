@@ -24,7 +24,7 @@ export function proxy(request) {
 
   const isAuthenticated = !!(accessToken || refreshToken);
 
-  const isProtectedRoute = pathname.startsWith('/dashboard');
+  const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/notes');
   const isAuthRoute = pathname === '/auth';
 
   // ── Redirect unauthenticated users away from protected routes ──────────────
@@ -56,6 +56,7 @@ export const config = {
    */
   matcher: [
     '/dashboard/:path*',
+    '/notes/:path*',
     '/auth/:path*'
   ],
 };

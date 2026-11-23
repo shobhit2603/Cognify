@@ -42,13 +42,34 @@
     font-family: var(--font-handwriting);
   }
 
-  /* Scrollbar suppression for smooth canvas */
-  ::-webkit-scrollbar {
+  /* Scrollbar suppression for smooth canvas (except on elements with custom-scrollbar) */
+  :not(.custom-scrollbar)::-webkit-scrollbar {
     display: none;
   }
-  * {
+  :not(.custom-scrollbar) {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Custom visible scrollbar utility for scrollable panels (only visible when content overflows) */
+  .custom-scrollbar {
+    -ms-overflow-style: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.45);
   }
 }
 

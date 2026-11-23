@@ -42,7 +42,12 @@ export default function Footer() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (pathname?.startsWith("/chat") || pathname?.startsWith("/dashboard")) return null;
+  if (
+    pathname?.startsWith("/chat") ||
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/notes")
+  )
+    return null;
 
   return (
     <footer className="w-full bg-osmo-dark text-white mt-10 font-sans border-t border-white/10">
