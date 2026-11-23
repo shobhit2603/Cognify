@@ -12,6 +12,7 @@ export default function RawNoteEditor({
   const [saveStatus, setSaveStatus] = useState("saved"); // "saved" | "saving" | "unsaved"
 
   const timerRef = useRef(null);
+  const prevExternalTitleRef = useRef(note?.title);
 
   // Clear debounce timer on unmount
   useEffect(() => {
@@ -19,6 +20,15 @@ export default function RawNoteEditor({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  // Sync external title updates (e.g. AI auto-title generation) without triggering auto-save
+  useEffect(() => {
+    if (note?.title && note.title !== prevExternalTitleRef.current) {
+      prevExternalTitleRef.current = note.title;
+      setTitle(note.title);
+      setSaveStatus("saved");
+    }
+  }, [note?.title]);
 
   // Debounced auto-save trigger (800ms)
   const triggerAutoSave = (newTitle, newContent) => {
@@ -56,7 +66,7 @@ export default function RawNoteEditor({
   const charCount = content.length;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#121215] border-r border-white/10 select-text overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#121215] select-text overflow-hidden">
       {/* ── Editor Header: Title & Auto-Save Indicator ── */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#121215]/80 backdrop-blur-sm shrink-0">
         <input

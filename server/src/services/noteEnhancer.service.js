@@ -2,6 +2,15 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { getGroqModelInstance } from "../providers/groq.provider.js";
 import getMistralModel from "../providers/mistral.provider.js";
 import envConfig from "../config/env.config.js";
+import * as noteRepository from "../repositories/note.repository.js";
+
+// ─── Core Proportionality & Scannability Rules ────────────────────────────────
+const CORE_PROPORTIONALITY_RULES = `
+CRITICAL LENGTH & SCOPE RULES:
+- STRICT PROPORTIONALITY: Match the length and depth directly to the input notes. A 2-line note must yield a concise 1-2 paragraph or short bullet summary—NEVER a sprawling textbook or giant multi-column table.
+- NO UNSOLICITED EXPANSIONS: Do not invent external facts, extensive trivia, or unnecessary boilerplate that the user did not touch upon.
+- HIGH-RETENTION SCANNABILITY: Use clean, compact Markdown bullets, bold highlights for key phrases, and clear hierarchy. Keep it easily digestible for fast revision.
+`;
 
 // ─── 1. Preset Framework Definitions ──────────────────────────────────────────
 
@@ -10,61 +19,53 @@ export const PRESET_FRAMEWORKS = {
     id: "study-guide",
     name: "Study Guide",
     description: "Transforms notes into structured study blueprints with key definitions, analogies, pitfalls, and review questions.",
-    systemPrompt: `You are Cognify's Learning & Study Specialist. Your objective is to transform raw, shorthand, or lecture notes into a high-retention Study Guide.
-Formatting Rules:
-- Structure clearly with Markdown headings:
-  1. ### Core Concept & Big Picture (clear summary and why this matters)
-  2. ### Key Terms & Definitions (bulleted list of essential concepts)
-  3. ### Deep-Dive & Real-World Examples (practical analogies and demonstrations)
-  4. ### Common Pitfalls & Mistakes (what to avoid or watch out for)
-  5. ### Quick Review & Self-Test Questions (3-4 comprehension checks with answers hidden in markdown blockquotes)
-- Maintain absolute fidelity to the user's raw notes without inventing unrelated facts.
-- Keep the tone pedagogical, crystal-clear, and engaging.`,
+    systemPrompt: `You are Cognify's Learning & Study Specialist. Transform raw or lecture notes into a high-retention study blueprint.
+${CORE_PROPORTIONALITY_RULES}
+Structure (scale sections to input volume; omit sections if note is brief):
+- ### Core Concept (1-2 sentences summarizing the core idea)
+- ### Key Points & Definitions (bulleted list of essential concepts)
+- ### Quick Revision / Pitfalls (practical memory hook, common trap, or self-check question)
+Maintain absolute fidelity to the user's raw notes without inventing unrelated facts.`,
   },
 
   CODE_TECH_NOTES: {
     id: "code-tech",
     name: "Code & Tech Notes",
     description: "Breaks down technical notes, algorithms, and system concepts into logic blueprints, edge cases, and code patterns.",
-    systemPrompt: `You are Cognify's Senior Technical Architect & Developer Specialist. Your objective is to transform rough coding thoughts, architecture sketches, or debug logs into crisp, production-grade technical documentation.
-Formatting Rules:
-- Structure clearly with Markdown headings:
-  1. ### Technical Overview & Core Objective
-  2. ### Architecture & Logic Breakdown (step-by-step mechanism)
-  3. ### Code Example / Implementation Pattern (clean, syntax-highlighted code block with comments)
-  4. ### Edge Cases & Potential Pitfalls (concurrency, limits, security, failure modes)
-  5. ### Performance & Scalability Considerations
-- Keep code clean, modern, and idiomatic.
-- Do not bloat with boilerplate; focus on the core logic specified in the raw notes.`,
+    systemPrompt: `You are Cognify's Senior Technical Architect. Transform rough coding thoughts or debug notes into clean, production-grade technical documentation.
+${CORE_PROPORTIONALITY_RULES}
+Structure (scale sections to input volume):
+- ### Overview & Objective (brief summary)
+- ### Implementation Pattern (clean, syntax-highlighted code block with comments)
+- ### Key Considerations & Edge Cases (concise bullet points on gotchas, limits, or performance)
+Do NOT write endless boilerplate. Focus strictly on the logic in the notes.`,
   },
 
   MEETING_TAKEAWAYS: {
     id: "meeting-takeaways",
     name: "Meeting Takeaways",
     description: "Extracts key discussion points, explicit decisions, and assigned action items from meeting notes.",
-    systemPrompt: `You are Cognify's Executive Meeting & Project Management Specialist. Your objective is to transform raw, informal meeting notes or bullet dumps into an actionable Meeting Brief.
-Formatting Rules:
-- Structure clearly with Markdown headings:
-  1. ### Meeting Context & Objectives
-  2. ### Key Discussion Points & Topics Covered
-  3. ### Decisions Agreed Upon (unambiguous list of what was decided)
-  4. ### Action Items & Next Steps (checklist with Task, Assigned Owner [if mentioned or 'TBD'], and Priority)
-  5. ### Open Questions & Blockers (unresolved items requiring follow-up)
-- Preserve the exact decisions and nuance from the meeting notes. Be concise and eliminate conversational fluff.`,
+    systemPrompt: `You are Cognify's Executive Meeting Specialist. Transform raw meeting notes or bullet dumps into an actionable, crisp brief.
+${CORE_PROPORTIONALITY_RULES}
+Structure (scale sections to input volume):
+- ### Context & Goal (brief 1-sentence recap)
+- ### Decisions Agreed Upon (unambiguous bullet points)
+- ### Action Items (checklist with Task, Owner [if mentioned or 'TBD'], and Priority)
+- ### Open Questions (if any follow-up is noted)
+Be concise and eliminate conversational filler.`,
   },
 
   QUICK_POLISH: {
     id: "quick-polish",
     name: "Quick Polish & Summary",
     description: "Cleans grammar, improves flow, and provides an executive summary without altering original structure.",
-    systemPrompt: `You are Cognify's Executive Writing Specialist. Your objective is to polish raw notes for maximum clarity, professional flow, and readability.
-Formatting Rules:
-- Fix grammatical errors, sentence fragments, and awkward phrasing while strictly preserving the author's voice and structure.
-- Structure clearly:
-  1. ### Executive Summary (2-3 concise sentences distilling the core message)
-  2. ### Polished Notes (the user's notes cleaned up with professional formatting, bullet hierarchy, and bold emphasis)
-  3. ### High-Impact Takeaways (3-5 punchy key points)
-- Do not add extraneous information not present in the user's notes.`,
+    systemPrompt: `You are Cognify's Executive Writing Specialist. Polish raw notes for maximum clarity, clean flow, and readability.
+${CORE_PROPORTIONALITY_RULES}
+Structure:
+- ### Quick Summary (1-2 punchy sentences)
+- ### Polished Notes (the user's notes cleaned up with professional formatting, bullet hierarchy, and bold emphasis)
+- ### Key Takeaways (3-4 bullet points)
+Strictly preserve the author's meaning and tone without inflating the content.`,
   },
 };
 
@@ -180,15 +181,15 @@ export async function* streamNoteEnhancement({ rawContent, frameworkId = null, c
   let stream;
   try {
     if (envConfig.GROQ_API_KEY && envConfig.GROQ_API_KEY !== "mock_key") {
-      const model = getGroqModelInstance({ temperature: 0.3 });
+      const model = getGroqModelInstance({ temperature: 0.2 });
       stream = await model.stream(messages);
     } else {
-      const model = getMistralModel({ temperature: 0.3 });
+      const model = getMistralModel({ temperature: 0.2 });
       stream = await model.stream(messages);
     }
   } catch (providerError) {
     console.warn("[Note Enhancer] Primary model failed, falling back to Mistral:", providerError.message);
-    const fallbackModel = getMistralModel({ temperature: 0.3 });
+    const fallbackModel = getMistralModel({ temperature: 0.2 });
     stream = await fallbackModel.stream(messages);
   }
 
@@ -199,3 +200,70 @@ export async function* streamNoteEnhancement({ rawContent, frameworkId = null, c
     }
   }
 }
+
+// ─── 5. Auto-Title Generation & Safe Persistence ──────────────────────────────
+
+/**
+ * Checks if a note is untitled and generates a concise 3-5 word title.
+ * Persists the title to the database via noteRepository.
+ * Safely wrapped in try/catch so title generation never blocks or fails enhancement streaming.
+ *
+ * @param {Object} params
+ * @param {Object} params.note - The existing note document.
+ * @param {string} params.userId - User ID.
+ * @returns {Promise<string|null>} The generated clean title or null if skipped/failed.
+ */
+export const generateAndPersistTitleIfUntitled = async ({ note, userId }) => {
+  try {
+    const rawTitle = (note?.title || "").trim();
+    const isUntitled = !rawTitle || rawTitle === "Untitled Note" || rawTitle === "New Note";
+    if (!isUntitled) return null;
+
+    const content = (note?.originalContent || "").trim();
+    if (!content) return null;
+
+    const promptMessages = [
+      new SystemMessage(
+        "You are an expert editor. Generate a concise, meaningful 3 to 5 word title for the user's raw notes. " +
+        "Return ONLY the plain title text without quotes, punctuation, asterisks, or prefix labels."
+      ),
+      new HumanMessage(content.slice(0, 500)),
+    ];
+
+    let responseText = "";
+    try {
+      if (envConfig.NODE_ENV !== "test" && envConfig.GROQ_API_KEY && envConfig.GROQ_API_KEY !== "mock_key") {
+        const model = getGroqModelInstance({ temperature: 0.2, maxTokens: 30 });
+        const res = await model.invoke(promptMessages);
+        responseText = typeof res.content === "string" ? res.content : "";
+      } else if (envConfig.NODE_ENV !== "test" && envConfig.MISTRAL_API_KEY && envConfig.MISTRAL_API_KEY !== "mock_key") {
+        const model = getMistralModel({ temperature: 0.2, maxTokens: 30 });
+        const res = await model.invoke(promptMessages);
+        responseText = typeof res.content === "string" ? res.content : "";
+      }
+    } catch (llmErr) {
+      console.warn("[Note Enhancer] LLM title inference failed, using fallback:", llmErr.message);
+    }
+
+    // Strip surrounding quotes, asterisks, newlines, and trailing punctuation
+    let cleanTitle = responseText
+      .replace(/^["'`#*\s]+|["'`#*.\s]+$/g, "")
+      .replace(/[\r\n]+/g, " ")
+      .trim();
+
+    // Fallback if model was skipped, returned empty, or threw an error
+    if (!cleanTitle || cleanTitle.length > 60) {
+      const firstLine = content.split("\n")[0].replace(/[#*`_]/g, "").trim();
+      cleanTitle = firstLine.slice(0, 40) || "Untitled Note";
+    }
+
+    if (cleanTitle && cleanTitle !== "Untitled Note") {
+      await noteRepository.update(note._id, userId, { title: cleanTitle });
+      return cleanTitle;
+    }
+    return null;
+  } catch (err) {
+    console.warn("[Note Enhancer] Auto-title generation failed non-fatally:", err.message);
+    return null;
+  }
+};

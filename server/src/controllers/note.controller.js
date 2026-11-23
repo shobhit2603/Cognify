@@ -5,6 +5,7 @@ import {
   detectFramework,
   FRAMEWORK_MAP,
   streamNoteEnhancement,
+  generateAndPersistTitleIfUntitled,
 } from "../services/noteEnhancer.service.js";
 import ApiResponse from "../utils/apiResponse.util.js";
 
@@ -166,6 +167,18 @@ export const enhanceNote = async (req, res, next) => {
       })}\n\n`
     );
     if (typeof res.flush === "function") res.flush();
+
+    // Safely generate & persist title if note is untitled (handled in service layer)
+    const generatedTitle = await generateAndPersistTitleIfUntitled({ note, userId });
+    if (generatedTitle) {
+      res.write(
+        `data: ${JSON.stringify({
+          event: "title",
+          title: generatedTitle,
+        })}\n\n`
+      );
+      if (typeof res.flush === "function") res.flush();
+    }
 
     // Stage 2: Synthesis transition event
     res.write(

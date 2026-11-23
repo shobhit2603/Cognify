@@ -65,7 +65,7 @@ export default function NotesDrawer({
     <>
       <aside
         className={`h-full border-r border-white/10 bg-[#0e0e11] flex flex-col transition-all duration-200 select-none ${
-          isOpen ? "w-80 min-w-[20rem]" : "w-0 min-w-0 overflow-hidden border-none"
+          isOpen ? "w-[230px] min-w-[230px]" : "w-0 min-w-0 overflow-hidden border-none"
         }`}
       >
         {/* ── Top Header & Actions ── */}
@@ -417,8 +417,8 @@ function NoteItem({
             </span>
           )}
           {note.enhancedMetadata?.frameworkUsed && (
-            <span className="text-[9px] px-1 rounded bg-white/10 text-white/50 font-mono">
-              ⚡ {note.enhancedMetadata.frameworkUsed}
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/50 font-mono truncate max-w-[100px]">
+              {note.enhancedMetadata.frameworkUsed}
             </span>
           )}
         </div>

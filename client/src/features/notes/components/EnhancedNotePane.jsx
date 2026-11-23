@@ -147,18 +147,17 @@ Please give me a concise breakdown and let me know what questions you have or ho
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0e0e11] select-text overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#0e0e11] select-text overflow-hidden min-h-0">
       {/* ── Top Header Actions ── */}
-      <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/5 bg-[#0e0e11]/90 backdrop-blur-sm shrink-0 select-none">
-        <div className="flex items-center gap-2 truncate">
-          <Sparkle size={18} className="text-osmo-lime shrink-0" weight="fill" />
+      <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-[#0e0e11]/90 backdrop-blur-sm shrink-0 select-none">
+        <div className="flex items-center gap-2 truncate mr-2">
+          <Sparkle size={17} className="text-osmo-lime shrink-0" weight="fill" />
           <span className="text-sm font-semibold text-white tracking-wide font-mono uppercase truncate">
-            Enhanced Blueprint
+            Enhanced
           </span>
 
           {frameworkName && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-osmo-lime/10 text-osmo-lime border border-osmo-lime/20 font-mono truncate">
-              <Lightning size={11} weight="fill" />
+            <span className="hidden sm:inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-osmo-lime/10 text-osmo-lime border border-osmo-lime/20 font-mono truncate max-w-[120px]">
               <span>{frameworkName}</span>
             </span>
           )}
@@ -168,7 +167,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
         <div className="flex items-center gap-1.5 shrink-0">
           {hasContent && (
             <>
-              {/* Preview vs Edit Toggle */}
+              {/* Preview vs Edit Toggle (Icon Only) */}
               <button
                 type="button"
                 onClick={() => {
@@ -178,11 +177,10 @@ Please give me a concise breakdown and let me know what questions you have or ho
                   }
                   setIsEditing(!isEditing);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                title={isEditing ? "Switch to Rendered Preview" : "Edit Enhanced Text"}
+                className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                title={isEditing ? "Switch to Rendered Preview" : "Edit Enhanced Markdown"}
               >
-                {isEditing ? <Eye size={14} /> : <PencilSimple size={14} />}
-                <span className="hidden md:inline">{isEditing ? "Preview" : "Edit"}</span>
+                {isEditing ? <Eye size={15} /> : <PencilSimple size={15} />}
               </button>
 
               <button
@@ -207,10 +205,10 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 type="button"
                 onClick={handleDiscussInChat}
                 title="Discuss in AI Chat"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-osmo-lime/10 border border-osmo-lime/30 text-xs text-osmo-lime font-medium hover:bg-osmo-lime/20 transition-all shadow-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-osmo-lime/10 border border-osmo-lime/30 text-xs text-osmo-lime font-medium hover:bg-osmo-lime/20 transition-all shadow-sm shrink-0"
               >
                 <ChatsCircle size={15} weight="bold" />
-                <span className="hidden lg:inline">Discuss in Chat</span>
+                <span className="hidden xl:inline">Discuss in Chat</span>
               </button>
             </>
           )}
@@ -246,7 +244,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
       )}
 
       {/* ── Main Canvas ── */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 min-h-0 p-6 overflow-y-auto">
         {isEditing ? (
           <textarea
             value={editedContent}
@@ -311,18 +309,52 @@ Please give me a concise breakdown and let me know what questions you have or ho
                     </blockquote>
                   );
                 },
-                code({ inline, children }) {
-                  if (inline) {
+                pre({ children }) {
+                  return (
+                    <pre className="p-3.5 my-3 rounded-xl bg-black/60 border border-white/10 overflow-x-auto text-xs font-mono text-emerald-400">
+                      {children}
+                    </pre>
+                  );
+                },
+                code({ className, children, ...props }) {
+                  const isBlock = Boolean(className?.includes("language-")) || String(children).includes("\n");
+                  if (!isBlock) {
                     return (
-                      <code className="px-1.5 py-0.5 rounded bg-white/10 text-osmo-lime text-xs font-mono">
+                      <code
+                        className="px-1.5 py-0.5 rounded bg-white/10 text-osmo-lime text-xs font-mono inline break-words"
+                        {...props}
+                      >
                         {children}
                       </code>
                     );
                   }
                   return (
-                    <pre className="p-3.5 my-3 rounded-xl bg-black/60 border border-white/10 overflow-x-auto text-xs font-mono text-emerald-400">
-                      <code>{children}</code>
-                    </pre>
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                table({ children }) {
+                  return (
+                    <div className="my-4 w-full overflow-x-auto rounded-xl border border-white/10">
+                      <table className="w-full border-collapse text-left text-xs text-white/80">
+                        {children}
+                      </table>
+                    </div>
+                  );
+                },
+                th({ children }) {
+                  return (
+                    <th className="bg-white/5 border-b border-white/10 px-3.5 py-2.5 font-semibold text-white font-mono text-xs">
+                      {children}
+                    </th>
+                  );
+                },
+                td({ children }) {
+                  return (
+                    <td className="border-b border-white/5 px-3.5 py-2 text-xs leading-relaxed">
+                      {children}
+                    </td>
                   );
                 },
               }}

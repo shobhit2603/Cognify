@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { SidebarSimple, Plus, FileText, ArrowLeft } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import NotesDrawer from "./NotesDrawer";
@@ -13,11 +14,64 @@ import { noteService } from "../services/note.service";
 export default function NotesStudio() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   // State
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNoteId, setSelectedNoteId] = useState(null);
+
+  // Split ratio: default 42% for raw editor, 58% for enhanced reading view
+  const [splitPercent, setSplitPercent] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cognify_notes_split_ratio");
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (!isNaN(parsed) && parsed >= 25 && parsed <= 65) return parsed;
+      }
+    }
+    return 42;
+  });
+
+  const splitContainerRef = useRef(null);
+  const isDraggingRef = useRef(false);
+
+  // Pointer drag events for resizable divider
+  const handlePointerDown = (e) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDraggingRef.current || !splitContainerRef.current) return;
+    const rect = splitContainerRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const clientX = e.clientX;
+    const rawPercent = ((clientX - rect.left) / rect.width) * 100;
+    const clamped = Math.max(25, Math.min(65, rawPercent));
+    setSplitPercent(clamped);
+  };
+
+  const handlePointerUp = (e) => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      try {
+        localStorage.setItem("cognify_notes_split_ratio", splitPercent.toString());
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Enhancement Streaming State
   const [selectedFrameworkId, setSelectedFrameworkId] = useState(null); // null = Auto-Detect
@@ -131,6 +185,20 @@ export default function NotesStudio() {
           onStage: (data) => {
             setEnhancementStage(data);
           },
+          onTitle: (generatedTitle) => {
+            if (generatedTitle) {
+              queryClient.setQueryData(["notes"], (oldNotes) => {
+                if (!Array.isArray(oldNotes)) return oldNotes;
+                return oldNotes.map((n) =>
+                  n._id === activeNote._id ? { ...n, title: generatedTitle } : n
+                );
+              });
+              queryClient.setQueryData(["note", activeNote._id], (oldNote) => {
+                if (!oldNote) return oldNote;
+                return { ...oldNote, title: generatedTitle };
+              });
+            }
+          },
           onChunk: (chunk) => {
             setStreamedText((prev) => prev + chunk);
           },
@@ -138,6 +206,7 @@ export default function NotesStudio() {
             setIsEnhancing(false);
             setEnhancementStage(null);
             setStreamedText("");
+            queryClient.invalidateQueries({ queryKey: ["notes"] });
             toast.success(`Enhanced using ${data.frameworkUsed}!`);
           },
           onError: (err) => {
@@ -205,29 +274,69 @@ export default function NotesStudio() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleCreateNote()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs border border-white/10 transition-colors"
-            >
-              <Plus size={13} weight="bold" />
-              <span>New Note</span>
-            </button>
+            {!isDrawerOpen && (
+              <button
+                type="button"
+                onClick={() => handleCreateNote()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs border border-white/10 transition-colors"
+              >
+                <Plus size={13} weight="bold" />
+                <span>New Note</span>
+              </button>
+            )}
           </div>
         </header>
 
         {/* ── Split-Screen Studio ── */}
         {activeNote ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-              {/* Left Pane: Raw Note Editor */}
-              <RawNoteEditor
-                key={activeNote._id}
-                note={activeNote}
-                onSave={(id, data) => updateNote({ id, data })}
-              />
+          <div
+            ref={splitContainerRef}
+            className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative select-none md:select-text"
+          >
+            {/* Left Column: Raw Note Editor + Scoped Action Bar */}
+            <div
+              style={{ width: `${splitPercent}%` }}
+              className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden"
+            >
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                <RawNoteEditor
+                  key={activeNote._id}
+                  note={activeNote}
+                  onSave={(id, data) => updateNote({ id, data })}
+                />
+              </div>
 
-              {/* Right Pane: Live Enhanced Output */}
+              {/* Scoped Bottom Action Bar (width matches raw notes column only) */}
+              <div className="shrink-0 border-t border-white/10 bg-[#0d0d0f]">
+                <EnhanceActionBar
+                  selectedFrameworkId={selectedFrameworkId}
+                  onSelectFramework={setSelectedFrameworkId}
+                  customInstructions={customInstructions}
+                  setCustomInstructions={setCustomInstructions}
+                  onEnhance={handleEnhance}
+                  isEnhancing={isEnhancing}
+                  rawContentLength={(activeNote.originalContent || "").trim().length}
+                />
+              </div>
+            </div>
+
+            {/* Draggable Divider with Pointer Events */}
+            <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              title="Drag to resize panels"
+              className="hidden md:flex w-2.5 -mx-1.5 cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5"
+            >
+              <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-lime group-hover:h-14 transition-all" />
+            </div>
+
+            {/* Right Column: Live Enhanced Output (Extends cleanly to bottom of viewport) */}
+            <div
+              style={{ width: `${100 - splitPercent}%` }}
+              className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden border-l border-white/10"
+            >
               <EnhancedNotePane
                 note={activeNote}
                 isEnhancing={isEnhancing}
@@ -239,17 +348,6 @@ export default function NotesStudio() {
                 onRestorePrevious={(id) => restorePreviousEnhancement(id)}
               />
             </div>
-
-            {/* Bottom Floating Action Bar */}
-            <EnhanceActionBar
-              selectedFrameworkId={selectedFrameworkId}
-              onSelectFramework={setSelectedFrameworkId}
-              customInstructions={customInstructions}
-              setCustomInstructions={setCustomInstructions}
-              onEnhance={handleEnhance}
-              isEnhancing={isEnhancing}
-              rawContentLength={(activeNote.originalContent || "").trim().length}
-            />
           </div>
         ) : (
           /* Empty Workspace (no notes in user account) */

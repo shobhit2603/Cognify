@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../app.js";
 import { User } from "../models/user.model.js";
 import { Note } from "../models/note.model.js";
+import { generateAndPersistTitleIfUntitled } from "../services/noteEnhancer.service.js";
 
 describe("Notes and Folders Endpoints", () => {
   const testUser = {
@@ -318,6 +319,39 @@ describe("Notes and Folders Endpoints", () => {
       expect(enhanceRes.status).toBe(400);
       expect(enhanceRes.body.success).toBe(false);
       expect(enhanceRes.body.message).toMatch(/content is empty/i);
+    });
+
+    it("should auto-generate and persist a title for an untitled note", async () => {
+      const noteDoc = await Note.create({
+        userId,
+        title: "Untitled Note",
+        originalContent: "Discuss Docker container orchestration and Kubernetes pods scaling.",
+      });
+
+      const title = await generateAndPersistTitleIfUntitled({ note: noteDoc, userId });
+      expect(title).toBeDefined();
+      expect(typeof title).toBe("string");
+      expect(title.length).toBeGreaterThan(0);
+      expect(title).not.toBe("Untitled Note");
+
+      // Verify persistence in DB
+      const updatedInDb = await Note.findById(noteDoc._id);
+      expect(updatedInDb.title).toBe(title);
+    });
+
+    it("should NOT overwrite a title if user has already set a custom title", async () => {
+      const noteDoc = await Note.create({
+        userId,
+        title: "Custom User Chosen Title",
+        originalContent: "Some meeting notes.",
+      });
+
+      const title = await generateAndPersistTitleIfUntitled({ note: noteDoc, userId });
+      expect(title).toBeNull();
+
+      // In DB, title must remain unchanged
+      const inDb = await Note.findById(noteDoc._id);
+      expect(inDb.title).toBe("Custom User Chosen Title");
     });
   });
 });

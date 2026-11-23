@@ -76,7 +76,7 @@ export const noteService = {
 
   // ── SSE Streaming Enhancement Client ───────────────────────
   streamNoteEnhancement: async (noteId, payload, callbacks = {}) => {
-    const { onStage, onChunk, onDone, onError, signal } = callbacks;
+    const { onStage, onTitle, onChunk, onDone, onError, signal } = callbacks;
 
     const normalizedBase = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL;
     const url = `${normalizedBase}/notes/${noteId}/enhance`;
@@ -122,6 +122,8 @@ export const noteService = {
               const data = JSON.parse(trimmed.slice(6));
               if (data.event === "stage") {
                 onStage?.(data);
+              } else if (data.event === "title") {
+                onTitle?.(data.title);
               } else if (data.event === "chunk") {
                 onChunk?.(data.content);
               } else if (data.event === "done") {
