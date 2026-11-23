@@ -99,7 +99,10 @@ export default function RawNoteEditor({
       </div>
 
       {/* ── Raw Textarea Canvas ── */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div
+        data-lenis-prevent
+        className="flex-1 min-h-0 p-6 overflow-y-auto custom-scrollbar"
+      >
         <textarea
           value={content}
           onChange={handleContentChange}

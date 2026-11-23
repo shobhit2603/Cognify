@@ -244,18 +244,21 @@ Please give me a concise breakdown and let me know what questions you have or ho
       )}
 
       {/* ── Main Canvas ── */}
-      <div className="flex-1 min-h-0 p-6 overflow-y-auto">
+      <div
+        data-lenis-prevent
+        className="flex-1 min-h-0 p-6 overflow-y-auto custom-scrollbar select-text"
+      >
         {isEditing ? (
           <textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full h-full bg-transparent border-none outline-none resize-none text-white/90 text-sm leading-relaxed font-mono focus:ring-0"
+            className="w-full h-full bg-transparent border-none outline-none resize-none text-white/90 text-sm leading-relaxed font-mono focus:ring-0 custom-scrollbar"
             placeholder="Edit enhanced Markdown directly..."
           />
         ) : hasContent ? (
           <div
             ref={markdownContainerRef}
-            className="prose prose-invert max-w-none text-white/90 leading-relaxed font-sans select-text"
+            className="prose prose-invert max-w-none text-white/90 leading-relaxed font-sans select-text pb-12"
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
