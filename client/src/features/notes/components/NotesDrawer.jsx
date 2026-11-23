@@ -199,7 +199,7 @@ export default function NotesDrawer({
                           type="button"
                           aria-expanded={isExpanded}
                           onClick={() => toggleFolder(folder._id)}
-                          className="flex items-center gap-2 flex-1 truncate text-left focus:outline-none"
+                          className="flex items-center gap-2 flex-1 truncate text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-osmo-lime/60 rounded"
                         >
                           {isExpanded ? (
                             <CaretDown size={13} className="text-white/40 shrink-0" />
@@ -396,7 +396,7 @@ function NoteItem({
       <button
         type="button"
         onClick={onSelect}
-        className="flex-1 min-w-0 text-left truncate pr-2 focus:outline-none"
+        className="flex-1 min-w-0 text-left truncate pr-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-osmo-lime/60 rounded"
       >
         <div className="flex items-center gap-1.5">
           {note.isPinned && (

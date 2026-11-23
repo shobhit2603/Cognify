@@ -46,10 +46,13 @@ export const useNoteMutations = () => {
   const updateNoteMutation = useMutation({
     mutationFn: ({ id, data }) => noteService.updateNote(id, data),
     onSuccess: (res, variables) => {
-      queryClient.setQueryData(["note", variables.id], (old) => ({
-        ...old,
-        ...res.data,
-      }));
+      queryClient.setQueryData(["note", variables.id], (old) => {
+        if (!old) return res;
+        if (old.data) {
+          return { ...old, data: { ...old.data, ...res.data } };
+        }
+        return { ...old, ...res.data };
+      });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["note-folders"] });
     },
@@ -96,7 +99,7 @@ export const useNoteMutations = () => {
   const restoreMutation = useMutation({
     mutationFn: noteService.restorePreviousEnhancement,
     onSuccess: (res, id) => {
-      queryClient.setQueryData(["note", id], res.data);
+      queryClient.setQueryData(["note", id], res);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       toast.success("Previous enhancement restored!");
     },

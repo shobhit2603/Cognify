@@ -53,7 +53,7 @@ export default function EnhancedNotePane({
     }
 
     // If unchanged, exit edit mode without a redundant network request
-    if (editedContent.trim() === editBaseline.trim()) {
+    if (editedContent === editBaseline) {
       setIsEditing(false);
       return;
     }
@@ -283,9 +283,10 @@ Please give me a concise breakdown and let me know what questions you have or ho
       >
         {isEditing ? (
           <textarea
+            disabled={isSavingEdit}
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full h-full p-6 bg-transparent border-none outline-none resize-none text-white/90 text-sm leading-relaxed font-mono focus:ring-0 overflow-y-auto custom-scrollbar block"
+            className="w-full h-full p-6 bg-transparent border-none outline-none resize-none text-white/90 text-sm leading-relaxed font-mono focus:ring-0 overflow-y-auto custom-scrollbar block disabled:opacity-50"
             placeholder="Edit enhanced Markdown directly..."
           />
         ) : hasContent ? (

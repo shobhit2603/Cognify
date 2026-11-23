@@ -226,19 +226,39 @@ export const enhanceNote = async (req, res, next) => {
     await titlePromise;
 
     if (!clientDisconnected) {
-      // Re-fetch current note state to accurately capture the predecessor content being replaced
-      const latestNote = await noteRepository.findByIdAndUserId(noteId, userId);
-      const replacedContent = latestNote?.enhancedContent || note.enhancedContent || null;
+      // Auto-save enhanced output + archive previous enhancement with retry on contention
+      let updatedNote = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const latestNote = await noteRepository.findByIdAndUserId(noteId, userId);
+        const replacedContent = latestNote?.enhancedContent ?? note.enhancedContent ?? null;
 
-      // Auto-save enhanced output + archive previous enhancement as version safeguard
-      const updatedNote = await noteRepository.update(noteId, userId, {
-        previousEnhancedContent: replacedContent,
-        enhancedContent: fullEnhancedContent,
-        enhancedMetadata: {
-          frameworkUsed: framework.name,
-          enhancedAt: new Date(),
-        },
-      });
+        updatedNote = await noteRepository.update(
+          noteId,
+          userId,
+          {
+            previousEnhancedContent: replacedContent,
+            enhancedContent: fullEnhancedContent,
+            enhancedMetadata: {
+              frameworkUsed: framework.name,
+              enhancedAt: new Date(),
+            },
+          },
+          replacedContent !== null ? { enhancedContent: replacedContent } : {}
+        );
+
+        if (updatedNote) break;
+      }
+
+      if (!updatedNote) {
+        res.write(
+          `data: ${JSON.stringify({
+            event: "error",
+            error: "Failed to persist enhanced note due to a concurrent update.",
+          })}\n\n`
+        );
+        res.end();
+        return;
+      }
 
       res.write(
         `data: ${JSON.stringify({

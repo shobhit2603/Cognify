@@ -57,10 +57,11 @@ export default function RawNoteEditor({
 
     timerRef.current = setTimeout(async () => {
       try {
-        await onSave(note._id, {
+        const payload = pendingPayloadRef.current || {
           title: newTitle,
           originalContent: newContent,
-        });
+        };
+        await onSave(note._id, payload);
         if (saveVersionRef.current === currentVersion) {
           pendingPayloadRef.current = null;
           setSaveStatus("saved");

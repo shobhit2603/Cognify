@@ -278,8 +278,14 @@ export const generateAndPersistTitleIfUntitled = async ({ note, userId }) => {
     }
 
     if (cleanTitle && cleanTitle !== "Untitled Note") {
-      await noteRepository.update(note._id, userId, { title: cleanTitle });
-      return cleanTitle;
+      const updated = await noteRepository.update(
+        note._id,
+        userId,
+        { title: cleanTitle },
+        { title: note.title }
+      );
+      if (updated) return cleanTitle;
+      return null;
     }
     return null;
   } catch (err) {
