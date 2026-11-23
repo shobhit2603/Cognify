@@ -165,6 +165,18 @@ Please give me a concise breakdown and let me know what questions you have or ho
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Restore Previous Version Icon Button (rendered only when previous version exists) */}
+          {note?.previousEnhancedContent && (
+            <button
+              type="button"
+              onClick={() => onRestorePrevious(note._id)}
+              title="Restore Previous Version"
+              className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition-colors"
+            >
+              <ArrowCounterClockwise size={15} weight="bold" />
+            </button>
+          )}
+
           {hasContent && (
             <>
               {/* Preview vs Edit Toggle (Icon Only) */}
@@ -214,23 +226,6 @@ Please give me a concise breakdown and let me know what questions you have or ho
           )}
         </div>
       </div>
-
-      {/* ── Version Safeguard Banner (if previous enhancement exists) ── */}
-      {note?.previousEnhancedContent && (
-        <div className="px-6 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between text-xs text-amber-300 select-none shrink-0">
-          <span className="flex items-center gap-1.5">
-            <ArrowCounterClockwise size={13} weight="bold" />
-            <span>A previous enhancement version is available.</span>
-          </span>
-          <button
-            type="button"
-            onClick={() => onRestorePrevious(note._id)}
-            className="underline hover:text-amber-200 font-medium"
-          >
-            Restore Previous Version
-          </button>
-        </div>
-      )}
 
       {/* ── 2-Stage Progress Shimmer Banner (while enhancing) ── */}
       {isEnhancing && enhancementStage && (
@@ -297,16 +292,23 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 },
                 ul({ children }) {
                   return (
-                    <ul className="list-disc list-inside space-y-1 my-2.5 text-sm text-white/80">
+                    <ul className="list-disc list-outside ml-5 space-y-1.5 my-2.5 text-sm text-white/80">
                       {children}
                     </ul>
                   );
                 },
                 ol({ children }) {
                   return (
-                    <ol className="list-decimal list-inside space-y-1 my-2.5 text-sm text-white/80">
+                    <ol className="list-decimal list-outside ml-5 space-y-1.5 my-2.5 text-sm text-white/80">
                       {children}
                     </ol>
+                  );
+                },
+                li({ children }) {
+                  return (
+                    <li className="text-sm leading-relaxed text-white/80 my-1 marker:text-osmo-lime/70 [&>p]:inline [&>p]:my-0">
+                      {children}
+                    </li>
                   );
                 },
                 blockquote({ children }) {

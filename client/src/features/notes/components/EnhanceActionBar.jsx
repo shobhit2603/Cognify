@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Lightning,
   Sparkle,
@@ -9,6 +9,8 @@ import {
   PencilSimple,
   Plus,
   ArrowClockwise,
+  CaretDown,
+  Check,
 } from "@phosphor-icons/react";
 import {
   getStoredPresets,
@@ -38,6 +40,31 @@ export default function EnhanceActionBar({
     return getStoredPresets();
   });
   const [editingPreset, setEditingPreset] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown on outside click or Escape key
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isDropdownOpen]);
 
   const handleSavePreset = (updated) => {
     const updatedList = presets.map((p) => (p.id === updated.id ? updated : p));
@@ -68,89 +95,166 @@ export default function EnhanceActionBar({
     const updated = [...presets, newPreset];
     setPresets(updated);
     saveStoredPresets(updated);
+    setIsDropdownOpen(false);
     setEditingPreset(newPreset);
   };
 
   const isRawEmpty = rawContentLength === 0;
 
+  // Active framework display info
+  const activePreset = presets.find((p) => p.id === selectedFrameworkId);
+  const isAuto = selectedFrameworkId === null;
+  const ActiveIcon = isAuto ? Lightning : ICON_MAP[activePreset?.icon] || Sparkle;
+  const activeLabel = isAuto ? "Auto" : activePreset?.name || "Auto";
+
   return (
-    <div className="bg-[#0d0d0f] p-3 space-y-2.5 select-none">
-      {/* ── Preset Chips Selector (Horizontally scrollable for narrow widths) ── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider mr-1 shrink-0">
-          Mode:
-        </span>
-
-        {/* Auto-Detect Chip */}
-        <button
-          type="button"
-          onClick={() => onSelectFramework(null)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all shrink-0 text-xs ${
-            selectedFrameworkId === null
-              ? "bg-osmo-lime text-black border-osmo-lime font-semibold shadow-sm shadow-osmo-lime/20"
-              : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          <Lightning size={12} weight={selectedFrameworkId === null ? "fill" : "bold"} />
-          <span>Auto</span>
-        </button>
-
-        {/* Preset Framework Chips */}
-        {presets.map((preset) => {
-          const isSelected = selectedFrameworkId === preset.id;
-          const IconComponent = ICON_MAP[preset.icon] || Sparkle;
-
-          return (
-            <div
-              key={preset.id}
-              className={`group relative flex items-center rounded-full border transition-all shrink-0 text-xs ${
-                isSelected
-                  ? "bg-white/15 text-white border-osmo-lime shadow-sm"
-                  : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => onSelectFramework(isSelected ? null : preset.id)}
-                title={preset.description}
-                className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 font-medium truncate"
-              >
-                <IconComponent size={12} weight={isSelected ? "fill" : "regular"} />
-                <span className="truncate">{preset.name}</span>
-              </button>
-
-              {/* Edit Pencil Icon */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingPreset(preset);
-                }}
-                title="Edit preset template"
-                className="pr-2 pl-0.5 py-1 text-white/30 hover:text-osmo-lime opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <PencilSimple size={11} />
-              </button>
-            </div>
-          );
-        })}
-
-        {/* Add Custom Preset (if under limit of 6) */}
-        {presets.length < MAX_PRESETS && (
+    <div className="bg-[#0d0d0f] p-3 select-none">
+      {/* ── Single-Row Action Bar: [Mode Dropdown] [Prompt Input] [Enhance Button] ── */}
+      <div className="flex items-center gap-2">
+        {/* Mode Dropdown Trigger & Upward Popover */}
+        <div ref={dropdownRef} className="relative shrink-0">
           <button
             type="button"
-            onClick={handleCreateNewPreset}
-            title={`Create custom preset (${presets.length}/${MAX_PRESETS})`}
-            className="flex items-center gap-1 px-2 py-1 rounded-full border border-dashed border-white/20 text-white/40 hover:text-white hover:border-white/40 hover:bg-white/5 transition-all text-xs shrink-0"
+            onClick={() => setIsDropdownOpen((prev) => !prev)}
+            title={`Active Mode: ${activeLabel}`}
+            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-medium transition-all max-w-[140px] truncate ${
+              isAuto
+                ? "bg-osmo-lime/10 border-osmo-lime/30 text-osmo-lime hover:bg-osmo-lime/20"
+                : "bg-white/10 border-white/20 text-white hover:bg-white/15"
+            }`}
           >
-            <Plus size={11} />
-            <span>+</span>
+            <ActiveIcon
+              size={13}
+              weight={isAuto ? "fill" : "regular"}
+              className="shrink-0"
+            />
+            <span className="truncate hidden sm:inline">{activeLabel}</span>
+            <CaretDown
+              size={11}
+              weight="bold"
+              className={`shrink-0 transition-transform duration-150 ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
+            />
           </button>
-        )}
-      </div>
 
-      {/* ── Custom Instructions & CTA Bar ── */}
-      <div className="flex items-center gap-2">
+          {/* Upward-Opening Popover Menu */}
+          {isDropdownOpen && (
+            <div className="absolute bottom-full mb-2 left-0 w-64 bg-[#141418] border border-white/10 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl z-50 text-xs space-y-1">
+              {/* Auto-Detect Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectFramework(null);
+                  setIsDropdownOpen(false);
+                }}
+                className={`w-full flex items-center justify-between p-2 rounded-xl transition-colors text-left ${
+                  isAuto
+                    ? "bg-osmo-lime/10 text-osmo-lime"
+                    : "hover:bg-white/5 text-white/80 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Lightning
+                    size={14}
+                    weight={isAuto ? "fill" : "bold"}
+                    className={isAuto ? "text-osmo-lime shrink-0" : "text-white/50 shrink-0"}
+                  />
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">Auto-Detect</div>
+                    <div className="text-[10px] text-white/40 truncate">
+                      Automatically picks best structure
+                    </div>
+                  </div>
+                </div>
+                {isAuto && (
+                  <Check size={14} weight="bold" className="text-osmo-lime shrink-0 ml-2" />
+                )}
+              </button>
+
+              <div className="border-t border-white/10 my-1" />
+
+              {/* Presets List */}
+              <div className="max-h-52 overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
+                {presets.map((preset) => {
+                  const isSelected = selectedFrameworkId === preset.id;
+                  const Icon = ICON_MAP[preset.icon] || Sparkle;
+
+                  return (
+                    <div
+                      key={preset.id}
+                      className={`group flex items-center justify-between rounded-xl px-2 py-1.5 transition-colors ${
+                        isSelected
+                          ? "bg-white/15 text-white"
+                          : "hover:bg-white/5 text-white/70 hover:text-white"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectFramework(preset.id);
+                          setIsDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-2 flex-1 min-w-0 text-left truncate mr-1.5"
+                      >
+                        <Icon
+                          size={13}
+                          weight={isSelected ? "fill" : "regular"}
+                          className={isSelected ? "text-osmo-lime shrink-0" : "text-white/50 shrink-0"}
+                        />
+                        <span className="truncate font-medium">{preset.name}</span>
+                      </button>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Edit Preset Trigger */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPreset(preset);
+                            setIsDropdownOpen(false);
+                          }}
+                          title="Edit Preset"
+                          className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-osmo-lime opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <PencilSimple size={12} />
+                        </button>
+
+                        {isSelected && (
+                          <Check size={13} weight="bold" className="text-osmo-lime" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Pinned Footer Action: Create Custom Preset */}
+              <div className="border-t border-white/10 pt-1">
+                <button
+                  type="button"
+                  disabled={presets.length >= MAX_PRESETS}
+                  onClick={handleCreateNewPreset}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl border border-dashed transition-all text-left ${
+                    presets.length >= MAX_PRESETS
+                      ? "border-white/5 text-white/30 cursor-not-allowed"
+                      : "border-white/20 hover:border-osmo-lime/40 text-white/60 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 font-medium truncate">
+                    <Plus size={12} />
+                    <span>Custom Framework</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-white/40">
+                    {presets.length}/{MAX_PRESETS}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Custom Instructions Input */}
         <div className="relative flex-1 min-w-0">
           <input
             type="text"
@@ -168,6 +272,7 @@ export default function EnhanceActionBar({
           />
         </div>
 
+        {/* Enhance CTA Button */}
         <button
           type="button"
           disabled={isRawEmpty || isEnhancing}
