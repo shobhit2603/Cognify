@@ -60,6 +60,8 @@ export const getStoredPresets = () => {
   }
 };
 
+export const getAvailablePresets = getStoredPresets;
+
 export const saveStoredPresets = (presets) => {
   if (typeof window === "undefined") return;
   try {

@@ -10,7 +10,7 @@ import EnhanceActionBar from "./EnhanceActionBar";
 import EnhancedNotePane from "./EnhancedNotePane";
 import { useNotes, useNote, useNoteFolders, useNoteMutations } from "../hooks/useNotes";
 import { noteService } from "../services/note.service";
-import { getAvailablePresets } from "../constants/presets";
+import { getStoredPresets } from "../constants/presets";
 
 export default function NotesStudio() {
   const router = useRouter();
@@ -190,7 +190,7 @@ export default function NotesStudio() {
     // Look up preset instructions if active
     let presetInstructions;
     if (selectedFrameworkId) {
-      const presets = getAvailablePresets();
+      const presets = getStoredPresets();
       const match = presets.find((p) => p.id === selectedFrameworkId);
       if (match?.instructions?.trim()) {
         presetInstructions = match.instructions.trim();
