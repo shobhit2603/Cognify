@@ -86,7 +86,7 @@ export default function ChatSidebar({
                 weight="bold"
                 className="shrink-0 transition-transform duration-200 group-hover/dash:-translate-x-0.5 text-white/60 group-hover/dash:text-osmo-lime"
               />
-              <span className="tracking-tight">Dashboard</span>
+              {/* <span className="tracking-tight">Dashboard</span> */}
             </Link>
           </div>
 
