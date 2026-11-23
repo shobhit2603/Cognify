@@ -62,3 +62,16 @@ export const unlinkFolder = async (folderId, userId) => {
     { $set: { folderId: null } }
   );
 };
+
+export const findRecentNotes = async (userId, limit = 8) => {
+  return await Note.find({ userId })
+    .select("_id title updatedAt createdAt")
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .lean();
+};
+
+export const countNotesByUserId = async (userId) => {
+  return await Note.countDocuments({ userId });
+};
+

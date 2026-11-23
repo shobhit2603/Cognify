@@ -38,3 +38,12 @@ export const updateChat = async (id, updateData) => {
 export const softDeleteChat = async (id) => {
   return Chat.findByIdAndUpdate(id, { isDeleted: true }).lean();
 };
+
+export const findRecentChats = async (userId, limit = 8) => {
+  return Chat.find({ userId, isDeleted: { $ne: true } })
+    .select("_id title updatedAt createdAt")
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .lean();
+};
+

@@ -62,3 +62,12 @@ export const findChunksByDocumentId = async (documentId) => {
 export const deleteChunksByDocumentId = async (documentId, session = null) => {
   return DocumentChunk.deleteMany({ documentId }, { session });
 };
+
+export const findRecentDocuments = async (userId, limit = 8) => {
+  return Document.find({ userId })
+    .select("_id originalName status updatedAt createdAt")
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .limit(limit)
+    .lean();
+};
+
