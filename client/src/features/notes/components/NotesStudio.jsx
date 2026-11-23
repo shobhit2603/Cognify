@@ -137,7 +137,7 @@ export default function NotesStudio() {
       const newNote = res?.data || res;
       if (newNote?._id) {
         handleSelectNote(newNote._id);
-        toast.success("New note created");
+        // toast.success("New note created");
       }
     } catch {
       // Handled in mutation hook

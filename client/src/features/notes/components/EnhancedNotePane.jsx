@@ -63,7 +63,7 @@ export default function EnhancedNotePane({
       await onUpdateEnhancedContent(note._id, editedContent);
       setEditBaseline(editedContent);
       setIsEditing(false);
-      toast.success("Enhanced note updated");
+      // toast.success("Enhanced note updated");
     } catch {
       toast.error("Failed to save changes. Please try again.");
     } finally {
@@ -74,7 +74,7 @@ export default function EnhancedNotePane({
   const handleCopyMarkdown = () => {
     if (!activeContent) return;
     navigator.clipboard.writeText(activeContent);
-    toast.success("Enhanced note copied to clipboard as Markdown!");
+    // toast.success("Enhanced note copied to clipboard as Markdown!");
   };
 
   const handleSaveAsPdf = () => {
@@ -181,7 +181,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
       // Fallback
     }
 
-    toast.success("Redirecting to AI Chat with this note as context...");
+    // toast.success("Redirecting to AI Chat with this note as context...");
     router.push("/chat");
   };
 

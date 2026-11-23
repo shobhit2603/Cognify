@@ -66,7 +66,7 @@ export const useNoteMutations = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["note-folders"] });
-      toast.success("Note deleted");
+      // toast.success("Note deleted");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to delete note");
@@ -77,7 +77,7 @@ export const useNoteMutations = () => {
     mutationFn: noteService.togglePin,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.success(res.message || "Pin updated");
+      // toast.success(res.message || "Pin updated");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to update pin");
@@ -89,7 +89,7 @@ export const useNoteMutations = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["note-folders"] });
-      toast.success("Note moved");
+      // toast.success("Note moved");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to move note");
@@ -101,7 +101,7 @@ export const useNoteMutations = () => {
     onSuccess: (res, id) => {
       queryClient.setQueryData(["note", id], res);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.success("Previous enhancement restored!");
+      // toast.success("Previous enhancement restored!");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to restore enhancement");
@@ -113,7 +113,7 @@ export const useNoteMutations = () => {
     mutationFn: noteService.createFolder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["note-folders"] });
-      toast.success("Folder created");
+      // toast.success("Folder created");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to create folder");
@@ -125,7 +125,7 @@ export const useNoteMutations = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["note-folders"] });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.success("Folder updated");
+      // toast.success("Folder updated");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to update folder");
@@ -137,7 +137,7 @@ export const useNoteMutations = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["note-folders"] });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.success("Folder deleted");
+      // toast.success("Folder deleted");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to delete folder");
