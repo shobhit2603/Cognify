@@ -209,7 +209,9 @@ export default function Navbar() {
   if (
     pathname?.startsWith("/chat") ||
     pathname?.startsWith("/dashboard") ||
-    pathname?.startsWith("/notes")
+    pathname?.startsWith("/notes") ||
+    pathname?.startsWith("/documents") ||
+    pathname?.startsWith("/document")
   )
     return null;
 

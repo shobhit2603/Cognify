@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FilePdf,
   Plus,
@@ -9,26 +11,24 @@ import {
   Sparkle,
   CaretLeft,
   CaretRight,
+  ArrowLeft,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import ProtectedRoute from "../../components/layout/ProtectedRoute";
 import DocumentCard from "../../features/documents/components/DocumentCard";
 import DocumentUploadModal from "../../features/documents/components/DocumentUploadModal";
-import DocumentDetailsModal from "../../features/documents/components/DocumentDetailsModal";
 import * as docService from "../../features/documents/services/document.service";
 
 export default function DocumentsPage() {
+  const router = useRouter();
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1, limit: 12 });
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const pollingRef = useRef(null);
   const searchRequestIdRef = useRef(0);
-  const prefetchRequestIdRef = useRef(0);
 
   const fetchDocuments = useCallback(async (page = 1, search = "") => {
     const requestId = ++searchRequestIdRef.current;
@@ -164,32 +164,9 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleSelectDocument = async (doc) => {
-    const requestId = ++prefetchRequestIdRef.current;
-    setSelectedDocument(doc);
-    setIsDetailsOpen(true);
-
-    try {
-      const full = await docService.getDocumentById(doc._id);
-      // Guard against stale response if selection changed or modal closed
-      if (requestId === prefetchRequestIdRef.current && full?.document) {
-        setSelectedDocument((prev) => {
-          if (!prev || prev._id !== doc._id) return prev;
-          return { ...prev, ...full.document };
-        });
-      }
-    } catch (err) {
-      if (requestId === prefetchRequestIdRef.current) {
-        console.warn("Could not pre-fetch full document details:", err.message);
-      }
-    }
+  const handleSelectDocument = (doc) => {
+    router.push(`/documents/${doc._id}`);
   };
-
-  const handleCloseDetails = useCallback(() => {
-    prefetchRequestIdRef.current++;
-    setIsDetailsOpen(false);
-    setSelectedDocument(null);
-  }, []);
 
   const handleDocumentUploaded = (newDoc) => {
     setDocuments((prev) => [newDoc, ...prev]);
@@ -202,28 +179,37 @@ export default function DocumentsPage() {
 
   return (
     <ProtectedRoute>
-      <main className="w-full flex-1 min-h-[calc(100vh-64px)] bg-[#121111] text-white p-4 sm:p-8 lg:p-12">
-        <div className="max-w-7xl mx-auto flex flex-col gap-8">
+      <main className="w-full flex-1 min-h-screen bg-[#0d0d0f] text-white p-4 sm:p-8 lg:p-10 select-none">
+        <div className="max-w-7xl mx-auto flex flex-col gap-6">
           {/* Top Bar / Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
-            <div>
-              <div className="flex items-center gap-2 text-osmo-lime mb-1">
-                <Sparkle size={18} weight="bold" />
-                <span className="text-xs font-mono font-bold tracking-widest uppercase">
-                  AI Contextual Workspace
-                </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
+            <div className="flex items-start gap-4">
+              <Link
+                href="/dashboard"
+                className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white transition-colors shrink-0 mt-1"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft size={18} weight="bold" />
+              </Link>
+              <div>
+                <div className="flex items-center gap-2 text-osmo-lime mb-1">
+                  <Sparkle size={16} weight="bold" />
+                  <span className="text-[11px] font-mono font-bold tracking-widest uppercase">
+                    02 • Workspace
+                  </span>
+                </div>
+                <h1 className="text-xl sm:text-2xl font-display font-bold tracking-tight text-white">
+                  Document Analysis &amp; RAG
+                </h1>
+                <p className="text-xs text-white/50 mt-0.5 font-caveat text-sm">
+                  Upload PDFs for instant executive summaries, key takeaway extraction, and grounded vector Q&amp;A
+                </p>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-display font-semibold tracking-tight text-white">
-                Document Analysis &amp; RAG
-              </h1>
-              <p className="text-xs text-white/50 mt-1 font-caveat text-sm">
-                Upload PDFs for instant executive summaries, key takeaway extraction, and grounded vector Q&amp;A
-              </p>
             </div>
 
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-osmo-lime text-osmo-dark font-semibold text-xs tracking-wider uppercase hover:bg-osmo-lime/90 active:scale-95 transition-all shadow-lg shadow-osmo-lime/10 shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-lime text-osmo-dark font-semibold text-xs tracking-wider uppercase hover:bg-osmo-lime/90 active:scale-95 transition-all shadow-lg shadow-osmo-lime/10 shrink-0 cursor-pointer self-start sm:self-auto"
             >
               <Plus size={16} weight="bold" />
               Upload PDF
@@ -336,15 +322,6 @@ export default function DocumentsPage() {
           isOpen={isUploadModalOpen}
           onClose={() => setIsUploadModalOpen(false)}
           onUploaded={handleDocumentUploaded}
-        />
-
-        {/* Details & Q&A Modal: Keyed by stable document ID to reset conversation state when switching documents */}
-        <DocumentDetailsModal
-          key={selectedDocument?._id || "none"}
-          document={selectedDocument}
-          isOpen={isDetailsOpen}
-          onClose={handleCloseDetails}
-          onRefresh={() => fetchDocuments(currentPage, searchQuery)}
         />
       </main>
     </ProtectedRoute>

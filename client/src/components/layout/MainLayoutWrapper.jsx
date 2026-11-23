@@ -7,10 +7,18 @@ export default function MainLayoutWrapper({ children }) {
   const isAppRoute =
     pathname?.startsWith("/chat") ||
     pathname?.startsWith("/dashboard") ||
-    pathname?.startsWith("/notes");
+    pathname?.startsWith("/notes") ||
+    pathname?.startsWith("/documents") ||
+    pathname?.startsWith("/document");
 
   return (
-    <main className={isAppRoute ? "w-full h-full min-h-0 flex flex-col" : "grow pt-28 sm:pt-32"}>
+    <main
+      className={
+        isAppRoute
+          ? "w-full h-screen max-h-screen overflow-hidden flex flex-col bg-[#0d0d0f]"
+          : "grow pt-28 sm:pt-32"
+      }
+    >
       {children}
     </main>
   );

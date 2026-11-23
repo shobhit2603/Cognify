@@ -13,7 +13,9 @@ function LenisRouteHandler() {
     const isFixedAppRoute =
       pathname?.startsWith("/dashboard") ||
       pathname?.startsWith("/chat") ||
-      pathname?.startsWith("/notes");
+      pathname?.startsWith("/notes") ||
+      pathname?.startsWith("/documents") ||
+      pathname?.startsWith("/document");
 
     if (isFixedAppRoute) {
       // Pause window-level lenis on fixed viewport apps so internal scrolling is never hijacked
