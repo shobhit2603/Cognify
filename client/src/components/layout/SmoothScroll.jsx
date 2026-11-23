@@ -15,7 +15,9 @@ function LenisRouteHandler() {
       pathname?.startsWith("/chat") ||
       pathname?.startsWith("/notes") ||
       pathname?.startsWith("/documents") ||
-      pathname?.startsWith("/document");
+      pathname?.startsWith("/document") ||
+      pathname?.startsWith("/resume") ||
+      pathname?.startsWith("/writing");
 
     if (isFixedAppRoute) {
       // Pause window-level lenis on fixed viewport apps so internal scrolling is never hijacked

@@ -47,7 +47,9 @@ export default function Footer() {
     pathname?.startsWith("/dashboard") ||
     pathname?.startsWith("/notes") ||
     pathname?.startsWith("/documents") ||
-    pathname?.startsWith("/document")
+    pathname?.startsWith("/document") ||
+    pathname?.startsWith("/resume") ||
+    pathname?.startsWith("/writing")
   )
     return null;
 
