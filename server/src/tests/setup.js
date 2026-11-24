@@ -3,13 +3,17 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import envConfig from "../config/env.config.js"; // just to ensure environment runs
 import { jest } from "@jest/globals";
 
-jest.setTimeout(60000);
+jest.setTimeout(180000);
 
 let mongoServer;
 
 beforeAll(async () => {
-  // Start the in-memory MongoDB instance
-  mongoServer = await MongoMemoryServer.create();
+  // Start the in-memory MongoDB instance (using lightweight MongoDB binary)
+  mongoServer = await MongoMemoryServer.create({
+    binary: {
+      version: "5.0.14",
+    },
+  });
   const mongoUri = mongoServer.getUri();
   
   // Prevent Mongoose from using an existing connection if tests are run in parallel
