@@ -240,7 +240,7 @@ export default function ResumeStudio() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] w-full overflow-hidden bg-[#0d0d0f]">
+    <div className="flex h-screen w-full bg-[#0d0d0f] text-white overflow-hidden font-sans">
       {/* ── Left History Drawer (230px) ── */}
       <ResumeDrawer
         resumes={resumes}
