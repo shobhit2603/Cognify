@@ -72,11 +72,13 @@ export default function NotesStudio() {
 
   const splitContainerRef = useRef(null);
   const isDraggingRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Pointer drag events for resizable divider
   const handlePointerDown = (e) => {
     e.preventDefault();
     isDraggingRef.current = true;
+    setIsDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
@@ -95,6 +97,7 @@ export default function NotesStudio() {
   const handlePointerUp = (e) => {
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
+      setIsDragging(false);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
@@ -511,7 +514,9 @@ Please give me a concise breakdown and let me know what questions you have or ho
             {/* Left Column: Raw Note Editor + Scoped Action Bar */}
             <div
               style={{ width: isEnhancedPanelOpen ? `${splitPercent}%` : "100%" }}
-              className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden"
+              className={`h-full flex flex-col min-w-0 min-h-0 overflow-hidden ${
+                isDragging ? "" : "transition-[width] duration-300 ease-in-out"
+              }`}
             >
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                 <RawNoteEditor
@@ -538,25 +543,31 @@ Please give me a concise breakdown and let me know what questions you have or ho
             </div>
 
             {/* Draggable Divider with Pointer Events */}
-            {isEnhancedPanelOpen && (
-              <div
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                title="Drag to resize panels"
-                className="hidden md:flex w-2.5 -mx-1.5 cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5"
-              >
-                <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-teal group-hover:h-14 transition-all" />
-              </div>
-            )}
+            <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              title="Drag to resize panels"
+              className={`hidden md:flex cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5 transition-all duration-300 ease-in-out ${
+                isEnhancedPanelOpen
+                  ? "w-2.5 -mx-1.5 opacity-100"
+                  : "w-0 opacity-0 pointer-events-none overflow-hidden -mx-0"
+              }`}
+            >
+              <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-teal group-hover:h-14 transition-all" />
+            </div>
 
-            {/* Right Column: Live Enhanced Output (Extends cleanly to bottom of viewport) */}
-            {isEnhancedPanelOpen && (
-              <div
-                style={{ width: `${100 - splitPercent}%` }}
-                className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden border-l border-white/10"
-              >
+            {/* Right Column: Live Enhanced Output (Smooth slide animation in and out) */}
+            <div
+              style={{ width: isEnhancedPanelOpen ? `${100 - splitPercent}%` : "0%" }}
+              className={`h-full flex flex-col min-h-0 overflow-hidden ${
+                isEnhancedPanelOpen
+                  ? "border-l border-white/10 opacity-100 min-w-0"
+                  : "w-0 min-w-0 border-none opacity-0 pointer-events-none"
+              } ${isDragging ? "" : "transition-all duration-300 ease-in-out"}`}
+            >
+              <div className="w-full h-full min-w-[360px] flex flex-col min-h-0 overflow-hidden">
                 <EnhancedNotePane
                   key={activeNote._id}
                   note={activeNote}
@@ -569,7 +580,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
                   onRestorePrevious={(id) => restorePreviousEnhancement(id)}
                 />
               </div>
-            )}
+            </div>
           </div>
         ) : (
           /* Empty Workspace (no notes in user account) */

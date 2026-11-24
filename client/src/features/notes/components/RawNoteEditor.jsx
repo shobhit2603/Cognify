@@ -96,7 +96,7 @@ export default function RawNoteEditor({
     <div className="flex-1 flex flex-col h-full bg-[#121215] select-text overflow-hidden">
       {/* ── Editor Header: Title & Auto-Save Indicator ── */}
       <div className="border-b border-white/5 bg-[#121215]/80 backdrop-blur-sm shrink-0">
-        <div className={`flex items-center justify-between px-6 py-4 ${isCentered ? "max-w-4xl mx-auto w-full" : ""}`}>
+        <div className={`flex items-center justify-between px-6 py-4 transition-all duration-300 ease-in-out ${isCentered ? "max-w-4xl mx-auto w-full" : ""}`}>
           <input
             type="text"
             value={title}
@@ -129,7 +129,7 @@ export default function RawNoteEditor({
 
       {/* ── Raw Textarea Canvas ── */}
       <div className="flex-1 min-h-0 overflow-hidden relative">
-        <div className={`h-full ${isCentered ? "max-w-4xl mx-auto w-full" : ""}`}>
+        <div className={`h-full transition-all duration-300 ease-in-out ${isCentered ? "max-w-4xl mx-auto w-full" : ""}`}>
           <textarea
             data-lenis-prevent
             value={content}
@@ -142,7 +142,7 @@ export default function RawNoteEditor({
 
       {/* ── Editor Footer: Stats ── */}
       <div className="border-t border-white/5 bg-[#0f0f12] text-[11px] font-mono text-white/40 shrink-0 select-none">
-        <div className={`flex items-center justify-between px-6 py-2.5 ${isCentered ? "max-w-4xl mx-auto w-full" : ""}`}>
+        <div className={`flex items-center justify-between px-6 py-2.5 transition-all duration-300 ease-in-out ${isCentered ? "max-w-4xl mx-auto w-full" : ""}`}>
           <div className="flex items-center gap-4">
             <span>{wordCount} words</span>
             <span>•</span>

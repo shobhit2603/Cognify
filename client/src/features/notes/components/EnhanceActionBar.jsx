@@ -113,7 +113,7 @@ export default function EnhanceActionBar({
   return (
     <div className="bg-[#0d0d0f] p-3 select-none">
       {/* ── Single-Row Action Bar: [Mode Dropdown] [Prompt Input] [Enhance Button] ── */}
-      <div className={`flex items-center gap-2 ${isCentered ? "max-w-4xl mx-auto w-full px-3" : ""}`}>
+      <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out ${isCentered ? "max-w-4xl mx-auto w-full px-3" : ""}`}>
         {/* Mode Dropdown Trigger & Upward Popover */}
         <div ref={dropdownRef} className="relative shrink-0">
           <button
