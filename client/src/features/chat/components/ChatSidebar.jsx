@@ -17,6 +17,7 @@ import {
   ArrowLeft,
 } from "@phosphor-icons/react";
 import { useAuth } from "../../auth/hooks/useAuth";
+import Tooltip from "../../../components/ui/Tooltip";
 
 export default function ChatSidebar({
   isSidebarOpen,
@@ -54,40 +55,43 @@ export default function ChatSidebar({
         <div className="flex flex-col gap-3.5 shrink-0">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-1 pt-1">
-            <Link
-              href="/"
-              className="group/brand flex items-center gap-2.5 transition-transform active:scale-95"
-              title="Return to Home"
-            >
-              <div className="relative w-7 h-7 shrink-0 transition-transform duration-500 group-hover/brand:rotate-12 group-hover/brand:scale-105">
-                <Image
-                  src="/Cognify-Logo.png"
-                  alt="Cognify Logo"
-                  fill
-                  sizes="32px"
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <div>
-                <span className="font-display font-bold text-xl tracking-tight text-white leading-none block">
-                  COGNIFY<span className="text-osmo-lime">.</span>
-                </span>
-              </div>
-            </Link>
+            <Tooltip content="Return to Home" position="bottom-start">
+              <Link
+                href="/"
+                className="group/brand flex items-center gap-2.5 transition-transform active:scale-95"
+                aria-label="Return to Home"
+              >
+                <div className="relative w-7 h-7 shrink-0 transition-transform duration-500 group-hover/brand:rotate-12 group-hover/brand:scale-105">
+                  <Image
+                    src="/Cognify-Logo.png"
+                    alt="Cognify Logo"
+                    fill
+                    sizes="32px"
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+                <div>
+                  <span className="font-display font-bold text-xl tracking-tight text-white leading-none block">
+                    COGNIFY<span className="text-osmo-lime">.</span>
+                  </span>
+                </div>
+              </Link>
+            </Tooltip>
 
-            <Link
-              href="/dashboard"
-              className="group/dash flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white bg-white/[0.05] hover:bg-white/10 border border-white/[0.08] hover:border-white/20 px-3 py-1.5 rounded-xl transition-all duration-200 shadow-xs cursor-pointer"
-              title="Return to Dashboard"
-            >
-              <ArrowLeft
-                size={14}
-                weight="bold"
-                className="shrink-0 transition-transform duration-200 group-hover/dash:-translate-x-0.5 text-white/60 group-hover/dash:text-osmo-lime"
-              />
-              {/* <span className="tracking-tight">Dashboard</span> */}
-            </Link>
+            <Tooltip content="Return to Dashboard" position="bottom-end">
+              <Link
+                href="/dashboard"
+                className="group/dash w-8 h-8 flex items-center justify-center rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/[0.08] hover:border-white/20 transition-all duration-200 shadow-xs cursor-pointer"
+                aria-label="Return to Dashboard"
+              >
+                <ArrowLeft
+                  size={15}
+                  weight="bold"
+                  className="shrink-0 transition-transform duration-200 group-hover/dash:-translate-x-0.5 text-white/60 group-hover/dash:text-osmo-lime"
+                />
+              </Link>
+            </Tooltip>
           </div>
 
           {/* New Thread CTA Button */}
@@ -298,43 +302,51 @@ function ChatListItem({
 
       {/* Action Buttons: Show on Hover / Keyboard Focus */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
-        <button
-          onClick={onTogglePin}
-          className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${
-            chat.isPinned
-              ? "text-osmo-lime opacity-100"
-              : "text-white/40 hover:text-white"
-          }`}
-          title={chat.isPinned ? "Unpin thread" : "Pin thread"}
-        >
-          <PushPin size={13} weight={chat.isPinned ? "fill" : "regular"} />
-        </button>
+        <Tooltip content={chat.isPinned ? "Unpin thread" : "Pin thread"} position="top">
+          <button
+            onClick={onTogglePin}
+            className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
+              chat.isPinned
+                ? "text-osmo-lime opacity-100"
+                : "text-white/40 hover:text-white"
+            }`}
+            aria-label={chat.isPinned ? "Unpin thread" : "Pin thread"}
+          >
+            <PushPin size={13} weight={chat.isPinned ? "fill" : "regular"} />
+          </button>
+        </Tooltip>
 
         {isEditing ? (
-          <button
-            onClick={onSaveRename}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-osmo-lime"
-            title="Save title"
-          >
-            <Check size={13} weight="bold" />
-          </button>
+          <Tooltip content="Save title" position="top">
+            <button
+              onClick={onSaveRename}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-osmo-lime cursor-pointer"
+              aria-label="Save title"
+            >
+              <Check size={13} weight="bold" />
+            </button>
+          </Tooltip>
         ) : (
-          <button
-            onClick={onStartRename}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white"
-            title="Rename thread"
-          >
-            <PencilSimple size={13} />
-          </button>
+          <Tooltip content="Rename thread" position="top">
+            <button
+              onClick={onStartRename}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white cursor-pointer"
+              aria-label="Rename thread"
+            >
+              <PencilSimple size={13} />
+            </button>
+          </Tooltip>
         )}
 
-        <button
-          onClick={handleDeleteWithConfirm}
-          className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
-          title="Delete thread"
-        >
-          <Trash size={13} />
-        </button>
+        <Tooltip content="Delete thread" position="top">
+          <button
+            onClick={handleDeleteWithConfirm}
+            className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors cursor-pointer"
+            aria-label="Delete thread"
+          >
+            <Trash size={13} />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

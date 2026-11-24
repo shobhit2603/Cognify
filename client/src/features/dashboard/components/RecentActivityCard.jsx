@@ -240,7 +240,7 @@ export default function RecentActivityCard() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                title={cat.tooltip}
+                aria-label={cat.tooltip}
                 className={`relative group/pill flex-1 py-1 text-center font-mono text-[10px] font-bold tracking-wider rounded border transition-all duration-150 cursor-pointer ${
                   isActive
                     ? getPillActiveClass(cat.id)

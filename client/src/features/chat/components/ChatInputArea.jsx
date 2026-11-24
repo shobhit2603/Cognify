@@ -8,6 +8,7 @@ import {
   Paperclip,
   X
 } from "@phosphor-icons/react";
+import Tooltip from "../../../components/ui/Tooltip";
 
 export default function ChatInputArea({
   editPromptText,
@@ -108,14 +109,16 @@ export default function ChatInputArea({
                 ({formatFileSize(attachedFile.size)})
               </span>
             </div>
-            <button
-              type="button"
-              onClick={removeAttachedFile}
-              className="p-1 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors cursor-pointer ml-1"
-              title="Remove attached PDF"
-            >
-              <X size={13} weight="bold" />
-            </button>
+            <Tooltip content="Remove attached PDF" position="top">
+              <button
+                type="button"
+                onClick={removeAttachedFile}
+                className="p-1 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors cursor-pointer ml-1"
+                aria-label="Remove attached PDF"
+              >
+                <X size={13} weight="bold" />
+              </button>
+            </Tooltip>
           </div>
         )}
 
@@ -125,28 +128,35 @@ export default function ChatInputArea({
           {/* Action Buttons Left: PDF Attachment & Voice Mic */}
           <div className="flex items-center gap-1.5 shrink-0 mb-0.5">
             {/* PDF Upload Button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-10 h-10 rounded-2xl transition-all flex items-center justify-center cursor-pointer bg-white/5 text-white/50 hover:text-white hover:bg-white/10 active:scale-95"
-              title="Upload PDF Document"
-            >
-              <Paperclip size={18} weight="bold" />
-            </button>
+            <Tooltip content="Upload PDF Document" position="top">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-10 h-10 rounded-2xl transition-all flex items-center justify-center cursor-pointer bg-white/5 text-white/50 hover:text-white hover:bg-white/10 active:scale-95"
+                aria-label="Upload PDF Document"
+              >
+                <Paperclip size={18} weight="bold" />
+              </button>
+            </Tooltip>
 
             {/* Voice Input Trigger */}
-            <button
-              type="button"
-              onClick={onToggleMic}
-              className={`w-10 h-10 rounded-2xl transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
-                isListening
-                  ? "bg-red-500/20 text-red-400 animate-pulse"
-                  : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
-              }`}
-              title={isListening ? "Listening... click to stop" : "Voice dictation (speech-to-text)"}
+            <Tooltip
+              content={isListening ? "Listening... click to stop" : "Voice dictation (speech-to-text)"}
+              position="top"
             >
-              <Microphone size={18} weight={isListening ? "fill" : "bold"} />
-            </button>
+              <button
+                type="button"
+                onClick={onToggleMic}
+                className={`w-10 h-10 rounded-2xl transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
+                  isListening
+                    ? "bg-red-500/20 text-red-400 animate-pulse"
+                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
+                }`}
+                aria-label={isListening ? "Listening... click to stop" : "Voice dictation (speech-to-text)"}
+              >
+                <Microphone size={18} weight={isListening ? "fill" : "bold"} />
+              </button>
+            </Tooltip>
           </div>
 
           {/* Auto-growing Textarea with Clear Satoshi Font */}
@@ -166,26 +176,30 @@ export default function ChatInputArea({
 
           {/* Dynamic Send / Stop Action Button */}
           {isGenerating ? (
-            <button
-              onClick={onStop}
-              className="w-10 h-10 shrink-0 rounded-2xl bg-red-500/20 hover:bg-red-500/30 text-red-400 flex items-center justify-center transition-colors cursor-pointer mb-0.5 shadow-sm active:scale-95"
-              title="Stop generating"
-            >
-              <StopCircle size={20} weight="fill" />
-            </button>
+            <Tooltip content="Stop generating" position="top">
+              <button
+                onClick={onStop}
+                className="w-10 h-10 shrink-0 rounded-2xl bg-red-500/20 hover:bg-red-500/30 text-red-400 flex items-center justify-center transition-colors cursor-pointer mb-0.5 shadow-sm active:scale-95"
+                aria-label="Stop generating"
+              >
+                <StopCircle size={20} weight="fill" />
+              </button>
+            </Tooltip>
           ) : (
-            <button
-              onClick={submitMessage}
-              disabled={!canSubmit}
-              className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center transition-all cursor-pointer mb-0.5 shadow-sm ${
-                canSubmit
-                  ? "bg-osmo-lime text-[#151414] hover:bg-osmo-lime/90 hover:scale-105 active:scale-95"
-                  : "bg-white/5 text-white/20 cursor-not-allowed"
-              }`}
-              title="Send (Enter)"
-            >
-              <ArrowUp size={18} weight="bold" />
-            </button>
+            <Tooltip content="Send (Enter)" position="top">
+              <button
+                onClick={submitMessage}
+                disabled={!canSubmit}
+                className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center transition-all cursor-pointer mb-0.5 shadow-sm ${
+                  canSubmit
+                    ? "bg-osmo-lime text-[#151414] hover:bg-osmo-lime/90 hover:scale-105 active:scale-95"
+                    : "bg-white/5 text-white/20 cursor-not-allowed"
+                }`}
+                aria-label="Send (Enter)"
+              >
+                <ArrowUp size={18} weight="bold" />
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>

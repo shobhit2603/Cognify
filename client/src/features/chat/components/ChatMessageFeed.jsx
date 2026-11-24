@@ -15,6 +15,7 @@ import {
   X,
   PaperPlaneRight,
 } from "@phosphor-icons/react";
+import Tooltip from "../../../components/ui/Tooltip";
 
 export default function ChatMessageFeed({
   messages,
@@ -354,50 +355,63 @@ export default function ChatMessageFeed({
                   msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <button
-                  onClick={() => handleCopy(msg.content, msg.id)}
-                  className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm flex items-center gap-1"
-                  title="Copy message"
-                >
-                  {copiedId === msg.id ? (
-                    <Check size={15} className="text-osmo-lime" weight="bold" />
-                  ) : (
-                    <Copy size={15} />
-                  )}
-                </button>
+                <Tooltip content={copiedId === msg.id ? "Copied!" : "Copy message"} position="top">
+                  <button
+                    onClick={() => handleCopy(msg.content, msg.id)}
+                    className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm flex items-center gap-1"
+                    aria-label="Copy message"
+                  >
+                    {copiedId === msg.id ? (
+                      <Check size={15} className="text-osmo-lime" weight="bold" />
+                    ) : (
+                      <Copy size={15} />
+                    )}
+                  </button>
+                </Tooltip>
 
                 {msg.role === "user" &&
                   onStartEdit &&
                   editingMessageId !== msg.id && (
-                    <button
-                      onClick={() => onStartEdit(msg.id)}
-                      className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm"
-                      title="Edit prompt"
-                    >
-                      <PencilSimple size={15} />
-                    </button>
+                    <Tooltip content="Edit prompt" position="top">
+                      <button
+                        onClick={() => onStartEdit(msg.id)}
+                        className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm"
+                        aria-label="Edit prompt"
+                      >
+                        <PencilSimple size={15} />
+                      </button>
+                    </Tooltip>
                   )}
 
                 {msg.role === "assistant" && msg.content && (
-                  <button
-                    onClick={() => handleToggleVoice(msg.content, msg.id)}
-                    className={`p-1.5 rounded-xl transition-colors cursor-pointer text-sm ${
-                      playingVoiceId === msg.id
-                        ? "text-osmo-lime bg-osmo-lime/10 animate-pulse"
-                        : "hover:text-white hover:bg-white/5"
-                    }`}
-                    title={
+                  <Tooltip
+                    content={
                       playingVoiceId === msg.id
                         ? "Stop speech audio"
                         : "Read response aloud"
                     }
+                    position="top"
                   >
-                    {playingVoiceId === msg.id ? (
-                      <SpeakerSlash size={16} weight="fill" />
-                    ) : (
-                      <SpeakerHigh size={16} />
-                    )}
-                  </button>
+                    <button
+                      onClick={() => handleToggleVoice(msg.content, msg.id)}
+                      className={`p-1.5 rounded-xl transition-colors cursor-pointer text-sm ${
+                        playingVoiceId === msg.id
+                          ? "text-osmo-lime bg-osmo-lime/10 animate-pulse"
+                          : "hover:text-white hover:bg-white/5"
+                      }`}
+                      aria-label={
+                        playingVoiceId === msg.id
+                          ? "Stop speech audio"
+                          : "Read response aloud"
+                      }
+                    >
+                      {playingVoiceId === msg.id ? (
+                        <SpeakerSlash size={16} weight="fill" />
+                      ) : (
+                        <SpeakerHigh size={16} />
+                      )}
+                    </button>
+                  </Tooltip>
                 )}
               </div>
             </div>
