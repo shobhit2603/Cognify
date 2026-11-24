@@ -143,16 +143,39 @@ export const getDocumentById = async (documentId, userId) => {
  */
 async function retrieveDocumentContext(documentId, question) {
   const citations = [];
+  const seen = new Set();
+
+  const addCitation = (pageNumber, text) => {
+    if (!text) return;
+    const key = `${pageNumber}:${text.slice(0, 80).trim()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      citations.push({
+        pageNumber: pageNumber || 1,
+        text,
+      });
+    }
+  };
+
+  const isConclusionQuery = /\b(conclus|conclude|concluding|takeaway|takeaways|outcome|outcomes|wrap.?up|final|deliverable)\b/i.test(question);
+  const isOverviewQuery = /\b(objective|summary|summarize|overview|main goal|main point|about)\b/i.test(question);
+
+  let embedQueryText = question;
+  if (isConclusionQuery) {
+    embedQueryText = `${question} conclusion concluding remarks final summary key takeaways deliverables outcomes`;
+  } else if (isOverviewQuery) {
+    embedQueryText = `${question} executive summary overview objectives purpose background`;
+  }
 
   // 1. Try vector retrieval from Pinecone
   if (envConfig.PINECONE_API_KEY && envConfig.MISTRAL_API_KEY) {
     try {
       const index = pinecone.Index(envConfig.PINECONE_INDEX_NAME || "cognify-rag");
-      const vector = await embeddings.embedQuery(question);
+      const vector = await embeddings.embedQuery(embedQueryText);
 
       const queryResult = await index.query({
         vector,
-        topK: 4,
+        topK: isConclusionQuery || isOverviewQuery ? 6 : 4,
         includeMetadata: true,
         filter: { documentId: { $eq: String(documentId) } },
       });
@@ -160,10 +183,7 @@ async function retrieveDocumentContext(documentId, question) {
       if (queryResult.matches && queryResult.matches.length > 0) {
         for (const match of queryResult.matches) {
           if (match.metadata?.text) {
-            citations.push({
-              pageNumber: match.metadata.pageNumber || 1,
-              text: match.metadata.text,
-            });
+            addCitation(match.metadata.pageNumber, match.metadata.text);
           }
         }
       }
@@ -172,11 +192,26 @@ async function retrieveDocumentContext(documentId, question) {
     }
   }
 
+  // If concluding query, also include the final chunk(s) from MongoDB if not already present
+  if (isConclusionQuery) {
+    try {
+      const dbChunks = await documentRepository.findChunksByDocumentId(documentId);
+      if (dbChunks && dbChunks.length > 0) {
+        const lastChunk = dbChunks[dbChunks.length - 1];
+        if (lastChunk?.content) {
+          addCitation(lastChunk.pageNumber || 1, lastChunk.content);
+        }
+      }
+    } catch (err) {
+      // Non-fatal chunk retrieval error
+    }
+  }
+
   // 2. Fallback to MongoDB stored chunks if Pinecone returned no results
   if (citations.length === 0) {
     const dbChunks = await documentRepository.findChunksByDocumentId(documentId);
     if (dbChunks && dbChunks.length > 0) {
-      const keywords = question
+      const searchKeywords = embedQueryText
         .toLowerCase()
         .replace(/[^a-z0-9 ]/g, "")
         .split(" ")
@@ -184,20 +219,24 @@ async function retrieveDocumentContext(documentId, question) {
 
       const scored = dbChunks.map((chunk) => {
         const textLower = chunk.content.toLowerCase();
-        const score = keywords.reduce((acc, kw) => (textLower.includes(kw) ? acc + 1 : acc), 0);
+        const score = searchKeywords.reduce((acc, kw) => (textLower.includes(kw) ? acc + 1 : acc), 0);
         return { chunk, score };
       });
 
       scored.sort((a, b) => b.score - a.score);
-      const topChunks = (scored.length > 0 && scored[0].score > 0 ? scored.slice(0, 4) : dbChunks.slice(0, 4)).map(
+      const topChunks = (scored.length > 0 && scored[0].score > 0 ? scored.slice(0, 5) : dbChunks.slice(0, 4)).map(
         (s) => s.chunk || s
       );
 
       for (const c of topChunks) {
-        citations.push({
-          pageNumber: c.pageNumber || 1,
-          text: c.content,
-        });
+        addCitation(c.pageNumber || 1, c.content);
+      }
+
+      if (isConclusionQuery && dbChunks.length > 0) {
+        const lastChunk = dbChunks[dbChunks.length - 1];
+        if (lastChunk?.content) {
+          addCitation(lastChunk.pageNumber || 1, lastChunk.content);
+        }
       }
     }
   }
@@ -224,20 +263,33 @@ export const askDocument = async (documentId, userId, question) => {
 
   const citations = await retrieveDocumentContext(documentId, question);
 
-  const contextBlock = citations.length > 0
+  let documentOverview = "";
+  if (document.summary) {
+    documentOverview += `[Document Summary]:\n${document.summary}\n\n`;
+  }
+  if (Array.isArray(document.keyInsights) && document.keyInsights.length > 0) {
+    documentOverview += `[Key Takeaways & Insights]:\n${document.keyInsights.map((ki) => `• ${ki}`).join("\n")}\n\n`;
+  }
+
+  const excerptsBlock = citations.length > 0
     ? citations.map((c, i) => `[Excerpt ${i + 1} - Page ${c.pageNumber}]:\n${c.text}`).join("\n\n---\n\n")
     : "No direct matching excerpts found in this document.";
+
+  const fullContextBlock = documentOverview
+    ? `${documentOverview}---\n\n--- DOCUMENT EXCERPTS ---\n${excerptsBlock}`
+    : excerptsBlock;
 
   const groq = getGroqModelInstance();
 
   const messages = [
     new SystemMessage(
-      "You are Cognify Document Analyst. Answer the user's question accurately using ONLY the provided document excerpts. " +
-      "If citing information, mention the page number (e.g. [Page 2]). " +
-      "If the provided excerpts do not contain the answer, say honestly: 'Based on the provided document excerpts, this information is not mentioned.'"
+      "You are Cognify Document Analyst. Answer the user's question accurately and objectively using the provided document context, summary, and excerpts.\n" +
+      "- When citing specific details, sections, or findings, reference the relevant page number or excerpt (e.g. [Page 2] or [Excerpt 1, p. 2]).\n" +
+      "- If the user asks for conclusions, summary, main objective, or key takeaways, synthesize them directly from the document context, summary, and excerpts.\n" +
+      "- Only if the user asks for specific factual information that is completely absent from the provided context and cannot be deduced from it, say: 'Based on the provided document excerpts, this information is not mentioned.'"
     ),
     new HumanMessage(
-      `Document: "${document.originalName}"\n\n--- DOCUMENT EXCERPTS ---\n${contextBlock}\n-------------------------\n\nUser Question: ${question}`
+      `Document: "${document.originalName}"\n\n--- DOCUMENT CONTEXT ---\n${fullContextBlock}\n-------------------------\n\nUser Question: ${question}`
     ),
   ];
 
@@ -269,20 +321,33 @@ export async function* streamAskDocument(documentId, userId, question) {
 
   const citations = await retrieveDocumentContext(documentId, question);
 
-  const contextBlock = citations.length > 0
+  let documentOverview = "";
+  if (document.summary) {
+    documentOverview += `[Document Summary]:\n${document.summary}\n\n`;
+  }
+  if (Array.isArray(document.keyInsights) && document.keyInsights.length > 0) {
+    documentOverview += `[Key Takeaways & Insights]:\n${document.keyInsights.map((ki) => `• ${ki}`).join("\n")}\n\n`;
+  }
+
+  const excerptsBlock = citations.length > 0
     ? citations.map((c, i) => `[Excerpt ${i + 1} - Page ${c.pageNumber}]:\n${c.text}`).join("\n\n---\n\n")
     : "No direct matching excerpts found in this document.";
+
+  const fullContextBlock = documentOverview
+    ? `${documentOverview}---\n\n--- DOCUMENT EXCERPTS ---\n${excerptsBlock}`
+    : excerptsBlock;
 
   const groq = getGroqModelInstance();
 
   const messages = [
     new SystemMessage(
-      "You are Cognify Document Analyst. Answer the user's question accurately using ONLY the provided document excerpts. " +
-      "If citing information, mention the page number (e.g. [Page 2]). " +
-      "If the provided excerpts do not contain the answer, say honestly: 'Based on the provided document excerpts, this information is not mentioned.'"
+      "You are Cognify Document Analyst. Answer the user's question accurately and objectively using the provided document context, summary, and excerpts.\n" +
+      "- When citing specific details, sections, or findings, reference the relevant page number or excerpt (e.g. [Page 2] or [Excerpt 1, p. 2]).\n" +
+      "- If the user asks for conclusions, summary, main objective, or key takeaways, synthesize them directly from the document context, summary, and excerpts.\n" +
+      "- Only if the user asks for specific factual information that is completely absent from the provided context and cannot be deduced from it, say: 'Based on the provided document excerpts, this information is not mentioned.'"
     ),
     new HumanMessage(
-      `Document: "${document.originalName}"\n\n--- DOCUMENT EXCERPTS ---\n${contextBlock}\n-------------------------\n\nUser Question: ${question}`
+      `Document: "${document.originalName}"\n\n--- DOCUMENT CONTEXT ---\n${fullContextBlock}\n-------------------------\n\nUser Question: ${question}`
     ),
   ];
 
