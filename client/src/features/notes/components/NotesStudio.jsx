@@ -145,6 +145,16 @@ export default function NotesStudio() {
   const { data: singleNote } = useNote(activeNoteId);
   const activeNote = singleNote || notes.find((n) => n._id === activeNoteId) || null;
 
+  // Enhanced panel visibility: smart default based on whether active note has enhanced content
+  const [isEnhancedPanelOpen, setIsEnhancedPanelOpen] = useState(false);
+
+  // Sync smart default whenever switching active notes
+  useEffect(() => {
+    if (activeNote) {
+      setIsEnhancedPanelOpen(Boolean(activeNote.enhancedContent?.trim()));
+    }
+  }, [activeNote?._id]);
+
   const handleSelectNote = (id) => {
     if (isEnhancing && abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -230,6 +240,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
   const handleEnhance = async () => {
     if (!activeNote || !activeNote.originalContent?.trim() || isEnhancing) return;
 
+    setIsEnhancedPanelOpen(true);
     setIsEnhancing(true);
     accumulatedTextRef.current = "";
     setStreamedText("");
@@ -431,8 +442,8 @@ Please give me a concise breakdown and let me know what questions you have or ho
               </Tooltip>
             )}
 
-            {/* Restore Previous Version Icon Button (amber, rendered only when previous version exists) */}
-            {activeNote?.previousEnhancedContent && (
+            {/* Restore Previous Version Icon Button (amber, rendered only when panel open and previous version exists) */}
+            {isEnhancedPanelOpen && activeNote?.previousEnhancedContent && (
               <Tooltip content="Restore Previous Version" position="bottom">
                 <button
                   type="button"
@@ -444,8 +455,8 @@ Please give me a concise breakdown and let me know what questions you have or ho
               </Tooltip>
             )}
 
-            {/* Discuss in Chat Button (Notes Teal, rendered only when enhanced content exists) */}
-            {!!(streamedText || activeNote?.enhancedContent) && (
+            {/* Discuss in Chat Button (Notes Teal, rendered only when panel open and enhanced content exists) */}
+            {isEnhancedPanelOpen && !!(streamedText || activeNote?.enhancedContent) && (
               <Tooltip content="Discuss in AI Chat" position="bottom">
                 <button
                   type="button"
@@ -457,6 +468,29 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 </button>
               </Tooltip>
             )}
+
+            {/* Subtle Vertical Divider: Render only when at least one button to the left is visible */}
+            {(!isDrawerOpen || (isEnhancedPanelOpen && (activeNote?.previousEnhancedContent || (streamedText || activeNote?.enhancedContent)))) && (
+              <div className="h-4 w-px bg-white/10 mx-0.5" />
+            )}
+
+            {/* Enhanced Panel Toggle Button (Mirrored SidebarSimple, anchored at far-right) */}
+            <Tooltip
+              content={isEnhancedPanelOpen ? "Hide Enhanced Panel" : "Show Enhanced Panel"}
+              position="bottom"
+            >
+              <button
+                type="button"
+                onClick={() => setIsEnhancedPanelOpen((prev) => !prev)}
+                className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <SidebarSimple
+                  size={18}
+                  weight={isEnhancedPanelOpen ? "fill" : "regular"}
+                  className="rotate-180"
+                />
+              </button>
+            </Tooltip>
           </div>
         </header>
 
@@ -468,7 +502,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
           >
             {/* Left Column: Raw Note Editor + Scoped Action Bar */}
             <div
-              style={{ width: `${splitPercent}%` }}
+              style={{ width: isEnhancedPanelOpen ? `${splitPercent}%` : "100%" }}
               className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden"
             >
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -476,6 +510,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
                   key={activeNote._id}
                   note={activeNote}
                   onSave={(id, data) => updateNote({ id, data })}
+                  isCentered={!isEnhancedPanelOpen}
                 />
               </div>
 
@@ -489,39 +524,44 @@ Please give me a concise breakdown and let me know what questions you have or ho
                   onEnhance={handleEnhance}
                   isEnhancing={isEnhancing}
                   rawContentLength={(activeNote.originalContent || "").trim().length}
+                  isCentered={!isEnhancedPanelOpen}
                 />
               </div>
             </div>
 
             {/* Draggable Divider with Pointer Events */}
-            <div
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              title="Drag to resize panels"
-              className="hidden md:flex w-2.5 -mx-1.5 cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5"
-            >
-              <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-teal group-hover:h-14 transition-all" />
-            </div>
+            {isEnhancedPanelOpen && (
+              <div
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                title="Drag to resize panels"
+                className="hidden md:flex w-2.5 -mx-1.5 cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5"
+              >
+                <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-teal group-hover:h-14 transition-all" />
+              </div>
+            )}
 
             {/* Right Column: Live Enhanced Output (Extends cleanly to bottom of viewport) */}
-            <div
-              style={{ width: `${100 - splitPercent}%` }}
-              className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden border-l border-white/10"
-            >
-              <EnhancedNotePane
-                key={activeNote._id}
-                note={activeNote}
-                isEnhancing={isEnhancing}
-                enhancementStage={enhancementStage}
-                streamedText={streamedText}
-                onUpdateEnhancedContent={(id, content) =>
-                  updateNote({ id, data: { enhancedContent: content } })
-                }
-                onRestorePrevious={(id) => restorePreviousEnhancement(id)}
-              />
-            </div>
+            {isEnhancedPanelOpen && (
+              <div
+                style={{ width: `${100 - splitPercent}%` }}
+                className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden border-l border-white/10"
+              >
+                <EnhancedNotePane
+                  key={activeNote._id}
+                  note={activeNote}
+                  isEnhancing={isEnhancing}
+                  enhancementStage={enhancementStage}
+                  streamedText={streamedText}
+                  onUpdateEnhancedContent={(id, content) =>
+                    updateNote({ id, data: { enhancedContent: content } })
+                  }
+                  onRestorePrevious={(id) => restorePreviousEnhancement(id)}
+                />
+              </div>
+            )}
           </div>
         ) : (
           /* Empty Workspace (no notes in user account) */
