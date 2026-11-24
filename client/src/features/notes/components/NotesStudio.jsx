@@ -2,7 +2,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { SidebarSimple, Plus, FileText, ArrowLeft } from "@phosphor-icons/react";
+import {
+  SidebarSimple,
+  Plus,
+  FileText,
+  ArrowLeft,
+  ArrowCounterClockwise,
+  ChatsCircle,
+} from "@phosphor-icons/react";
+import Tooltip from "../../../components/ui/Tooltip";
 import { toast } from "sonner";
 import NotesDrawer from "./NotesDrawer";
 import RawNoteEditor from "./RawNoteEditor";
@@ -192,6 +200,30 @@ export default function NotesStudio() {
     } catch {
       // Handled
     }
+  };
+
+  const handleDiscussInChat = () => {
+    if (!activeNote) return;
+    const contentToDiscuss =
+      streamedText || activeNote.enhancedContent || activeNote.originalContent;
+    if (!contentToDiscuss) return;
+
+    const frameworkName = activeNote.enhancedMetadata?.frameworkUsed;
+    const chatContextPrompt = `I would like to discuss and ask questions about this note:
+
+**Title:** ${activeNote.title || "Untitled Note"}
+${frameworkName ? `**Framework:** ${frameworkName}\n` : ""}---
+${activeNote.enhancedContent || activeNote.originalContent}
+---
+Please give me a concise breakdown and let me know what questions you have or how we can explore this deeper.`;
+
+    try {
+      sessionStorage.setItem("cognify_pending_chat_prompt", chatContextPrompt);
+    } catch {
+      // Fallback
+    }
+
+    router.push("/chat");
   };
 
   // Trigger SSE Enhancement Streaming
@@ -387,14 +419,43 @@ export default function NotesStudio() {
 
           <div className="flex items-center gap-2">
             {!isDrawerOpen && (
-              <button
-                type="button"
-                onClick={() => handleCreateNote()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs border border-white/10 transition-colors"
-              >
-                <Plus size={13} weight="bold" />
-                <span>New Note</span>
-              </button>
+              <Tooltip content="Create New Note" position="bottom">
+                <button
+                  type="button"
+                  onClick={() => handleCreateNote()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs border border-white/10 transition-colors"
+                >
+                  <Plus size={13} weight="bold" />
+                  <span>New Note</span>
+                </button>
+              </Tooltip>
+            )}
+
+            {/* Restore Previous Version Icon Button (amber, rendered only when previous version exists) */}
+            {activeNote?.previousEnhancedContent && (
+              <Tooltip content="Restore Previous Version" position="bottom">
+                <button
+                  type="button"
+                  onClick={() => restorePreviousEnhancement(activeNote._id)}
+                  className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition-colors"
+                >
+                  <ArrowCounterClockwise size={15} weight="bold" />
+                </button>
+              </Tooltip>
+            )}
+
+            {/* Discuss in Chat Button (Notes Teal, rendered only when enhanced content exists) */}
+            {!!(streamedText || activeNote?.enhancedContent) && (
+              <Tooltip content="Discuss in AI Chat" position="bottom">
+                <button
+                  type="button"
+                  onClick={handleDiscussInChat}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-osmo-teal/10 border border-osmo-teal/30 text-xs text-osmo-teal font-medium hover:bg-osmo-teal/20 transition-all shadow-sm shrink-0"
+                >
+                  <ChatsCircle size={15} weight="bold" />
+                  <span className="hidden sm:inline">Discuss in Chat</span>
+                </button>
+              </Tooltip>
             )}
           </div>
         </header>

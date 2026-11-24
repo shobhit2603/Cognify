@@ -2,15 +2,12 @@
 import React, { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useRouter } from "next/navigation";
 import {
   Sparkle,
   Copy,
   FilePdf,
-  ChatsCircle,
   Eye,
   PencilSimple,
-  ArrowCounterClockwise,
   CircleNotch,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -23,7 +20,6 @@ export default function EnhancedNotePane({
   onUpdateEnhancedContent,
   onRestorePrevious,
 }) {
-  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [editBaseline, setEditBaseline] = useState("");
@@ -162,28 +158,6 @@ export default function EnhancedNotePane({
     }, 400);
   };
 
-  const handleDiscussInChat = () => {
-    if (!activeContent && !note?.originalContent) return;
-
-    const chatContextPrompt = `I would like to discuss and ask questions about this note:
-
-**Title:** ${note?.title || "Untitled Note"}
-${frameworkName ? `**Framework:** ${frameworkName}\n` : ""}
----
-${activeContent || note.originalContent}
----
-Please give me a concise breakdown and let me know what questions you have or how we can explore this deeper.`;
-
-    try {
-      sessionStorage.setItem("cognify_pending_chat_prompt", chatContextPrompt);
-    } catch {
-      // Fallback
-    }
-
-    // toast.success("Redirecting to AI Chat with this note as context...");
-    router.push("/chat");
-  };
-
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0e0e11] select-text overflow-hidden min-h-0">
       {/* ── Top Header Actions ── */}
@@ -204,20 +178,8 @@ Please give me a concise breakdown and let me know what questions you have or ho
           )}
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons: Edit, Copy Markdown, Save as PDF */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Restore Previous Version Icon Button (rendered only when previous version exists) */}
-          {note?.previousEnhancedContent && (
-            <button
-              type="button"
-              onClick={() => onRestorePrevious(note._id)}
-              title="Restore Previous Version"
-              className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition-colors"
-            >
-              <ArrowCounterClockwise size={15} weight="bold" />
-            </button>
-          )}
-
           {hasContent && (
             <>
               {/* Preview vs Edit Toggle (Icon Only) */}
@@ -247,16 +209,6 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <FilePdf size={15} />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDiscussInChat}
-                title="Discuss in AI Chat"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-osmo-teal/10 border border-osmo-teal/30 text-xs text-osmo-teal font-medium hover:bg-osmo-teal/20 transition-all shadow-sm shrink-0"
-              >
-                <ChatsCircle size={15} weight="bold" />
-                <span className="hidden xl:inline">Discuss in Chat</span>
               </button>
             </>
           )}
