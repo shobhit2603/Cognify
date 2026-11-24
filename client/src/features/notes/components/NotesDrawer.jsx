@@ -59,6 +59,10 @@ export default function NotesDrawer({
     return acc;
   }, {});
 
+  // Active note folder resolution
+  const activeNote = notes.find((n) => n._id === activeNoteId);
+  const activeNoteFolderId = activeNote?.folderId?._id || activeNote?.folderId || null;
+
   const isSearching = !!searchQuery.trim();
 
   return (
@@ -190,11 +194,18 @@ export default function NotesDrawer({
                   const isExpanded = !!expandedFolders[folder._id];
                   const folderNotes = notesByFolder[folder._id] || [];
                   const isFolderMenuOpen = activeMenuFolderId === folder._id;
+                  const isParentOfActiveNote = activeNoteFolderId === folder._id;
 
                   return (
                     <div key={folder._id} className="space-y-0.5">
                       {/* Folder Row */}
-                      <div className="group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-xs">
+                      <div
+                        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg transition-all text-xs ${
+                          isParentOfActiveNote && !isExpanded
+                            ? "bg-osmo-teal/10 border border-osmo-teal/30 text-white font-medium shadow-sm"
+                            : "hover:bg-white/5 border border-transparent text-white/90"
+                        }`}
+                      >
                         <button
                           type="button"
                           aria-expanded={isExpanded}
