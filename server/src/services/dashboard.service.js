@@ -1,6 +1,7 @@
 import * as chatRepository from "../repositories/chat.repository.js";
 import * as documentRepository from "../repositories/document.repository.js";
 import * as noteRepository from "../repositories/note.repository.js";
+import * as resumeRepository from "../repositories/resume.repository.js";
 
 const normalizeChat = (chat) => ({
   id: chat._id.toString(),
@@ -20,6 +21,16 @@ const normalizeDocument = (doc) => ({
   title: doc.originalName || "Untitled Document",
   updatedAt: doc.updatedAt || doc.createdAt,
   href: `/documents/${doc._id}`,
+});
+
+const normalizeResume = (resume) => ({
+  id: resume._id.toString(),
+  categoryCode: "03",
+  categoryLabel: "Resume Studio",
+  subLabel: "Resumes",
+  title: resume.title || resume.originalName || "Untitled Resume",
+  updatedAt: resume.updatedAt || resume.createdAt,
+  href: `/resume?id=${resume._id}`,
 });
 
 const normalizeNote = (note) => ({
@@ -59,11 +70,15 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
     };
   }
 
-  // 03: Resume Studio (Not yet persisted, return clean empty array)
+  // 03: Resume Studio
   if (category === "03") {
+    const [resumes, totalCount] = await Promise.all([
+      resumeRepository.findRecentResumes(userId, safeLimit),
+      resumeRepository.countResumesByUserId(userId),
+    ]);
     return {
-      items: [],
-      totalCount: 0,
+      items: resumes.map(normalizeResume),
+      totalCount,
     };
   }
 
@@ -88,19 +103,22 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
   }
 
   // category === "all": Query all implemented repositories in parallel
-  const [chats, chatCount, docs, docCount, notes, noteCount] = await Promise.all([
+  const [chats, chatCount, docs, docCount, notes, noteCount, resumes, resumeCount] = await Promise.all([
     chatRepository.findRecentChats(userId, safeLimit),
     chatRepository.countChatsByUserId(userId),
     documentRepository.findRecentDocuments(userId, safeLimit),
     documentRepository.countDocumentsByUserId(userId),
     noteRepository.findRecentNotes(userId, safeLimit),
     noteRepository.countNotesByUserId(userId),
+    resumeRepository.findRecentResumes(userId, safeLimit),
+    resumeRepository.countResumesByUserId(userId),
   ]);
 
   const allItems = [
     ...chats.map(normalizeChat),
     ...docs.map(normalizeDocument),
     ...notes.map(normalizeNote),
+    ...resumes.map(normalizeResume),
   ];
 
   // Sort descending by latest timestamp
