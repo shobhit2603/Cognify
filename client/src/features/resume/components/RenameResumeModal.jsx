@@ -5,10 +5,13 @@ import { X } from "@phosphor-icons/react";
 export default function RenameResumeModal({ isOpen, onClose, currentTitle, onRename }) {
   const [title, setTitle] = useState(currentTitle || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [prevTitle, setPrevTitle] = useState(currentTitle);
 
-  useEffect(() => {
+  // Sync state during render when currentTitle changes (React recommended pattern)
+  if (currentTitle !== prevTitle) {
+    setPrevTitle(currentTitle);
     setTitle(currentTitle || "");
-  }, [currentTitle, isOpen]);
+  }
 
   if (!isOpen) return null;
 

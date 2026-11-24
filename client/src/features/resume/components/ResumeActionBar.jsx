@@ -49,16 +49,18 @@ export default function ResumeActionBar({
   const [input, setInput] = useState("");
   const [selectedMode, setSelectedMode] = useState("general");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [prevPrompt, setPrevPrompt] = useState(initialPrompt);
+  const [prevMode, setPrevMode] = useState(initialMode);
   const dropdownRef = useRef(null);
   const textareaRef = useRef(null);
 
-  useEffect(() => {
-    if (initialPrompt) {
-      setInput(initialPrompt);
-      if (initialMode) setSelectedMode(initialMode);
-      textareaRef.current?.focus();
-    }
-  }, [initialPrompt, initialMode]);
+  // Sync state during render when prompt/mode changes from external suggestions
+  if (initialPrompt !== prevPrompt || initialMode !== prevMode) {
+    setPrevPrompt(initialPrompt);
+    setPrevMode(initialMode);
+    if (initialPrompt) setInput(initialPrompt);
+    if (initialMode) setSelectedMode(initialMode);
+  }
 
   // Close dropdown on outside click
   useEffect(() => {
