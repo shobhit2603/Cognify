@@ -89,7 +89,7 @@ Cognify combines five specialized AI productivity modules into one seamless plat
 ## 🛠️ Development & Testing
 
 ### Prerequisites
-- Node.js (v18+)
+- Node.js (>= 20.19.0)
 - MongoDB (running locally or MongoDB Atlas connection URI)
 - Redis (for BullMQ queue processing)
 - API Keys: Groq, Mistral AI, Pinecone, Tavily
@@ -123,9 +123,9 @@ npm test
 ---
 
 ## 📚 Documentation
-- [Notes Enhancer Documentation](file:///c:/Users/Shashank%20Lakhera/OneDrive/Desktop/Kodex/Projects/Full-Stack%20Projects/Cognify/docs/notes-enhancer.md)
-- [Document Analysis Documentation](file:///c:/Users/Shashank%20Lakhera/OneDrive/Desktop/Kodex/Projects/Full-Stack%20Projects/Cognify/docs/document-analysis.md)
-- [Project Showcase Documentation](file:///c:/Users/Shashank%20Lakhera/OneDrive/Desktop/Kodex/Projects/Full-Stack%20Projects/Cognify/Project_Showcase_Documentation.md)
+- [Notes Enhancer Documentation](docs/notes-enhancer.md)
+- [Document Analysis Documentation](docs/document-analysis.md)
+- [Project Showcase Documentation](Project_Showcase_Documentation.md)
 
 ---
 *Maintained under the Cognify AI Master Project Engineering Context.*

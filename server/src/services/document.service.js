@@ -157,7 +157,7 @@ async function retrieveDocumentContext(documentId, question) {
     }
   };
 
-  const isConclusionQuery = /\b(conclus|conclude|concluding|takeaway|takeaways|outcome|outcomes|wrap.?up|final|deliverable)\b/i.test(question);
+  const isConclusionQuery = /\b(conclus\w*|conclud\w*|takeaway|takeaways|outcome|outcomes|wrap.?up|final|deliverable)\b/i.test(question);
   const isOverviewQuery = /\b(objective|summary|summarize|overview|main goal|main point|about)\b/i.test(question);
 
   let embedQueryText = question;

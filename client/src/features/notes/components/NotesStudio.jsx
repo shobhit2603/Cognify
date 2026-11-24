@@ -232,7 +232,7 @@ export default function NotesStudio() {
 
 **Title:** ${activeNote.title || "Untitled Note"}
 ${frameworkName ? `**Framework:** ${frameworkName}\n` : ""}---
-${activeNote.enhancedContent || activeNote.originalContent}
+${contentToDiscuss}
 ---
 Please give me a concise breakdown and let me know what questions you have or how we can explore this deeper.`;
 
@@ -564,10 +564,10 @@ Please give me a concise breakdown and let me know what questions you have or ho
               className={`h-full flex flex-col min-h-0 overflow-hidden ${
                 isEnhancedPanelOpen
                   ? "border-l border-white/10 opacity-100 min-w-0"
-                  : "w-0 min-w-0 border-none opacity-0 pointer-events-none"
+                  : "w-0 min-w-0 border-none opacity-0 pointer-events-none max-md:hidden max-md:h-0"
               } ${isDragging ? "" : "transition-all duration-300 ease-in-out"}`}
             >
-              <div className="w-full h-full min-w-[360px] flex flex-col min-h-0 overflow-hidden">
+              <div className="w-full h-full min-w-0 flex flex-col min-h-0 overflow-hidden">
                 <EnhancedNotePane
                   key={activeNote._id}
                   note={activeNote}

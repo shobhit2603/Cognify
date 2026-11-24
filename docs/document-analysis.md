@@ -83,12 +83,11 @@ The `/documents/[id]` workspace provides a focused two-tab view powered by `Docu
 ### C. Context-Aware Grounded Document Q&A (RAG)
 - **Top-$k$ Vector Retrieval:** User queries are embedded and compared against stored chunk vectors in Pinecone to find the most semantically relevant sections.
 - **Holistic Document Grounding:** In addition to top-$k$ excerpts, the document's `summary` and `keyInsights` are automatically injected into the model context block (`[Document Summary]` & `[Key Takeaways & Insights]`). This guarantees that macro-level questions receive accurate answers even when individual chunks discuss fine-grained technical specifics.
-- **Semantic Query Expansion (Conclusions & Summaries Safeguard):**
-  - Broad or concluding questions (e.g. *"What are the conclusions?"*, *"Summarize the deliverables"*, *"Final outcomes"*) naturally spread across whole documents rather than matching a single narrow chunk.
-  - The retrieval pipeline detects conclusion/overview patterns (`/\b(conclus|conclude|concluding|takeaway|takeaways|outcome|outcomes|wrap.?up|final|deliverable)\b/i`) and enriches the embedding query with semantic synonyms (`conclusion concluding remarks final summary key takeaways deliverables outcomes`).
-  - Retrieval expands `topK` to 6 chunks and automatically appends the final document chunks (ending pages) from MongoDB to guarantee conclusion sections are included in the prompt context.
+- **Semantic Query Expansion Paths:**
+  - **Conclusion Path:** Queries matching conclusion patterns (`/\b(conclus\w*|conclud\w*|takeaway|takeaways|outcome|outcomes|wrap.?up|final|deliverable)\b/i`) expand the vector embedding query with `"${question} conclusion concluding remarks final summary key takeaways deliverables outcomes"`, set `topK: 6`, and append the single last chunk from MongoDB (`dbChunks[dbChunks.length - 1]`) as a safeguard for concluding remarks located at the very end of the file (note: this does not guarantee conclusion inclusion if it appears earlier in the document).
+  - **Overview Path:** Queries matching overview patterns (`/\b(objective|summary|summarize|overview|main goal|main point|about)\b/i`) expand the embedding query with `"${question} executive summary overview objectives purpose background"`, set `topK: 6`, and do not append the last chunk.
 - **Strict Anti-Hallucination Prompting:** The LLM is instructed to synthesize answers strictly from provided context and excerpts, citing page numbers directly. Only if a specific factual detail is completely absent will it return `"Based on the provided document excerpts, this information is not mentioned."`
-- **Dual Retrieval Fallback:** If Pinecone is unreachable or returns zero matches, the system automatically falls back to keyword-scored chunk retrieval directly from MongoDB, ensuring high availability.
+- **Dual Retrieval Fallback:** If Pinecone is unreachable or returns zero vector matches, and no citations were added (such as via the conclusion last-chunk safeguard), the system falls back to keyword-scored chunk retrieval directly from MongoDB, ensuring high availability.
 
 ### D. Safe Document Deletion
 - Deleting a document removes:
