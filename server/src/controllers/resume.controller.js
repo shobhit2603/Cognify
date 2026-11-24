@@ -1,5 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import * as resumeService from "../services/resume.service.js";
+import * as resumeAnalysisService from "../services/resumeAnalysis.service.js";
 import ApiResponse from "../utils/apiResponse.util.js";
 import ApiError from "../utils/apiError.util.js";
 
@@ -124,6 +125,63 @@ export const deleteResume = async (req, res, next) => {
     res
       .status(StatusCodes.OK)
       .json(ApiResponse(StatusCodes.OK, result.message, null));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Run full 4-dimensional ATS diagnostic audit (with optional Job Description)
+ */
+export const auditResume = async (req, res, next) => {
+  try {
+    const { jobDescription, targetRole } = req.body || {};
+    const result = await resumeAnalysisService.runResumeAudit({
+      resumeId: req.params.id,
+      userId: req.user._id,
+      jobDescription,
+      targetRole,
+    });
+
+    res
+      .status(StatusCodes.OK)
+      .json(ApiResponse(StatusCodes.OK, "ATS audit completed successfully", result));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Interactive Resume Chat & Section Optimization (SSE streaming)
+ */
+export const chatResume = async (req, res, next) => {
+  try {
+    const { message, mode, jobDescription } = req.body;
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    try {
+      const stream = resumeAnalysisService.streamResumeChat({
+        resumeId: req.params.id,
+        userId: req.user._id,
+        userMessage: message,
+        mode: mode || "general",
+        jobDescription: jobDescription || "",
+      });
+
+      for await (const chunk of stream) {
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      }
+      res.end();
+    } catch (streamErr) {
+      res.write(
+        `data: ${JSON.stringify({ event: "error", error: streamErr.message })}\n\n`
+      );
+      res.end();
+    }
   } catch (error) {
     next(error);
   }

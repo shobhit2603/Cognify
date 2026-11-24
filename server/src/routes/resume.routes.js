@@ -5,7 +5,10 @@ import { requireAuth, requireEmailVerification } from "../middlewares/auth.middl
 import {
   updateResumeTitleSchema,
   getResumesQuerySchema,
+  resumeAuditSchema,
+  resumeChatSchema,
 } from "../validations/resume.validation.js";
+import { aiEndpointLimiter } from "../middlewares/rateLimiter.middleware.js";
 
 const router = express.Router();
 
@@ -97,5 +100,37 @@ router.patch(
  *       - bearerAuth: []
  */
 router.delete("/:id", resumeController.deleteResume);
+
+/**
+ * @swagger
+ * /api/v1/resumes/{id}/audit:
+ *   post:
+ *     summary: Run full 4-dimensional ATS diagnostic audit
+ *     tags: [Resumes]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  "/:id/audit",
+  aiEndpointLimiter,
+  validate(resumeAuditSchema, "body"),
+  resumeController.auditResume
+);
+
+/**
+ * @swagger
+ * /api/v1/resumes/{id}/chat:
+ *   post:
+ *     summary: Interactive resume chat & section optimization (SSE stream)
+ *     tags: [Resumes]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  "/:id/chat",
+  aiEndpointLimiter,
+  validate(resumeChatSchema, "body"),
+  resumeController.chatResume
+);
 
 export default router;

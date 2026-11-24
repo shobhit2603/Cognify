@@ -224,6 +224,52 @@ describe("Resume Studio Endpoints (Phase 1)", () => {
 
       expect(getRes.status).toBe(404);
     });
+
+    it("should run full ATS diagnostic audit", async () => {
+      const res = await request(app)
+        .post(`/api/v1/resumes/${resumeId}/audit`)
+        .set("Cookie", cookiesA)
+        .send({
+          targetRole: "Senior Full Stack Engineer",
+          jobDescription: "Looking for an engineer skilled in Node.js, React, and AWS microservices.",
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.latestAudit).toBeDefined();
+      expect(res.body.data.latestAudit.overallScore).toBeGreaterThan(0);
+      expect(res.body.data.latestAudit.subScores).toHaveProperty("formatting");
+      expect(res.body.data.latestAudit.subScores).toHaveProperty("impactAndMetrics");
+      expect(res.body.data.latestAudit.subScores).toHaveProperty("skillsAndKeywords");
+      expect(res.body.data.latestAudit.subScores).toHaveProperty("sectionStructure");
+      expect(res.body.data.latestAudit.actionableRecommendations.length).toBeGreaterThan(0);
+      expect(res.body.data.message.role).toBe("assistant");
+    });
+
+    it("should deny ATS audit for non-owner", async () => {
+      const res = await request(app)
+        .post(`/api/v1/resumes/${resumeId}/audit`)
+        .set("Cookie", cookiesB)
+        .send({ targetRole: "Staff Engineer" });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("should stream resume chat response via SSE", async () => {
+      const res = await request(app)
+        .post(`/api/v1/resumes/${resumeId}/chat`)
+        .set("Cookie", cookiesA)
+        .send({
+          message: "Rewrite my work experience bullet with stronger metrics",
+          mode: "optimize-section",
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.headers["content-type"]).toContain("text/event-stream");
+      expect(res.text).toContain("data:");
+      expect(res.text).toContain('"event":"chunk"');
+      expect(res.text).toContain('"event":"done"');
+    });
   });
 
   describe("Dashboard Activity Feed Integration", () => {
