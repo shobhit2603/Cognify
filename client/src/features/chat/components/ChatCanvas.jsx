@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { motion, AnimatePresence } from "motion/react";
 
 // Chat Components
 import ChatHeader from "./ChatHeader";
@@ -11,6 +12,41 @@ import ChatInputArea from "./ChatInputArea";
 // API Service
 import * as chatService from "../services/chat.service";
 import { useChatContext } from "../context/ChatContext";
+
+/**
+ * Detects query intent synchronously to render immediate dynamic Stage 1 feedback.
+ */
+function detectChatStage(text = "", options = {}) {
+  if (options.hasAttachedFile) {
+    return { step: 1, stage: "docs", message: "Scanning document context..." };
+  }
+
+  const cleanText = text.toLowerCase();
+
+  const isWeb =
+    /latest|current|today|todays|now|recent|news|price|gold|silver|weather|stock|market|trending|score|who won|when did|what is .* (in \d{4}|right now|currently|today)|how much|how many|who is|who are/i.test(
+      cleanText,
+    );
+  const isDoc =
+    /document|pdf|file|upload|internship|resume|cv|report|according to|in the (doc|file|pdf)|what (does the|is in the)/i.test(
+      cleanText,
+    );
+  const isCode =
+    /code|function|bug|algorithm|implement|python|javascript|typescript|react|nextjs|sql|database|api|endpoint|debug|class|def |const |let /i.test(
+      cleanText,
+    );
+
+  if (isDoc) {
+    return { step: 1, stage: "docs", message: "Scanning document context..." };
+  }
+  if (isWeb) {
+    return { step: 1, stage: "web", message: "Searching the live web..." };
+  }
+  if (isCode) {
+    return { step: 1, stage: "code", message: "Analyzing logic & structure..." };
+  }
+  return { step: 1, stage: "reasoning", message: "Analyzing query & context..." };
+}
 
 export default function ChatCanvas({ chatId: propChatId }) {
   const router = useRouter();
@@ -32,8 +68,10 @@ export default function ChatCanvas({ chatId: propChatId }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // Streaming UI state
+  // Streaming UI & Two-Stage Indication state
   const [streamingMessageId, setStreamingMessageId] = useState(null);
+  const [activeStage, setActiveStage] = useState(null);
+  const stageTimerRef = useRef(null);
 
   // Micro-interactions
   const [copiedId, setCopiedId] = useState(null);
@@ -67,6 +105,8 @@ export default function ChatCanvas({ chatId: propChatId }) {
       // 1. If we switch away from currently streaming chat to another
       if (isStreamingRef.current && streamChatIdRef.current !== chatId) {
         abortControllerRef.current?.abort();
+        if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+        setActiveStage(null);
         isStreamingRef.current = false;
         setIsGenerating(false);
         setStreamingMessageId(null);
@@ -75,6 +115,8 @@ export default function ChatCanvas({ chatId: propChatId }) {
       // 2. If navigating to New Chat
       if (!chatId) {
         setMessages([]);
+        if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+        setActiveStage(null);
         return;
       }
 
@@ -85,6 +127,8 @@ export default function ChatCanvas({ chatId: propChatId }) {
 
       // 4. Safe to clear and load the new chat history
       setMessages([]);
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+      setActiveStage(null);
 
       chatService
         .getMessages(chatId, 1, 100)
@@ -93,6 +137,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
           if (!data?.messages) return;
           const formatted = data.messages.map((m) => ({
             id: m._id,
+            clientKey: m._id,
             role: m.role,
             content: m.content,
           }));
@@ -120,6 +165,8 @@ export default function ChatCanvas({ chatId: propChatId }) {
       
       // Delay state updates to avoid synchronous setState inside effect warning
       setTimeout(() => {
+        if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+        setActiveStage(null);
         setIsGenerating(false);
         setStreamingMessageId(null);
         setMessages([]);
@@ -179,8 +226,11 @@ export default function ChatCanvas({ chatId: propChatId }) {
     const isNewMessage = messages.length > previousMessagesLength.current;
     previousMessagesLength.current = messages.length;
 
-    const useSmooth = isNewMessage || !isGenerating;
-    scrollToBottom(false, useSmooth);
+    if (isNewMessage) {
+      scrollToBottom(false, true);
+    } else if (isGenerating) {
+      scrollToBottom(false, false);
+    }
   }, [messages, isGenerating, scrollToBottom]);
 
   // ─── Cleanup on unmount ──────────────────────────────────────────────────────
@@ -190,6 +240,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
         window.speechSynthesis.cancel();
       }
       abortControllerRef.current?.abort();
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -282,30 +333,45 @@ export default function ChatCanvas({ chatId: propChatId }) {
   };
 
   // ─── Send & Stream Message ───────────────────────────────────────────────────
-  const handleSend = async (submittedText) => {
+  const handleSend = async (submittedText, attachedFile = null) => {
     const textToSend = typeof submittedText === "string" ? submittedText : "";
     if (!textToSend.trim() || isGenerating) return;
 
     const isNewChat = !chatId;
 
-    const userMessageId = `user-${Date.now()}`;
-    const assistantId = `assistant-${Date.now() + 1}`;
+    const userMessageId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const assistantId = `assistant-${Date.now() + 1}-${Math.random().toString(36).slice(2, 7)}`;
+
+    // Set immediate dynamic stage indication for instant zero-latency feedback
+    const stage = detectChatStage(textToSend, { hasAttachedFile: !!attachedFile });
+    setActiveStage(stage);
+
+    if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+    // Smooth transition to stage 2 if server hasn't sent it yet after 750ms
+    stageTimerRef.current = setTimeout(() => {
+      setActiveStage((prev) =>
+        prev && prev.step === 1
+          ? { step: 2, stage: "synthesizing", message: "Synthesizing response..." }
+          : prev,
+      );
+    }, 750);
 
     setMessages((prev) => {
-      // capture history before adding new messages, to send to backend if temporary
-      const historyToSend = prev.map((m) => ({ role: m.role, content: m.content }));
-      
-      const newMessages = [
+      return [
         ...prev,
         {
           id: userMessageId,
+          clientKey: userMessageId,
           role: "user",
           content: textToSend.trim(),
         },
-        { id: assistantId, role: "assistant", content: "" },
+        {
+          id: assistantId,
+          clientKey: assistantId,
+          role: "assistant",
+          content: "",
+        },
       ];
-      
-      return newMessages;
     });
 
     setEditPromptText(null);
@@ -321,8 +387,7 @@ export default function ChatCanvas({ chatId: propChatId }) {
     streamChatIdRef.current = chatId;
 
     try {
-      // Capture the current history to send if it's a temporary chat
-      const historyToSend = messages.map(m => ({ role: m.role, content: m.content }));
+      const historyToSend = messages.map((m) => ({ role: m.role, content: m.content }));
       
       await chatService.streamMessage(
         textToSend.trim(),
@@ -337,12 +402,13 @@ export default function ChatCanvas({ chatId: propChatId }) {
                 if (prev.some((c) => c._id === payload.chat._id)) return prev;
                 return [payload.chat, ...prev];
               });
-              router.push(`/chat/${newChatId}`);
+              // Quiet URL replacement without jumping page scroll
+              router.replace(`/chat/${newChatId}`, { scroll: false });
             }
             if (payload.message) {
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === userMessageId
+                  msg.clientKey === userMessageId || msg.id === userMessageId
                     ? { ...msg, id: payload.message._id }
                     : msg,
                 ),
@@ -350,10 +416,21 @@ export default function ChatCanvas({ chatId: propChatId }) {
             }
           },
 
+          onStage: (stagePayload) => {
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage({
+              step: stagePayload.step || 2,
+              stage: stagePayload.stage || "synthesizing",
+              message: stagePayload.message || "Synthesizing response...",
+            });
+          },
+
           onChunk: (chunkText) => {
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage(null);
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === assistantId
+                msg.clientKey === assistantId || msg.id === assistantId
                   ? { ...msg, content: msg.content + chunkText }
                   : msg,
               ),
@@ -361,10 +438,12 @@ export default function ChatCanvas({ chatId: propChatId }) {
           },
 
           onDone: (payload) => {
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage(null);
             if (payload?.message) {
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === assistantId
+                  msg.clientKey === assistantId || msg.id === assistantId
                     ? { ...msg, id: payload.message._id }
                     : msg,
                 ),
@@ -377,9 +456,11 @@ export default function ChatCanvas({ chatId: propChatId }) {
 
           onError: (err) => {
             console.error("[Stream] Error:", err);
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage(null);
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === assistantId
+                msg.clientKey === assistantId || msg.id === assistantId
                   ? {
                       ...msg,
                       content:
@@ -400,9 +481,11 @@ export default function ChatCanvas({ chatId: propChatId }) {
     } catch (err) {
       if (err.name !== "AbortError") {
         console.error("[Stream] Promise rejected:", err);
+        if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+        setActiveStage(null);
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === assistantId
+            msg.clientKey === assistantId || msg.id === assistantId
               ? {
                   ...msg,
                   content:
@@ -414,6 +497,8 @@ export default function ChatCanvas({ chatId: propChatId }) {
         );
       }
     } finally {
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+      setActiveStage(null);
       isStreamingRef.current = false;
       setStreamingMessageId(null);
       setIsGenerating(false);
@@ -422,21 +507,44 @@ export default function ChatCanvas({ chatId: propChatId }) {
 
   // ─── Edit & Stream Message ───────────────────────────────────────────────────
   const handleEditSubmit = async (messageIdToEdit, newContent) => {
-    if (!newContent.trim() || isGenerating) return;
+    const trimmed = typeof newContent === "string" ? newContent.trim() : "";
+    if (!trimmed || isGenerating) return;
 
     // 1. Truncate local state to remove the edited message and all subsequent ones
     const editIndex = messages.findIndex((m) => m.id === messageIdToEdit);
     if (editIndex === -1) return;
 
-    const userMessageId = `user-${Date.now()}`;
-    const assistantId = `assistant-${Date.now() + 1}`;
+    const userMessageId = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const assistantId = `assistant-${Date.now() + 1}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const stage = detectChatStage(trimmed);
+    setActiveStage(stage);
+
+    if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+    stageTimerRef.current = setTimeout(() => {
+      setActiveStage((prev) =>
+        prev && prev.step === 1
+          ? { step: 2, stage: "synthesizing", message: "Synthesizing response..." }
+          : prev,
+      );
+    }, 750);
 
     setMessages((prev) => {
       const truncated = prev.slice(0, editIndex);
       return [
         ...truncated,
-        { id: userMessageId, role: "user", content: newContent.trim() },
-        { id: assistantId, role: "assistant", content: "" },
+        {
+          id: userMessageId,
+          clientKey: userMessageId,
+          role: "user",
+          content: trimmed,
+        },
+        {
+          id: assistantId,
+          clientKey: assistantId,
+          role: "assistant",
+          content: "",
+        },
       ];
     });
 
@@ -452,70 +560,97 @@ export default function ChatCanvas({ chatId: propChatId }) {
     try {
       await chatService.streamEditMessage(
         messageIdToEdit,
-        newContent.trim(),
+        trimmed,
         {
           onConnected: (payload) => {
             if (payload.message) {
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === userMessageId ? { ...msg, id: payload.message._id } : msg
-                )
+                  msg.clientKey === userMessageId || msg.id === userMessageId
+                    ? { ...msg, id: payload.message._id }
+                    : msg,
+                ),
               );
             }
           },
+          onStage: (stagePayload) => {
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage({
+              step: stagePayload.step || 2,
+              stage: stagePayload.stage || "synthesizing",
+              message: stagePayload.message || "Synthesizing response...",
+            });
+          },
           onChunk: (chunkText) => {
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage(null);
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === assistantId ? { ...msg, content: msg.content + chunkText } : msg
-              )
+                msg.clientKey === assistantId || msg.id === assistantId
+                  ? { ...msg, content: msg.content + chunkText }
+                  : msg,
+              ),
             );
           },
           onDone: (payload) => {
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage(null);
             if (payload?.message) {
               setMessages((prev) =>
                 prev.map((msg) =>
-                  msg.id === assistantId ? { ...msg, id: payload.message._id } : msg
-                )
+                  msg.clientKey === assistantId || msg.id === assistantId
+                    ? { ...msg, id: payload.message._id }
+                    : msg,
+                ),
               );
             }
           },
           onError: (err) => {
             console.error("[Stream Edit] Error:", err);
+            if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+            setActiveStage(null);
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === assistantId
+                msg.clientKey === assistantId || msg.id === assistantId
                   ? {
                       ...msg,
-                      content: msg.content || "Sorry, something went wrong while reasoning. Please try again.",
+                      content:
+                        msg.content ||
+                        "Sorry, something went wrong while reasoning. Please try again.",
                     }
-                  : msg
-              )
+                  : msg,
+              ),
             );
           },
         },
-        controller.signal
+        controller.signal,
       );
     } catch (err) {
       if (err.name !== "AbortError") {
         console.error("[Stream Edit] Promise rejected:", err);
+        if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+        setActiveStage(null);
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === assistantId
+            msg.clientKey === assistantId || msg.id === assistantId
               ? {
                   ...msg,
-                  content: msg.content || "Sorry, something went wrong. Please try again.",
+                  content:
+                    msg.content ||
+                    "Sorry, something went wrong. Please try again.",
                 }
-              : msg
-          )
+              : msg,
+          ),
         );
       }
     } finally {
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+      setActiveStage(null);
       isStreamingRef.current = false;
       setStreamingMessageId(null);
       setIsGenerating(false);
     }
   };
-
 
   // ─── Auto-fire pending prompt from Dashboard quick-send ──────────────────────
   useEffect(() => {
@@ -551,6 +686,8 @@ export default function ChatCanvas({ chatId: propChatId }) {
   // ─── Stop Generation ─────────────────────────────────────────────────────────
   const handleStop = () => {
     abortControllerRef.current?.abort();
+    if (stageTimerRef.current) clearTimeout(stageTimerRef.current);
+    setActiveStage(null);
     isStreamingRef.current = false;
     setStreamingMessageId(null);
     setIsGenerating(false);
@@ -574,25 +711,45 @@ export default function ChatCanvas({ chatId: propChatId }) {
         className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-10 lg:px-16 py-6 pb-36 select-text"
       >
         <div className="max-w-3xl mx-auto flex flex-col gap-6">
-          {messages.length === 0 ? (
-            <ChatEmptyState />
-          ) : (
-            <ChatMessageFeed
-              messages={messages}
-              streamingMessageId={streamingMessageId}
-              copiedId={copiedId}
-              playingVoiceId={playingVoiceId}
-              handleCopy={handleCopy}
-              handleToggleVoice={handleToggleVoice}
-              editingMessageId={editingMessageId}
-              onStartEdit={(msgId) => setEditingMessageId(msgId)}
-              onCancelEdit={() => setEditingMessageId(null)}
-              onSubmitEdit={handleEditSubmit}
-              onEditPrompt={(text) =>
-                setEditPromptText({ text, nonce: Date.now() })
-              }
-            />
-          )}
+          <AnimatePresence mode="wait">
+            {messages.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.2 }}
+                className="w-full"
+              >
+                <ChatEmptyState />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="feed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="w-full"
+              >
+                <ChatMessageFeed
+                  messages={messages}
+                  activeStage={activeStage}
+                  streamingMessageId={streamingMessageId}
+                  copiedId={copiedId}
+                  playingVoiceId={playingVoiceId}
+                  handleCopy={handleCopy}
+                  handleToggleVoice={handleToggleVoice}
+                  editingMessageId={editingMessageId}
+                  onStartEdit={(msgId) => setEditingMessageId(msgId)}
+                  onCancelEdit={() => setEditingMessageId(null)}
+                  onSubmitEdit={handleEditSubmit}
+                  onEditPrompt={(text) =>
+                    setEditPromptText({ text, nonce: Date.now() })
+                  }
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div ref={messagesEndRef} />
         </div>

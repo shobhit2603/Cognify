@@ -260,7 +260,12 @@ export const streamMessage = async (req, res, next) => {
       // Stop consuming events if the client has already disconnected
       if (clientDisconnected) break;
 
-      if (chunk && chunk.content) {
+      if (chunk.event === "stage") {
+        res.write(
+          `data: ${JSON.stringify({ event: "stage", stage: chunk.stage, message: chunk.message, step: chunk.step })}\n\n`,
+        );
+        if (typeof res.flush === "function") res.flush();
+      } else if (chunk && chunk.content) {
         fullResponse += chunk.content;
         res.write(
           `data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`,
@@ -426,7 +431,12 @@ export const streamEditMessage = async (req, res, next) => {
 
     for await (const chunk of events) {
       if (clientDisconnected) break;
-      if (chunk && chunk.content) {
+      if (chunk.event === "stage") {
+        res.write(
+          `data: ${JSON.stringify({ event: "stage", stage: chunk.stage, message: chunk.message, step: chunk.step })}\n\n`,
+        );
+        if (typeof res.flush === "function") res.flush();
+      } else if (chunk && chunk.content) {
         fullResponse += chunk.content;
         res.write(
           `data: ${JSON.stringify({ event: "chunk", content: chunk.content })}\n\n`,

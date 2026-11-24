@@ -14,11 +14,17 @@ import {
   SpeakerSlash,
   X,
   PaperPlaneRight,
+  CircleNotch,
+  Globe,
+  FileText,
+  Sparkle,
+  Code,
 } from "@phosphor-icons/react";
 import Tooltip from "../../../components/ui/Tooltip";
 
 export default function ChatMessageFeed({
   messages,
+  activeStage = null,
   streamingMessageId,
   copiedId,
   playingVoiceId,
@@ -45,10 +51,10 @@ export default function ChatMessageFeed({
     <div className="flex flex-col gap-8 w-full">
       {messages.map((msg) => (
         <motion.div
-          key={msg.id}
-          initial={{ opacity: 0, y: 10 }}
+          key={msg.clientKey || msg.id}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className={`flex flex-col w-full ${
             msg.role === "user" ? "items-end" : "items-start"
           }`}
@@ -130,10 +136,40 @@ export default function ChatMessageFeed({
                   )}
                 </div>
               ) : (
-                /* Assistant Content with Modern ChatGPT-style Markdown */
+                /* Assistant Content */
                 <div className="w-full text-white/90 pt-0.5">
-                  <div className="text-white/90 leading-relaxed font-sans select-text">
-                    <ReactMarkdown
+                  {msg.id === streamingMessageId && (!msg.content || msg.content.trim().length === 0) ? (
+                    /* ── Two-Stage Dynamic Shimmer Banner & Skeleton Structure ── */
+                    <div className="flex flex-col gap-3.5 w-full select-none pt-0.5">
+                      {/* Dynamic 2-Stage Progress Shimmer Banner */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                        className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-osmo-lime/10 border border-osmo-lime/25 text-xs text-osmo-lime shadow-sm w-fit"
+                      >
+                        <CircleNotch size={14} className="animate-spin text-osmo-lime shrink-0" />
+                        <span className="font-sans text-xs text-white/95 font-medium flex items-center gap-1.5">
+                          {activeStage?.stage === "web" && <Globe size={13} className="text-osmo-lime shrink-0" />}
+                          {activeStage?.stage === "docs" && <FileText size={13} className="text-osmo-lime shrink-0" />}
+                          {activeStage?.stage === "code" && <Code size={13} className="text-osmo-lime shrink-0" />}
+                          {(!activeStage?.stage || activeStage?.stage === "reasoning" || activeStage?.stage === "synthesizing") && (
+                            <Sparkle size={13} weight="fill" className="text-osmo-lime shrink-0" />
+                          )}
+                          <span>{activeStage?.message || "Analyzing query & context..."}</span>
+                        </span>
+                      </motion.div>
+
+                      {/* Realistic Loading Skeleton Structure */}
+                      <div className="flex flex-col gap-2.5 w-full max-w-md pt-1">
+                        <div className="h-3 w-4/5 rounded-full bg-white/[0.08] animate-pulse" />
+                        <div className="h-3 w-full rounded-full bg-white/[0.05] animate-pulse [animation-delay:150ms]" />
+                        <div className="h-3 w-3/5 rounded-full bg-white/[0.04] animate-pulse [animation-delay:300ms]" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-white/90 leading-relaxed font-sans select-text">
+                      <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
                         h1({ children }) {
@@ -346,74 +382,77 @@ export default function ChatMessageFeed({
                       <span className="inline-block w-1.5 h-4.5 bg-osmo-lime/90 animate-pulse align-middle ml-1.5 rounded-xs" />
                     )}
                   </div>
+                  )}
                 </div>
               )}
 
-              {/* Message Action Bar */}
-              <div
-                className={`flex items-center gap-1.5 text-white/40 pt-1 select-none ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <Tooltip content={copiedId === msg.id ? "Copied!" : "Copy message"} position="top">
-                  <button
-                    onClick={() => handleCopy(msg.content, msg.id)}
-                    className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm flex items-center gap-1"
-                    aria-label="Copy message"
-                  >
-                    {copiedId === msg.id ? (
-                      <Check size={15} className="text-osmo-lime" weight="bold" />
-                    ) : (
-                      <Copy size={15} />
-                    )}
-                  </button>
-                </Tooltip>
-
-                {msg.role === "user" &&
-                  onStartEdit &&
-                  editingMessageId !== msg.id && (
-                    <Tooltip content="Edit prompt" position="top">
-                      <button
-                        onClick={() => onStartEdit(msg.id)}
-                        className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm"
-                        aria-label="Edit prompt"
-                      >
-                        <PencilSimple size={15} />
-                      </button>
-                    </Tooltip>
-                  )}
-
-                {msg.role === "assistant" && msg.content && (
-                  <Tooltip
-                    content={
-                      playingVoiceId === msg.id
-                        ? "Stop speech audio"
-                        : "Read response aloud"
-                    }
-                    position="top"
-                  >
+              {/* Message Action Bar (only when message has content) */}
+              {msg.content && msg.content.trim().length > 0 && (
+                <div
+                  className={`flex items-center gap-1.5 text-white/40 pt-1 select-none ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <Tooltip content={copiedId === msg.id ? "Copied!" : "Copy message"} position="top">
                     <button
-                      onClick={() => handleToggleVoice(msg.content, msg.id)}
-                      className={`p-1.5 rounded-xl transition-colors cursor-pointer text-sm ${
-                        playingVoiceId === msg.id
-                          ? "text-osmo-lime bg-osmo-lime/10 animate-pulse"
-                          : "hover:text-white hover:bg-white/5"
-                      }`}
-                      aria-label={
+                      onClick={() => handleCopy(msg.content, msg.id)}
+                      className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm flex items-center gap-1"
+                      aria-label="Copy message"
+                    >
+                      {copiedId === msg.id ? (
+                        <Check size={15} className="text-osmo-lime" weight="bold" />
+                      ) : (
+                        <Copy size={15} />
+                      )}
+                    </button>
+                  </Tooltip>
+
+                  {msg.role === "user" &&
+                    onStartEdit &&
+                    editingMessageId !== msg.id && (
+                      <Tooltip content="Edit prompt" position="top">
+                        <button
+                          onClick={() => onStartEdit(msg.id)}
+                          className="p-1.5 hover:text-white hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-sm"
+                          aria-label="Edit prompt"
+                        >
+                          <PencilSimple size={15} />
+                        </button>
+                      </Tooltip>
+                    )}
+
+                  {msg.role === "assistant" && msg.content && (
+                    <Tooltip
+                      content={
                         playingVoiceId === msg.id
                           ? "Stop speech audio"
                           : "Read response aloud"
                       }
+                      position="top"
                     >
-                      {playingVoiceId === msg.id ? (
-                        <SpeakerSlash size={16} weight="fill" />
-                      ) : (
-                        <SpeakerHigh size={16} />
-                      )}
-                    </button>
-                  </Tooltip>
-                )}
-              </div>
+                      <button
+                        onClick={() => handleToggleVoice(msg.content, msg.id)}
+                        className={`p-1.5 rounded-xl transition-colors cursor-pointer text-sm ${
+                          playingVoiceId === msg.id
+                            ? "text-osmo-lime bg-osmo-lime/10 animate-pulse"
+                            : "hover:text-white hover:bg-white/5"
+                        }`}
+                        aria-label={
+                          playingVoiceId === msg.id
+                            ? "Stop speech audio"
+                            : "Read response aloud"
+                        }
+                      >
+                        {playingVoiceId === msg.id ? (
+                          <SpeakerSlash size={16} weight="fill" />
+                        ) : (
+                          <SpeakerHigh size={16} />
+                        )}
+                      </button>
+                    </Tooltip>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

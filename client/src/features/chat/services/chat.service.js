@@ -145,6 +145,9 @@ export const streamMessage = async (content, chatId, callbacks, signal, extra = 
               case "connected":
                 callbacks.onConnected?.(parsed);
                 break;
+              case "stage":
+                callbacks.onStage?.(parsed);
+                break;
               case "chunk":
                 callbacks.onChunk?.(parsed.content);
                 break;
@@ -253,6 +256,9 @@ export const streamEditMessage = async (messageId, content, callbacks, signal, e
             switch (parsed.event) {
               case "connected":
                 callbacks.onConnected?.(parsed);
+                break;
+              case "stage":
+                callbacks.onStage?.(parsed);
                 break;
               case "chunk":
                 callbacks.onChunk?.(parsed.content);
