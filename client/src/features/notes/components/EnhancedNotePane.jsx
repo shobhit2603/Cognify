@@ -195,8 +195,11 @@ Please give me a concise breakdown and let me know what questions you have or ho
           </span>
 
           {frameworkName && (
-            <span className="hidden sm:inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-osmo-teal/10 text-osmo-teal border border-osmo-teal/20 font-mono truncate max-w-[120px]">
-              <span>{frameworkName}</span>
+            <span
+              title={frameworkName}
+              className="inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full bg-osmo-teal/10 text-osmo-teal border border-osmo-teal/20 font-mono whitespace-nowrap shrink-0 max-w-[220px] truncate"
+            >
+              <span className="truncate">{frameworkName}</span>
             </span>
           )}
         </div>
