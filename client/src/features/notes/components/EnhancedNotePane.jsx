@@ -11,7 +11,6 @@ import {
   Eye,
   PencilSimple,
   ArrowCounterClockwise,
-  Lightning,
   CircleNotch,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -422,13 +421,13 @@ Please give me a concise breakdown and let me know what questions you have or ho
             </p>
             <div className="grid grid-cols-2 gap-2.5 max-w-md w-full text-left text-xs font-mono">
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <span className="text-osmo-teal font-bold">⚡ Zero Friction</span>
+                <span className="text-osmo-teal font-bold">Zero Friction</span>
                 <p className="text-[11px] text-white/40 mt-1">
                   Auto-Detect selects the best format if no preset is chosen.
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <span className="text-osmo-teal font-bold">🛡️ Version Safe</span>
+                <span className="text-osmo-teal font-bold">Version Safe</span>
                 <p className="text-[11px] text-white/40 mt-1">
                   Re-enhancing keeps your original raw text and backup intact.
                 </p>
