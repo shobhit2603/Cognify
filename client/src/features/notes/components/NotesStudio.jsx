@@ -2,7 +2,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { SidebarSimple, Plus, FileText, ArrowLeft } from "@phosphor-icons/react";
+import {
+  SidebarSimple,
+  Plus,
+  FileText,
+  ArrowLeft,
+  ArrowCounterClockwise,
+  ChatsCircle,
+} from "@phosphor-icons/react";
+import Tooltip from "../../../components/ui/Tooltip";
 import { toast } from "sonner";
 import NotesDrawer from "./NotesDrawer";
 import RawNoteEditor from "./RawNoteEditor";
@@ -64,11 +72,13 @@ export default function NotesStudio() {
 
   const splitContainerRef = useRef(null);
   const isDraggingRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Pointer drag events for resizable divider
   const handlePointerDown = (e) => {
     e.preventDefault();
     isDraggingRef.current = true;
+    setIsDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
@@ -87,6 +97,7 @@ export default function NotesStudio() {
   const handlePointerUp = (e) => {
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
+      setIsDragging(false);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
@@ -136,6 +147,22 @@ export default function NotesStudio() {
   const activeNoteId = selectedNoteId || urlId || (notes.length > 0 ? notes[0]._id : null);
   const { data: singleNote } = useNote(activeNoteId);
   const activeNote = singleNote || notes.find((n) => n._id === activeNoteId) || null;
+
+  // Enhanced panel visibility: smart default based on whether active note has enhanced content
+  const [panelToggleMap, setPanelToggleMap] = useState({});
+
+  const isEnhancedPanelOpen =
+    activeNoteId && activeNoteId in panelToggleMap
+      ? panelToggleMap[activeNoteId]
+      : Boolean(activeNote?.enhancedContent?.trim());
+
+  const handleToggleEnhancedPanel = () => {
+    if (!activeNoteId) return;
+    setPanelToggleMap((prev) => ({
+      ...prev,
+      [activeNoteId]: !isEnhancedPanelOpen,
+    }));
+  };
 
   const handleSelectNote = (id) => {
     if (isEnhancing && abortControllerRef.current) {
@@ -194,10 +221,37 @@ export default function NotesStudio() {
     }
   };
 
+  const handleDiscussInChat = () => {
+    if (!activeNote) return;
+    const contentToDiscuss =
+      streamedText || activeNote.enhancedContent || activeNote.originalContent;
+    if (!contentToDiscuss) return;
+
+    const frameworkName = activeNote.enhancedMetadata?.frameworkUsed;
+    const chatContextPrompt = `I would like to discuss and ask questions about this note:
+
+**Title:** ${activeNote.title || "Untitled Note"}
+${frameworkName ? `**Framework:** ${frameworkName}\n` : ""}---
+${contentToDiscuss}
+---
+Please give me a concise breakdown and let me know what questions you have or how we can explore this deeper.`;
+
+    try {
+      sessionStorage.setItem("cognify_pending_chat_prompt", chatContextPrompt);
+    } catch {
+      // Fallback
+    }
+
+    router.push("/chat");
+  };
+
   // Trigger SSE Enhancement Streaming
   const handleEnhance = async () => {
     if (!activeNote || !activeNote.originalContent?.trim() || isEnhancing) return;
 
+    if (activeNote._id) {
+      setPanelToggleMap((prev) => ({ ...prev, [activeNote._id]: true }));
+    }
     setIsEnhancing(true);
     accumulatedTextRef.current = "";
     setStreamedText("");
@@ -387,15 +441,67 @@ export default function NotesStudio() {
 
           <div className="flex items-center gap-2">
             {!isDrawerOpen && (
+              <Tooltip content="Create New Note" position="bottom">
+                <button
+                  type="button"
+                  onClick={() => handleCreateNote()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs border border-white/10 transition-colors"
+                >
+                  <Plus size={13} weight="bold" />
+                  <span>New Note</span>
+                </button>
+              </Tooltip>
+            )}
+
+            {/* Restore Previous Version Icon Button (amber, rendered only when panel open and previous version exists) */}
+            {isEnhancedPanelOpen && activeNote?.previousEnhancedContent && (
+              <Tooltip content="Restore Previous Version" position="bottom">
+                <button
+                  type="button"
+                  onClick={() => restorePreviousEnhancement(activeNote._id)}
+                  className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition-colors"
+                >
+                  <ArrowCounterClockwise size={15} weight="bold" />
+                </button>
+              </Tooltip>
+            )}
+
+            {/* Discuss in Chat Button (Notes Teal, rendered only when panel open and enhanced content exists) */}
+            {isEnhancedPanelOpen && !!(streamedText || activeNote?.enhancedContent) && (
+              <Tooltip content="Discuss in AI Chat" position="bottom">
+                <button
+                  type="button"
+                  onClick={handleDiscussInChat}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-osmo-teal/10 border border-osmo-teal/30 text-xs text-osmo-teal font-medium hover:bg-osmo-teal/20 transition-all shadow-sm shrink-0"
+                >
+                  <ChatsCircle size={15} weight="bold" />
+                  <span className="hidden sm:inline">Discuss in Chat</span>
+                </button>
+              </Tooltip>
+            )}
+
+            {/* Subtle Vertical Divider: Render only when at least one button to the left is visible */}
+            {(!isDrawerOpen || (isEnhancedPanelOpen && (activeNote?.previousEnhancedContent || (streamedText || activeNote?.enhancedContent)))) && (
+              <div className="h-4 w-px bg-white/10 mx-0.5" />
+            )}
+
+            {/* Enhanced Panel Toggle Button (Mirrored SidebarSimple, anchored at far-right) */}
+            <Tooltip
+              content={isEnhancedPanelOpen ? "Hide Enhanced Panel" : "Show Enhanced Panel"}
+              position="bottom"
+            >
               <button
                 type="button"
-                onClick={() => handleCreateNote()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs border border-white/10 transition-colors"
+                onClick={handleToggleEnhancedPanel}
+                className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
               >
-                <Plus size={13} weight="bold" />
-                <span>New Note</span>
+                <SidebarSimple
+                  size={18}
+                  weight={isEnhancedPanelOpen ? "fill" : "regular"}
+                  className="rotate-180"
+                />
               </button>
-            )}
+            </Tooltip>
           </div>
         </header>
 
@@ -407,14 +513,17 @@ export default function NotesStudio() {
           >
             {/* Left Column: Raw Note Editor + Scoped Action Bar */}
             <div
-              style={{ width: `${splitPercent}%` }}
-              className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden"
+              style={{ width: isEnhancedPanelOpen ? `${splitPercent}%` : "100%" }}
+              className={`h-full flex flex-col min-w-0 min-h-0 overflow-hidden ${
+                isDragging ? "" : "transition-[width] duration-300 ease-in-out"
+              }`}
             >
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                 <RawNoteEditor
                   key={activeNote._id}
                   note={activeNote}
                   onSave={(id, data) => updateNote({ id, data })}
+                  isCentered={!isEnhancedPanelOpen}
                 />
               </div>
 
@@ -428,6 +537,7 @@ export default function NotesStudio() {
                   onEnhance={handleEnhance}
                   isEnhancing={isEnhancing}
                   rawContentLength={(activeNote.originalContent || "").trim().length}
+                  isCentered={!isEnhancedPanelOpen}
                 />
               </div>
             </div>
@@ -439,33 +549,43 @@ export default function NotesStudio() {
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
               title="Drag to resize panels"
-              className="hidden md:flex w-2.5 -mx-1.5 cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5"
+              className={`hidden md:flex cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5 transition-all duration-300 ease-in-out ${
+                isEnhancedPanelOpen
+                  ? "w-2.5 -mx-1.5 opacity-100"
+                  : "w-0 opacity-0 pointer-events-none overflow-hidden -mx-0"
+              }`}
             >
-              <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-lime group-hover:h-14 transition-all" />
+              <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-teal group-hover:h-14 transition-all" />
             </div>
 
-            {/* Right Column: Live Enhanced Output (Extends cleanly to bottom of viewport) */}
+            {/* Right Column: Live Enhanced Output (Smooth slide animation in and out) */}
             <div
-              style={{ width: `${100 - splitPercent}%` }}
-              className="h-full flex flex-col min-w-0 min-h-0 overflow-hidden border-l border-white/10"
+              style={{ width: isEnhancedPanelOpen ? `${100 - splitPercent}%` : "0%" }}
+              className={`h-full flex flex-col min-h-0 overflow-hidden ${
+                isEnhancedPanelOpen
+                  ? "border-l border-white/10 opacity-100 min-w-0"
+                  : "w-0 min-w-0 border-none opacity-0 pointer-events-none max-md:hidden max-md:h-0"
+              } ${isDragging ? "" : "transition-all duration-300 ease-in-out"}`}
             >
-              <EnhancedNotePane
-                key={activeNote._id}
-                note={activeNote}
-                isEnhancing={isEnhancing}
-                enhancementStage={enhancementStage}
-                streamedText={streamedText}
-                onUpdateEnhancedContent={(id, content) =>
-                  updateNote({ id, data: { enhancedContent: content } })
-                }
-                onRestorePrevious={(id) => restorePreviousEnhancement(id)}
-              />
+              <div className="w-full h-full min-w-0 flex flex-col min-h-0 overflow-hidden">
+                <EnhancedNotePane
+                  key={activeNote._id}
+                  note={activeNote}
+                  isEnhancing={isEnhancing}
+                  enhancementStage={enhancementStage}
+                  streamedText={streamedText}
+                  onUpdateEnhancedContent={(id, content) =>
+                    updateNote({ id, data: { enhancedContent: content } })
+                  }
+                  onRestorePrevious={(id) => restorePreviousEnhancement(id)}
+                />
+              </div>
             </div>
           </div>
         ) : (
           /* Empty Workspace (no notes in user account) */
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none">
-            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-osmo-lime mb-4 shadow-inner">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-osmo-teal mb-4 shadow-inner">
               <FileText size={32} weight="duotone" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">
@@ -478,7 +598,7 @@ export default function NotesStudio() {
             <button
               type="button"
               onClick={() => handleCreateNote()}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-lime text-black font-semibold text-xs hover:bg-osmo-lime/90 transition-all shadow-md shadow-osmo-lime/20"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-teal text-black font-semibold text-xs hover:bg-osmo-teal/90 transition-all shadow-md shadow-osmo-teal/20"
             >
               <Plus size={15} weight="bold" />
               <span>Create First Note</span>

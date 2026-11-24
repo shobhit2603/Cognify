@@ -34,6 +34,7 @@ export default function EnhanceActionBar({
   onEnhance,
   isEnhancing = false,
   rawContentLength = 0,
+  isCentered = false,
 }) {
   const [presets, setPresets] = useState(() => {
     if (typeof window === "undefined") return [];
@@ -112,7 +113,7 @@ export default function EnhanceActionBar({
   return (
     <div className="bg-[#0d0d0f] p-3 select-none">
       {/* ── Single-Row Action Bar: [Mode Dropdown] [Prompt Input] [Enhance Button] ── */}
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out ${isCentered ? "max-w-4xl mx-auto w-full px-3" : ""}`}>
         {/* Mode Dropdown Trigger & Upward Popover */}
         <div ref={dropdownRef} className="relative shrink-0">
           <button
@@ -121,7 +122,7 @@ export default function EnhanceActionBar({
             title={`Active Mode: ${activeLabel}`}
             className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-medium transition-all max-w-[140px] truncate ${
               isAuto
-                ? "bg-osmo-lime/10 border-osmo-lime/30 text-osmo-lime hover:bg-osmo-lime/20"
+                ? "bg-osmo-teal/10 border-osmo-teal/30 text-osmo-teal hover:bg-osmo-teal/20"
                 : "bg-white/10 border-white/20 text-white hover:bg-white/15"
             }`}
           >
@@ -152,7 +153,7 @@ export default function EnhanceActionBar({
                 }}
                 className={`w-full flex items-center justify-between p-2 rounded-xl transition-colors text-left ${
                   isAuto
-                    ? "bg-osmo-lime/10 text-osmo-lime"
+                    ? "bg-osmo-teal/10 text-osmo-teal"
                     : "hover:bg-white/5 text-white/80 hover:text-white"
                 }`}
               >
@@ -160,7 +161,7 @@ export default function EnhanceActionBar({
                   <Lightning
                     size={14}
                     weight={isAuto ? "fill" : "bold"}
-                    className={isAuto ? "text-osmo-lime shrink-0" : "text-white/50 shrink-0"}
+                    className={isAuto ? "text-osmo-teal shrink-0" : "text-white/50 shrink-0"}
                   />
                   <div className="min-w-0">
                     <div className="font-semibold truncate">Auto-Detect</div>
@@ -170,7 +171,7 @@ export default function EnhanceActionBar({
                   </div>
                 </div>
                 {isAuto && (
-                  <Check size={14} weight="bold" className="text-osmo-lime shrink-0 ml-2" />
+                  <Check size={14} weight="bold" className="text-osmo-teal shrink-0 ml-2" />
                 )}
               </button>
 
@@ -202,7 +203,7 @@ export default function EnhanceActionBar({
                         <Icon
                           size={13}
                           weight={isSelected ? "fill" : "regular"}
-                          className={isSelected ? "text-osmo-lime shrink-0" : "text-white/50 shrink-0"}
+                          className={isSelected ? "text-osmo-teal shrink-0" : "text-white/50 shrink-0"}
                         />
                         <span className="truncate font-medium">{preset.name}</span>
                       </button>
@@ -217,13 +218,13 @@ export default function EnhanceActionBar({
                             setIsDropdownOpen(false);
                           }}
                           title="Edit Preset"
-                          className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-osmo-lime opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-osmo-teal opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <PencilSimple size={12} />
                         </button>
 
                         {isSelected && (
-                          <Check size={13} weight="bold" className="text-osmo-lime" />
+                          <Check size={13} weight="bold" className="text-osmo-teal" />
                         )}
                       </div>
                     </div>
@@ -240,7 +241,7 @@ export default function EnhanceActionBar({
                   className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl border border-dashed transition-all text-left ${
                     customPresetsCount >= MAX_CUSTOM_PRESETS
                       ? "border-white/5 text-white/30 cursor-not-allowed"
-                      : "border-white/20 hover:border-osmo-lime/40 text-white/60 hover:text-white hover:bg-white/5"
+                      : "border-white/20 hover:border-osmo-teal/40 text-white/60 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   <span className="flex items-center gap-1.5 font-medium truncate">
@@ -270,7 +271,7 @@ export default function EnhanceActionBar({
               }
             }}
             disabled={isEnhancing}
-            className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-osmo-lime/70 focus:ring-1 focus:ring-osmo-lime/40 transition-colors disabled:opacity-50"
+            className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:border-osmo-teal/70 focus:ring-1 focus:ring-osmo-teal/40 transition-colors disabled:opacity-50"
           />
         </div>
 
@@ -281,10 +282,10 @@ export default function EnhanceActionBar({
           onClick={onEnhance}
           className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-semibold text-xs transition-all shadow-md shrink-0 ${
             isEnhancing
-              ? "bg-osmo-lime/80 text-black cursor-wait"
+              ? "bg-osmo-teal/80 text-black cursor-wait"
               : isRawEmpty
               ? "bg-white/10 text-white/30 border border-white/5 cursor-not-allowed"
-              : "bg-osmo-lime text-black hover:bg-osmo-lime/90 hover:scale-[1.02] shadow-osmo-lime/20 cursor-pointer"
+              : "bg-osmo-teal text-black hover:bg-osmo-teal/90 hover:scale-[1.02] shadow-osmo-teal/20 cursor-pointer"
           }`}
         >
           {isEnhancing ? (

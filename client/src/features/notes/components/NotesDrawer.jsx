@@ -59,6 +59,10 @@ export default function NotesDrawer({
     return acc;
   }, {});
 
+  // Active note folder resolution
+  const activeNote = notes.find((n) => n._id === activeNoteId);
+  const activeNoteFolderId = activeNote?.folderId?._id || activeNote?.folderId || null;
+
   const isSearching = !!searchQuery.trim();
 
   return (
@@ -72,7 +76,7 @@ export default function NotesDrawer({
         <div className="p-3.5 border-b border-white/10 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText size={20} className="text-osmo-lime" weight="duotone" />
+              <FileText size={20} className="text-osmo-teal" weight="duotone" />
               <h2 className="text-sm font-semibold tracking-wide text-white uppercase font-mono">
                 Notes
               </h2>
@@ -94,7 +98,7 @@ export default function NotesDrawer({
                 type="button"
                 onClick={() => onCreateNote()}
                 title="New Note"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-osmo-lime text-black font-semibold text-xs hover:bg-osmo-lime/90 transition-all shadow-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-osmo-teal text-black font-semibold text-xs hover:bg-osmo-teal/90 transition-all shadow-sm"
               >
                 <Plus size={14} weight="bold" />
                 <span>New</span>
@@ -113,7 +117,7 @@ export default function NotesDrawer({
               placeholder="Search notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder-white/40 focus:outline-none focus:border-osmo-lime/60 focus:bg-white/[0.08] transition-colors"
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder-white/40 focus:outline-none focus:border-osmo-teal/60 focus:bg-white/[0.08] transition-colors"
             />
             {isSearching && (
               <button
@@ -190,16 +194,23 @@ export default function NotesDrawer({
                   const isExpanded = !!expandedFolders[folder._id];
                   const folderNotes = notesByFolder[folder._id] || [];
                   const isFolderMenuOpen = activeMenuFolderId === folder._id;
+                  const isParentOfActiveNote = activeNoteFolderId === folder._id;
 
                   return (
                     <div key={folder._id} className="space-y-0.5">
                       {/* Folder Row */}
-                      <div className="group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-xs">
+                      <div
+                        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg transition-all text-xs ${
+                          isParentOfActiveNote && !isExpanded
+                            ? "bg-osmo-teal/10 border border-osmo-teal/30 text-white font-medium shadow-sm"
+                            : "hover:bg-white/5 border border-transparent text-white/90"
+                        }`}
+                      >
                         <button
                           type="button"
                           aria-expanded={isExpanded}
                           onClick={() => toggleFolder(folder._id)}
-                          className="flex items-center gap-2 flex-1 truncate text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-osmo-lime/60 rounded"
+                          className="flex items-center gap-2 flex-1 truncate text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-osmo-teal/60 rounded"
                         >
                           {isExpanded ? (
                             <CaretDown size={13} className="text-white/40 shrink-0" />
@@ -389,14 +400,14 @@ function NoteItem({
     <div
       className={`group relative flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all ${
         isActive
-          ? "bg-osmo-lime/10 border border-osmo-lime/40 text-white font-medium"
+          ? "bg-osmo-teal/10 border border-osmo-teal/40 text-white font-medium"
           : "hover:bg-white/5 border border-transparent text-white/80"
       }`}
     >
       <button
         type="button"
         onClick={onSelect}
-        className="flex-1 min-w-0 text-left truncate pr-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-osmo-lime/60 rounded"
+        className="flex-1 min-w-0 text-left truncate pr-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-osmo-teal/60 rounded"
       >
         <div className="flex items-center gap-1.5">
           {note.isPinned && (

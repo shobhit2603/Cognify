@@ -2,16 +2,12 @@
 import React, { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useRouter } from "next/navigation";
 import {
   Sparkle,
   Copy,
   FilePdf,
-  ChatsCircle,
   Eye,
   PencilSimple,
-  ArrowCounterClockwise,
-  Lightning,
   CircleNotch,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -24,7 +20,6 @@ export default function EnhancedNotePane({
   onUpdateEnhancedContent,
   onRestorePrevious,
 }) {
-  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [editBaseline, setEditBaseline] = useState("");
@@ -163,59 +158,28 @@ export default function EnhancedNotePane({
     }, 400);
   };
 
-  const handleDiscussInChat = () => {
-    if (!activeContent && !note?.originalContent) return;
-
-    const chatContextPrompt = `I would like to discuss and ask questions about this note:
-
-**Title:** ${note?.title || "Untitled Note"}
-${frameworkName ? `**Framework:** ${frameworkName}\n` : ""}
----
-${activeContent || note.originalContent}
----
-Please give me a concise breakdown and let me know what questions you have or how we can explore this deeper.`;
-
-    try {
-      sessionStorage.setItem("cognify_pending_chat_prompt", chatContextPrompt);
-    } catch {
-      // Fallback
-    }
-
-    // toast.success("Redirecting to AI Chat with this note as context...");
-    router.push("/chat");
-  };
-
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0e0e11] select-text overflow-hidden min-h-0">
       {/* ── Top Header Actions ── */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-[#0e0e11]/90 backdrop-blur-sm shrink-0 select-none">
         <div className="flex items-center gap-2 truncate mr-2">
-          <Sparkle size={17} className="text-osmo-lime shrink-0" weight="fill" />
+          <Sparkle size={17} className="text-osmo-teal shrink-0" weight="fill" />
           <span className="text-sm font-semibold text-white tracking-wide font-mono uppercase truncate">
             Enhanced
           </span>
 
           {frameworkName && (
-            <span className="hidden sm:inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-osmo-lime/10 text-osmo-lime border border-osmo-lime/20 font-mono truncate max-w-[120px]">
-              <span>{frameworkName}</span>
+            <span
+              title={frameworkName}
+              className="inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full bg-osmo-teal/10 text-osmo-teal border border-osmo-teal/20 font-mono whitespace-nowrap shrink-0 max-w-[220px] truncate"
+            >
+              <span className="truncate">{frameworkName}</span>
             </span>
           )}
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons: Edit, Copy Markdown, Save as PDF */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Restore Previous Version Icon Button (rendered only when previous version exists) */}
-          {note?.previousEnhancedContent && (
-            <button
-              type="button"
-              onClick={() => onRestorePrevious(note._id)}
-              title="Restore Previous Version"
-              className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition-colors"
-            >
-              <ArrowCounterClockwise size={15} weight="bold" />
-            </button>
-          )}
-
           {hasContent && (
             <>
               {/* Preview vs Edit Toggle (Icon Only) */}
@@ -246,16 +210,6 @@ Please give me a concise breakdown and let me know what questions you have or ho
               >
                 <FilePdf size={15} />
               </button>
-
-              <button
-                type="button"
-                onClick={handleDiscussInChat}
-                title="Discuss in AI Chat"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-osmo-lime/10 border border-osmo-lime/30 text-xs text-osmo-lime font-medium hover:bg-osmo-lime/20 transition-all shadow-sm shrink-0"
-              >
-                <ChatsCircle size={15} weight="bold" />
-                <span className="hidden xl:inline">Discuss in Chat</span>
-              </button>
             </>
           )}
         </div>
@@ -263,8 +217,8 @@ Please give me a concise breakdown and let me know what questions you have or ho
 
       {/* ── 2-Stage Progress Shimmer Banner (while enhancing) ── */}
       {isEnhancing && enhancementStage && (
-        <div className="px-6 py-3 bg-osmo-lime/10 border-b border-osmo-lime/20 flex items-center gap-3 text-xs text-osmo-lime font-mono shrink-0 animate-pulse">
-          <CircleNotch size={16} className="animate-spin text-osmo-lime" />
+        <div className="px-6 py-3 bg-osmo-teal/10 border-b border-osmo-teal/20 flex items-center gap-3 text-xs text-osmo-teal font-mono shrink-0 animate-pulse">
+          <CircleNotch size={16} className="animate-spin text-osmo-teal" />
           <span className="font-semibold uppercase">
             [{enhancementStage.stage === "detecting" ? "STAGE 1/2" : "STAGE 2/2"}]:
           </span>
@@ -306,7 +260,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 },
                 h2({ children }) {
                   return (
-                    <h2 className="text-lg font-semibold tracking-tight text-white mt-5 mb-2.5 first:mt-0 text-osmo-lime">
+                    <h2 className="text-lg font-semibold tracking-tight text-white mt-5 mb-2.5 first:mt-0 text-osmo-teal">
                       {children}
                     </h2>
                   );
@@ -341,14 +295,14 @@ Please give me a concise breakdown and let me know what questions you have or ho
                 },
                 li({ children }) {
                   return (
-                    <li className="text-sm leading-relaxed text-white/80 my-1 marker:text-osmo-lime/70 [&>p]:inline [&>p]:my-0">
+                    <li className="text-sm leading-relaxed text-white/80 my-1 marker:text-osmo-teal/70 [&>p]:inline [&>p]:my-0">
                       {children}
                     </li>
                   );
                 },
                 blockquote({ children }) {
                   return (
-                    <blockquote className="border-l-4 border-osmo-lime/70 pl-3.5 my-3 bg-white/[0.03] py-2 rounded-r-lg text-white/70 italic text-xs">
+                    <blockquote className="border-l-4 border-osmo-teal/70 pl-3.5 my-3 bg-white/[0.03] py-2 rounded-r-lg text-white/70 italic text-xs">
                       {children}
                     </blockquote>
                   );
@@ -365,7 +319,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
                   if (!isBlock) {
                     return (
                       <code
-                        className="px-1.5 py-0.5 rounded bg-white/10 text-osmo-lime text-xs font-mono inline break-words"
+                        className="px-1.5 py-0.5 rounded bg-white/10 text-osmo-teal text-xs font-mono inline break-words"
                         {...props}
                       >
                         {children}
@@ -409,7 +363,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
         ) : (
           /* Empty State */
           <div className="h-full flex flex-col items-center justify-center text-center p-8 select-none">
-            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-osmo-lime mb-4 shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-osmo-teal mb-4 shadow-inner">
               <Sparkle size={28} weight="duotone" />
             </div>
             <h4 className="text-base font-semibold text-white mb-2">
@@ -417,18 +371,18 @@ Please give me a concise breakdown and let me know what questions you have or ho
             </h4>
             <p className="text-xs text-white/50 max-w-sm leading-relaxed mb-6">
               Write or paste your rough notes on the left canvas, select an enhancement
-              preset, and click <span className="text-osmo-lime font-medium">Enhance Note</span> to
+              preset, and click <span className="text-osmo-teal font-medium">Enhance Note</span> to
               generate a structured study guide, technical blueprint, or meeting brief.
             </p>
             <div className="grid grid-cols-2 gap-2.5 max-w-md w-full text-left text-xs font-mono">
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <span className="text-osmo-lime font-bold">⚡ Zero Friction</span>
+                <span className="text-osmo-teal font-bold">Zero Friction</span>
                 <p className="text-[11px] text-white/40 mt-1">
                   Auto-Detect selects the best format if no preset is chosen.
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <span className="text-osmo-lime font-bold">🛡️ Version Safe</span>
+                <span className="text-osmo-teal font-bold">Version Safe</span>
                 <p className="text-[11px] text-white/40 mt-1">
                   Re-enhancing keeps your original raw text and backup intact.
                 </p>

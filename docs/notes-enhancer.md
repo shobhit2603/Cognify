@@ -11,23 +11,23 @@ The **Notes Enhancer** is Cognify's smart synthesis studio designed for students
 
 ## 2. Studio Workspace Architecture (`/notes`)
 
-The Notes Enhancer is built as a **Split-Screen Studio**:
+The Notes Enhancer is built as a **Split-Screen Studio** with fluid collapsible panels and dedicated workspace navigation:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Header: [Toggle Drawer] [← Dashboard] / [Note Title]                [+ New Note (only if drawer shut)] │
+│ Header: [Toggle Drawer] [← Dashboard] / [Note Title]   [+ Note] [↺ Restore] [💬 Discuss] │ [Toggle Panel]│
 ├────────────────┬───────────────────────────────────────┬───┬───────────────────────────────────────────┤
 │ Left Drawer    │ Center: Raw Notes Panel               │ ⁝ │ Right: Enhanced Notes Panel               │
-│ Compact        │ (Default ~42% width, resizable 25–65%)│   │ (Default ~58% width, fills remaining)     │
-│ [230px]        │                                       │ D │                                           │
+│ Compact        │ (Default ~42% width, resizable 25–65%,│   │ (Default ~58% width, collapsible to 0%,   │
+│ [230px]        │  expands to centered max-w-4xl canvas)│ D │  smooth 300ms ease-in-out slide)          │
 │                │ ┌───────────────────────────────────┐ │ R │ ┌───────────────────────────────────────┐ │
-│ [Search Notes] │ │ Title & Debounced Auto-Save Dot   │ │ A │ │ [Enhanced] [Mode Pill] [↺][👁][📋][📄][💬]│ │
+│ [Search Notes] │ │ Title & Debounced Auto-Save Dot   │ │ A │ │ [Enhanced] [Mode Pill]   [👁][📋][📄] │ │
 │ [+ Note] [+Dir]│ ├───────────────────────────────────┤ │ G │ ├───────────────────────────────────────┤ │
 │                │ │                                   │ │   │ │                                       │ │
 │ 📌 Pinned      │ │ Raw Textarea Canvas               │ │ D │ │ Enhanced Markdown Reading View        │ │
 │ 📁 Folders     │ │ (Automatic scrollbar on overflow) │ │ I │ │ (Automatic scrollbar on overflow,     │ │
-│ 📝 General     │ │                                   │ │ V │ │  extends to bottom of viewport)       │ │
-│                │ ├───────────────────────────────────┤ │ I │ │                                       │ │
+│   (active tint)│ │                                   │ │ V │ │  extends to bottom of viewport)       │ │
+│ 📝 General     │ ├───────────────────────────────────┤ │ I │ │                                       │ │
 │                │ │ Scoped Single-Row Action Bar      │ │ D │ │ • Full table wrapping (no clipping)   │ │
 │                │ │ [Mode ▾] [Custom Prompt] [Enhance]│ │ E │ │ • Clean inline `code` vs ``` blocks   │ │
 │                │ └───────────────────────────────────┘ │ R │ │ • Proportional, scannable output      │ │
@@ -36,14 +36,21 @@ The Notes Enhancer is built as a **Split-Screen Studio**:
 ```
 
 ### Key UI/UX Layout Rules
-- **Draggable Pointer-Events Splitter:** Centers between raw notes and enhanced reading view with safe clamped boundaries ($25\% - 65\%$, default $42\% / 58\%$). Split ratio is persisted in `localStorage`.
-- **Scoped Action Bar:** Confined exclusively to the Raw Notes column. The Enhanced Notes panel extends uninterrupted to the bottom of the viewport.
-- **Single-Row Action Bar with Upward Mode Popover:**
-  - `[Mode Dropdown Trigger] [Custom Prompt Input] [Enhance Button]` in a unified, single row.
-  - Upward-opening popover menu (`bottom-full mb-2 left-0`, `z-50`) displaying Auto-Detect, preset framework list with checkmarks and hover edit pencils, and `+ Custom Framework (X/6)`.
-  - Mode trigger collapses cleanly to icon + chevron on narrow widths so the prompt input stays comfortable to type in.
-- **Compact Sidebar Drawer (230px):** Narrow width prevents cramping the central workspace, shows clean text mode pills without redundant icons, and displays AI-generated titles immediately.
-- **Clean Action Header:** Full-width warning/restore banner replaced with an icon-only button (`ArrowCounterClockwise`) in the top-right toolbar alongside Edit, Copy, PDF, and Discuss in Chat.
+- **Color Identity (Notes Teal `#00FFFF`):** Distinct from Document Analysis (Lime Green `#a1ff62`), Notes Enhancer uses an electric teal theme token (`--color-osmo-teal: #00ffff`) across headers, active note cards, active collapsed folder rows, action bar mode triggers, and the primary CTA.
+- **Collapsible Enhanced Notes Panel with Smart Default:**
+  - **Smart Default:** Closed by default when creating a new note or opening an unenhanced note to keep focus on the raw canvas; automatically opens when opening a note with existing enhancement or upon clicking **Enhance**.
+  - **Smooth Sliding Transition:** Animates smoothly between `58%` and `0%` over 300ms with persistent DOM clipping (`min-w-[360px]` inner container), completely eliminating layout snapping.
+  - **Centered Raw Canvas When Collapsed:** When the right panel is closed, the divider hides and the Raw Notes editor + scoped bottom action bar smoothly center into a comfortable `max-w-4xl mx-auto` container like Notion.
+  - **Draggable Pointer-Events Splitter:** Centers between raw notes and enhanced reading view with safe clamped boundaries ($25\% - 65\%$, default $42\% / 58\%$). Split ratio is persisted in `localStorage`. Transitions are automatically disabled during active dragging for zero-latency cursor tracking.
+- **Top-Right Workspace Action Navbar:**
+  - `[+ New Note]`: Rendered when the left drawer is collapsed.
+  - `[Restore Previous Version]`: Amber icon button with custom tooltip, visible when the Enhanced panel is open and a previous version exists.
+  - `[Discuss in Chat]`: Teal accent button with custom tooltip, visible when enhanced content exists.
+  - `[Enhanced Panel Toggle]`: Mirrored `SidebarSimple` (`rotate-180`, weight `fill` when open) anchored at the far right with `"Show/Hide Enhanced Panel"` tooltip.
+- **Decluttered Enhanced Notes Header:** Confined strictly to **`ENHANCED` + Mode Chip** on the left and the 3 document-level icons (**Preview/Edit**, **Copy Markdown**, **Save as PDF**) on the right.
+- **Mode Chip Text Overflow Safeguard:** Framework chips use `whitespace-nowrap font-mono text-[10px] px-2.5 py-0.5 rounded-full` with relaxed width caps and a `title={frameworkName}` tooltip fallback.
+- **Active Parent Folder Cue:** When an active note resides inside a collapsed folder, the folder row receives a subtle teal background and border highlight (`bg-osmo-teal/10 border-osmo-teal/30`) so users instantly spot where the active note belongs.
+- **Clean Typography Info Cards:** Empty state info cards (`Zero Friction` & `Version Safe`) render with clean typography without emoji or flash/shield icons.
 
 ---
 
