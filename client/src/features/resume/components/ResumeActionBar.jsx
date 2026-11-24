@@ -110,14 +110,14 @@ export default function ResumeActionBar({
 
     setInput("");
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = "40px";
     }
   };
 
   const handleInputResize = (e) => {
     setInput(e.target.value);
-    e.target.style.height = "auto";
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+    e.target.style.height = "40px";
+    e.target.style.height = `${Math.max(40, Math.min(e.target.scrollHeight, 120))}px`;
   };
 
   return (
@@ -128,9 +128,9 @@ export default function ResumeActionBar({
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/90 hover:text-white transition-all shadow-sm"
+            className="h-10 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/90 hover:text-white transition-all shadow-sm flex items-center gap-1.5 shrink-0"
           >
-            <ActiveIcon size={14} className="text-[#ffbd2e]" weight="bold" />
+            <ActiveIcon size={15} className="text-[#ffbd2e]" weight="bold" />
             <span className="hidden sm:inline">{activeModeConfig.label}</span>
             <CaretUp size={12} className="text-white/40" />
           </button>
@@ -168,7 +168,7 @@ export default function ResumeActionBar({
         </div>
 
         {/* Text Input Area */}
-        <div className="flex-1 min-w-0 relative">
+        <div className="flex-1 min-w-0 relative flex items-center">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -176,7 +176,7 @@ export default function ResumeActionBar({
             onChange={handleInputResize}
             onKeyDown={handleKeyDown}
             placeholder={activeModeConfig.placeholder}
-            className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs sm:text-sm text-white placeholder-white/40 focus:outline-none focus:border-[#ffbd2e]/60 focus:bg-white/[0.08] transition-colors resize-none leading-relaxed max-h-[120px] overflow-y-auto"
+            className="w-full h-10 min-h-[40px] max-h-[120px] px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs sm:text-sm text-white placeholder-white/40 focus:outline-none focus:border-[#ffbd2e]/60 focus:bg-white/[0.08] transition-colors resize-none leading-normal overflow-y-auto block"
           />
         </div>
 
@@ -185,7 +185,7 @@ export default function ResumeActionBar({
           <button
             type="button"
             onClick={onStopStreaming}
-            className="p-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors shrink-0 shadow-sm"
+            className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors shrink-0 shadow-sm flex items-center justify-center"
             title="Stop generating"
           >
             <Stop size={16} weight="bold" />
@@ -195,7 +195,7 @@ export default function ResumeActionBar({
             type="button"
             onClick={handleSubmit}
             disabled={!input.trim() && selectedMode !== "audit"}
-            className="p-2.5 rounded-xl bg-[#ffbd2e] text-black hover:bg-[#ffbd2e]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 shadow-md shadow-[#ffbd2e]/10"
+            className="w-10 h-10 rounded-xl bg-[#ffbd2e] text-black hover:bg-[#ffbd2e]/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 shadow-md shadow-[#ffbd2e]/10 flex items-center justify-center"
             title="Send Message"
           >
             <PaperPlaneRight size={16} weight="fill" />

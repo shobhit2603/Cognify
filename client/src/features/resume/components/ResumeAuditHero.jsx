@@ -51,76 +51,79 @@ export default function ResumeAuditHero({
     return (
       <div
         onClick={onToggleExpand}
-        className="sticky top-0 z-20 px-4 py-2.5 bg-[#121215]/95 backdrop-blur-md border-b border-white/10 flex items-center justify-between cursor-pointer hover:bg-[#16161a] transition-all select-none shadow-md"
+        className="sticky top-0 z-20 px-4 py-2.5 bg-[#121215]/95 backdrop-blur-md border-b border-white/10 cursor-pointer hover:bg-[#16161a] transition-all select-none shadow-md"
       >
-        <div className="flex items-center gap-3 min-w-0">
-          {isAuditing ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#ffbd2e]/40 bg-[#ffbd2e]/10 text-xs font-mono font-bold text-[#ffbd2e] shrink-0">
-              <CircleNotch size={14} className="animate-spin text-[#ffbd2e]" />
-              <span>Analyzing...</span>
-            </div>
-          ) : isPendingAudit ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/20 bg-white/5 text-xs font-mono font-bold text-white/60 shrink-0">
-              <ChartBar size={14} />
-              <span>ATS Ready</span>
-            </div>
-          ) : (
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono font-bold shrink-0 ${getScoreColor(
-                score
-              )}`}
-            >
-              <ChartBar size={14} weight="bold" />
-              <span>ATS {score}%</span>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 text-xs text-white/70 truncate">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
             {isAuditing ? (
-              <span className="text-[#ffbd2e] animate-pulse">Running 4-D ATS diagnostic...</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#ffbd2e]/40 bg-[#ffbd2e]/10 text-xs font-mono font-bold text-[#ffbd2e] shrink-0">
+                <CircleNotch size={14} className="animate-spin text-[#ffbd2e]" />
+                <span>Analyzing...</span>
+              </div>
             ) : isPendingAudit ? (
-              <span className="text-white/60">Audit ready to be executed</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/20 bg-white/5 text-xs font-mono font-bold text-white/60 shrink-0">
+                <ChartBar size={14} />
+                <span>ATS Ready</span>
+              </div>
             ) : (
-              <>
-                <span className="font-medium text-white/90">{getScoreText(score)}</span>
-                <span className="text-white/20">•</span>
-                <span className="text-white/50 truncate">
-                  {audit.keyProblems?.length || 0} issues detected ·{" "}
-                  {audit.actionableRecommendations?.length || 0} recommendations
-                </span>
-                {audit.targetRole && (
-                  <>
-                    <span className="text-white/20">•</span>
-                    <span className="text-[#ffbd2e] truncate font-medium">
-                      Target: {audit.targetRole}
-                    </span>
-                  </>
-                )}
-              </>
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono font-bold shrink-0 ${getScoreColor(
+                  score
+                )}`}
+              >
+                <ChartBar size={14} weight="bold" />
+                <span>ATS {score}%</span>
+              </div>
             )}
-          </div>
-        </div>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand();
-          }}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-[#ffbd2e] hover:bg-[#ffbd2e]/10 border border-[#ffbd2e]/20 transition-colors shrink-0"
-        >
-          <span>Expand Report</span>
-          <CaretDown size={13} weight="bold" />
-        </button>
+            <div className="flex items-center gap-2 text-xs text-white/70 truncate">
+              {isAuditing ? (
+                <span className="text-[#ffbd2e] animate-pulse">Running 4-D ATS diagnostic...</span>
+              ) : isPendingAudit ? (
+                <span className="text-white/60">Audit ready to be executed</span>
+              ) : (
+                <>
+                  <span className="font-medium text-white/90">{getScoreText(score)}</span>
+                  <span className="text-white/20">•</span>
+                  <span className="text-white/50 truncate">
+                    {audit.keyProblems?.length || 0} issues detected ·{" "}
+                    {audit.actionableRecommendations?.length || 0} recommendations
+                  </span>
+                  {audit.targetRole && (
+                    <>
+                      <span className="text-white/20">•</span>
+                      <span className="text-[#ffbd2e] truncate font-medium">
+                        Target: {audit.targetRole}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleExpand();
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-[#ffbd2e] hover:bg-[#ffbd2e]/10 border border-[#ffbd2e]/20 transition-colors shrink-0"
+          >
+            <span>Expand Report</span>
+            <CaretDown size={13} weight="bold" />
+          </button>
+        </div>
       </div>
     );
   }
 
   // ── Expanded Full Audit Card ──
   return (
-    <div className="border-b border-white/10 bg-[#121215] p-5 sm:p-6 space-y-6 animate-fadeIn select-none">
-      {/* ── Top Bar: Gauge & Headline ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="bg-[#121215] p-5 sm:p-6 animate-fadeIn select-none">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* ── Top Bar: Gauge & Headline ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           {/* Radial Score Meter */}
           <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
@@ -406,6 +409,7 @@ export default function ResumeAuditHero({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

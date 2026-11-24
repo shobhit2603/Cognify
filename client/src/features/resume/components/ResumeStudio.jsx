@@ -397,29 +397,34 @@ export default function ResumeStudio() {
                 isDragging ? "" : "transition-[width] duration-300 ease-in-out"
               }`}
             >
-              {/* Collapsible Top ATS Audit Card */}
-              {activeResume?.latestAudit && (
-                <div className="shrink-0 max-h-[50%] overflow-y-auto">
-                  <ResumeAuditHero
-                    audit={activeResume.latestAudit}
-                    isExpanded={isAuditExpanded}
-                    onToggleExpand={() => setIsAuditExpanded((prev) => !prev)}
-                    onReAudit={handleReAudit}
-                    isAuditing={isAuditing}
+              {/* Unified Scrollable Center Workspace */}
+              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+                {/* Collapsible Top ATS Audit Card */}
+                {activeResume?.latestAudit && (
+                  <div className="shrink-0 border-b border-white/10">
+                    <ResumeAuditHero
+                      audit={activeResume.latestAudit}
+                      isExpanded={isAuditExpanded}
+                      onToggleExpand={() => setIsAuditExpanded((prev) => !prev)}
+                      onReAudit={handleReAudit}
+                      isAuditing={isAuditing}
+                    />
+                  </div>
+                )}
+
+                {/* Interactive Chat Stream */}
+                <div className="flex-1 flex flex-col min-h-0">
+                  <ResumeChatFeed
+                    messages={activeResume.messages || []}
+                    streamedText={streamedText}
+                    isStreaming={isStreaming}
+                    onSelectPrompt={handleSelectStarterPrompt}
                   />
                 </div>
-              )}
-
-              {/* Interactive Chat Stream */}
-              <ResumeChatFeed
-                messages={activeResume.messages || []}
-                streamedText={streamedText}
-                isStreaming={isStreaming}
-                onSelectPrompt={handleSelectStarterPrompt}
-              />
+              </div>
 
               {/* Scoped Bottom Action Bar */}
-              <div className="shrink-0">
+              <div className="shrink-0 border-t border-white/10 bg-[#0d0d0f]">
                 <ResumeActionBar
                   onSendMessage={handleSendMessage}
                   isStreaming={isStreaming}

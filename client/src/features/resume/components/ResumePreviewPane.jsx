@@ -111,11 +111,13 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
               <p className="text-xs">Loading PDF document...</p>
             </div>
           ) : blobUrl ? (
-            <iframe
-              src={`${blobUrl}#toolbar=0&navpanes=0`}
-              title="Resume PDF Document"
-              className="w-full h-full border-none bg-[#111114]"
-            />
+            <div className="w-full h-full flex items-center justify-center bg-[#111114] overflow-hidden">
+              <iframe
+                src={`${blobUrl}#toolbar=0&navpanes=0&view=FitH`}
+                title="Resume PDF Document"
+                className="w-full h-full border-none bg-[#111114]"
+              />
+            </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-6 text-center text-xs text-white/40 gap-3 bg-[#111114]">
               <p>{isPdfError ? "Failed to load PDF preview." : "PDF preview could not be loaded."}</p>
@@ -131,7 +133,7 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
           )
         ) : (
           /* Parsed Structure Tab */
-          <div className="h-full overflow-y-auto p-5 space-y-6 text-white text-xs leading-relaxed">
+          <div className="h-full overflow-y-auto p-5 space-y-6 text-white text-xs leading-relaxed max-w-2xl mx-auto">
             {/* Contact Information */}
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold text-[#ffbd2e]">
