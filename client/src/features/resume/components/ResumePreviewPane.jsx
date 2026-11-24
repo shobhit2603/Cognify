@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   FilePdf,
   DownloadSimple,
@@ -9,13 +10,34 @@ import {
   Phone,
   LinkedinLogo,
   GithubLogo,
-  Buildings,
-  GraduationCap,
-  Sparkle,
+  CircleNotch,
+  ArrowClockwise,
 } from "@phosphor-icons/react";
+import { axiosInstance } from "../../../lib/axios";
 
 export default function ResumePreviewPane({ resume, isDragging = false }) {
   const [activeTab, setActiveTab] = useState("pdf"); // "pdf" | "parsed"
+
+  const resumeId = resume?._id;
+
+  const {
+    data: blobUrl,
+    isLoading: isLoadingPdf,
+    isError: isPdfError,
+    refetch: refetchPdf,
+  } = useQuery({
+    queryKey: ["resume-pdf-blob", resumeId],
+    queryFn: async () => {
+      if (!resumeId) return null;
+      const response = await axiosInstance.get(`/resumes/${resumeId}/file`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      return URL.createObjectURL(blob);
+    },
+    enabled: !!resumeId,
+    staleTime: 1000 * 60 * 15,
+  });
 
   if (!resume) {
     return (
@@ -27,15 +49,6 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
 
   const parsed = resume.parsedSections || {};
   const contact = parsed.contactInfo || {};
-
-  // Construct secure file URL for the iframe
-  const serverOrigin =
-    typeof window !== "undefined"
-      ? (process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000")
-      : "";
-  const pdfViewUrl = resume._id
-    ? `${serverOrigin}/api/v1/resumes/${resume._id}/file`
-    : resume.fileUrl;
 
   return (
     <div className="h-full flex flex-col bg-[#0e0e11] select-none md:select-text overflow-hidden">
@@ -70,9 +83,9 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
         </div>
 
         {/* Download Button */}
-        {pdfViewUrl && (
+        {(blobUrl || resume.fileUrl) && (
           <a
-            href={pdfViewUrl}
+            href={blobUrl || resume.fileUrl}
             target="_blank"
             rel="noreferrer"
             download={resume.originalName || "resume.pdf"}
@@ -92,15 +105,28 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
         }`}
       >
         {activeTab === "pdf" ? (
-          pdfViewUrl ? (
+          isLoadingPdf ? (
+            <div className="h-full flex flex-col items-center justify-center gap-3 text-white/50 bg-[#111114]">
+              <CircleNotch size={28} className="animate-spin text-[#ffbd2e]" />
+              <p className="text-xs">Loading PDF document...</p>
+            </div>
+          ) : blobUrl ? (
             <iframe
-              src={`${pdfViewUrl}#toolbar=0&navpanes=0`}
+              src={`${blobUrl}#toolbar=0&navpanes=0`}
               title="Resume PDF Document"
               className="w-full h-full border-none bg-[#111114]"
             />
           ) : (
-            <div className="h-full flex items-center justify-center p-6 text-center text-xs text-white/40">
-              <p>PDF URL is not available.</p>
+            <div className="h-full flex flex-col items-center justify-center p-6 text-center text-xs text-white/40 gap-3 bg-[#111114]">
+              <p>{isPdfError ? "Failed to load PDF preview." : "PDF preview could not be loaded."}</p>
+              <button
+                type="button"
+                onClick={() => refetchPdf()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-medium transition-colors"
+              >
+                <ArrowClockwise size={13} />
+                <span>Retry</span>
+              </button>
             </div>
           )
         ) : (

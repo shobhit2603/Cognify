@@ -117,7 +117,34 @@ export default function ResumeStudio() {
   const activeResumeId = urlResumeId || (!isUploadMode && resumes[0]?._id) || null;
   const { data: activeResume, isLoading: isLoadingActiveResume } = useResume(activeResumeId);
 
-  const { uploadResume, updateTitle, deleteResume, runAudit, isAuditing } = useResumeMutations();
+  const {
+    uploadResume,
+    isUploading,
+    updateTitle,
+    deleteResume,
+    runAudit,
+    isAuditing,
+  } = useResumeMutations();
+
+  // ── Auto-Run Audit For Un-audited Resumes ─────────────────────────────────
+  const hasTriggeredAuditRef = useRef(new Set());
+  useEffect(() => {
+    if (
+      activeResume?._id &&
+      !activeResume.latestAudit?.analyzedAt &&
+      !isAuditing &&
+      !hasTriggeredAuditRef.current.has(activeResume._id)
+    ) {
+      hasTriggeredAuditRef.current.add(activeResume._id);
+      runAudit({
+        id: activeResume._id,
+        targetRole: activeResume.latestAudit?.targetRole || "",
+        jobDescription: activeResume.latestAudit?.targetJobDescription || "",
+      }).catch((err) => {
+        console.warn("[Resume Studio] Auto-audit failed:", err?.message);
+      });
+    }
+  }, [activeResume, isAuditing, runAudit]);
 
   // ── Streaming Chat State ──────────────────────────────────────────────────
   const [streamedText, setStreamedText] = useState("");
@@ -163,16 +190,21 @@ export default function ResumeStudio() {
 
   // ── Upload Handler ────────────────────────────────────────────────────────
   const handleUpload = async ({ file, title, targetRole }) => {
-    const created = await uploadResume({ file, title });
-    if (created?._id) {
-      handleSelectResume(created._id);
+    try {
+      const res = await uploadResume({ file, title });
+      const created = res?.data || res;
+      if (created?._id) {
+        handleSelectResume(created._id);
 
-      // Trigger automatic initial audit in background
-      try {
-        await runAudit({ id: created._id, targetRole });
-      } catch (auditErr) {
-        console.warn("[Resume Studio] Initial audit trigger warning:", auditErr.message);
+        // Trigger automatic initial audit in background
+        try {
+          await runAudit({ id: created._id, targetRole });
+        } catch (auditErr) {
+          console.warn("[Resume Studio] Initial audit trigger warning:", auditErr?.message);
+        }
       }
+    } catch (err) {
+      console.error("[Resume Studio] Upload failed:", err);
     }
   };
 
@@ -351,7 +383,7 @@ export default function ResumeStudio() {
         {/* ── Studio Canvas / Split View ── */}
         {isUploadMode || !activeResume ? (
           <div className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center">
-            <ResumeUploadZone onUpload={handleUpload} />
+            <ResumeUploadZone onUpload={handleUpload} isUploading={isUploading} />
           </div>
         ) : (
           <div
