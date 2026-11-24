@@ -40,7 +40,7 @@ function EditPresetDialog({ onClose, preset, onSave, onDelete, canDelete }) {
       <div className="w-full max-w-lg bg-[#18181b] border border-white/10 rounded-2xl shadow-2xl p-6 text-white">
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <Sparkle size={20} className="text-osmo-lime" weight="fill" />
+            <Sparkle size={20} className="text-osmo-teal" weight="fill" />
             <h3 className="text-base font-semibold text-white">Customize Enhancement Preset</h3>
           </div>
           <button
@@ -63,7 +63,7 @@ function EditPresetDialog({ onClose, preset, onSave, onDelete, canDelete }) {
               placeholder="e.g. Study Guide, System Architecture..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-lime/70 text-sm"
+              className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-teal/70 text-sm"
             />
           </div>
 
@@ -77,7 +77,7 @@ function EditPresetDialog({ onClose, preset, onSave, onDelete, canDelete }) {
               placeholder="e.g. Focus on definitions and review questions"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-lime/70 text-sm"
+              className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-teal/70 text-sm"
             />
           </div>
 
@@ -91,7 +91,7 @@ function EditPresetDialog({ onClose, preset, onSave, onDelete, canDelete }) {
               placeholder="Special instructions for how the AI should format and structure this note style..."
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-lime/70 text-xs resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-teal/70 text-xs resize-none"
             />
             <p className="text-[11px] text-white/40 mt-1">
               These guidelines are sent alongside your raw notes whenever you select this preset chip.
@@ -126,7 +126,7 @@ function EditPresetDialog({ onClose, preset, onSave, onDelete, canDelete }) {
               <button
                 type="submit"
                 disabled={!name.trim()}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-osmo-lime text-black hover:bg-osmo-lime/90 transition-all shadow-md shadow-osmo-lime/20"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-osmo-teal text-black hover:bg-osmo-teal/90 transition-all shadow-md shadow-osmo-teal/20"
               >
                 Save Preset
               </button>

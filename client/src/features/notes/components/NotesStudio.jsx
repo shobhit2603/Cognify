@@ -441,7 +441,7 @@ export default function NotesStudio() {
               title="Drag to resize panels"
               className="hidden md:flex w-2.5 -mx-1.5 cursor-col-resize z-20 items-center justify-center group shrink-0 relative select-none hover:bg-white/5"
             >
-              <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-lime group-hover:h-14 transition-all" />
+              <div className="w-1 h-10 rounded-full bg-white/20 group-hover:bg-osmo-teal group-hover:h-14 transition-all" />
             </div>
 
             {/* Right Column: Live Enhanced Output (Extends cleanly to bottom of viewport) */}
@@ -465,7 +465,7 @@ export default function NotesStudio() {
         ) : (
           /* Empty Workspace (no notes in user account) */
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none">
-            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-osmo-lime mb-4 shadow-inner">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-osmo-teal mb-4 shadow-inner">
               <FileText size={32} weight="duotone" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">
@@ -478,7 +478,7 @@ export default function NotesStudio() {
             <button
               type="button"
               onClick={() => handleCreateNote()}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-lime text-black font-semibold text-xs hover:bg-osmo-lime/90 transition-all shadow-md shadow-osmo-lime/20"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-osmo-teal text-black font-semibold text-xs hover:bg-osmo-teal/90 transition-all shadow-md shadow-osmo-teal/20"
             >
               <Plus size={15} weight="bold" />
               <span>Create First Note</span>

@@ -32,7 +32,7 @@ export default function MoveNoteModal({ isOpen, onClose, folders = [], currentFo
       <div className="w-full max-w-sm bg-[#18181b] border border-white/10 rounded-2xl shadow-2xl p-5 text-white">
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <FolderSimple size={20} className="text-osmo-lime" weight="bold" />
+            <FolderSimple size={20} className="text-osmo-teal" weight="bold" />
             <h3 className="text-base font-semibold text-white">Move Note</h3>
           </div>
           <button
@@ -50,7 +50,7 @@ export default function MoveNoteModal({ isOpen, onClose, folders = [], currentFo
             onClick={() => setSelectedFolderId("null")}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors text-left ${
               selectedFolderId === "null"
-                ? "bg-osmo-lime/10 text-osmo-lime border border-osmo-lime/30 font-medium"
+                ? "bg-osmo-teal/10 text-osmo-teal border border-osmo-teal/30 font-medium"
                 : "text-white/80 hover:bg-white/5 border border-transparent"
             }`}
           >
@@ -71,7 +71,7 @@ export default function MoveNoteModal({ isOpen, onClose, folders = [], currentFo
                 onClick={() => setSelectedFolderId(folder._id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors text-left ${
                   isSelected
-                    ? "bg-osmo-lime/10 text-osmo-lime border border-osmo-lime/30 font-medium"
+                    ? "bg-osmo-teal/10 text-osmo-teal border border-osmo-teal/30 font-medium"
                     : "text-white/80 hover:bg-white/5 border border-transparent"
                 }`}
               >
@@ -97,7 +97,7 @@ export default function MoveNoteModal({ isOpen, onClose, folders = [], currentFo
             type="button"
             disabled={isSubmitting}
             onClick={handleMove}
-            className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-osmo-lime text-black hover:bg-osmo-lime/90 disabled:opacity-50"
+            className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-osmo-teal text-black hover:bg-osmo-teal/90 disabled:opacity-50"
           >
             {isSubmitting ? "Moving..." : "Move"}
           </button>

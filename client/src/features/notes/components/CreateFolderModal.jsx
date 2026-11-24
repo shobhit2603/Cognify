@@ -80,7 +80,7 @@ function CreateFolderDialog({ onClose, onSubmit, initialFolder }) {
               placeholder="e.g. Work, College, Project ideas..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-lime/70 focus:ring-1 focus:ring-osmo-lime/50 text-sm"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-osmo-teal/70 focus:ring-1 focus:ring-osmo-teal/50 text-sm"
             />
           </div>
 
@@ -114,7 +114,7 @@ function CreateFolderDialog({ onClose, onSubmit, initialFolder }) {
             <button
               type="submit"
               disabled={!name.trim() || isSubmitting}
-              className="px-5 py-2 rounded-xl text-sm font-semibold bg-osmo-lime text-black hover:bg-osmo-lime/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-osmo-lime/20"
+              className="px-5 py-2 rounded-xl text-sm font-semibold bg-osmo-teal text-black hover:bg-osmo-teal/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-osmo-teal/20"
             >
               {isSubmitting ? "Saving..." : initialFolder ? "Update Folder" : "Create Folder"}
             </button>
