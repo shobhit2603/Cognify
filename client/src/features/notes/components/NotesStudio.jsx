@@ -146,14 +146,20 @@ export default function NotesStudio() {
   const activeNote = singleNote || notes.find((n) => n._id === activeNoteId) || null;
 
   // Enhanced panel visibility: smart default based on whether active note has enhanced content
-  const [isEnhancedPanelOpen, setIsEnhancedPanelOpen] = useState(false);
+  const [panelToggleMap, setPanelToggleMap] = useState({});
 
-  // Sync smart default whenever switching active notes
-  useEffect(() => {
-    if (activeNote) {
-      setIsEnhancedPanelOpen(Boolean(activeNote.enhancedContent?.trim()));
-    }
-  }, [activeNote?._id]);
+  const isEnhancedPanelOpen =
+    activeNoteId && activeNoteId in panelToggleMap
+      ? panelToggleMap[activeNoteId]
+      : Boolean(activeNote?.enhancedContent?.trim());
+
+  const handleToggleEnhancedPanel = () => {
+    if (!activeNoteId) return;
+    setPanelToggleMap((prev) => ({
+      ...prev,
+      [activeNoteId]: !isEnhancedPanelOpen,
+    }));
+  };
 
   const handleSelectNote = (id) => {
     if (isEnhancing && abortControllerRef.current) {
@@ -240,7 +246,9 @@ Please give me a concise breakdown and let me know what questions you have or ho
   const handleEnhance = async () => {
     if (!activeNote || !activeNote.originalContent?.trim() || isEnhancing) return;
 
-    setIsEnhancedPanelOpen(true);
+    if (activeNote._id) {
+      setPanelToggleMap((prev) => ({ ...prev, [activeNote._id]: true }));
+    }
     setIsEnhancing(true);
     accumulatedTextRef.current = "";
     setStreamedText("");
@@ -481,7 +489,7 @@ Please give me a concise breakdown and let me know what questions you have or ho
             >
               <button
                 type="button"
-                onClick={() => setIsEnhancedPanelOpen((prev) => !prev)}
+                onClick={handleToggleEnhancedPanel}
                 className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
               >
                 <SidebarSimple
