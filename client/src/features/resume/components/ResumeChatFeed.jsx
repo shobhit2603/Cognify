@@ -23,15 +23,15 @@ function UserMessageBubble({ msg }) {
   const isLongJd = jdLines.length > 4 || jdText.length > 250;
 
   return (
-    <div className="flex justify-end">
-      <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-sm bg-[#ffbd2e] text-black px-4 py-3 shadow-md space-y-2">
-        <p className="text-xs sm:text-sm font-medium whitespace-pre-wrap leading-relaxed">
+    <div className="flex justify-end min-w-0">
+      <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-sm bg-[#ffbd2e] text-black px-4 py-3 shadow-md space-y-2 min-w-0 overflow-x-hidden break-words [overflow-wrap:anywhere]">
+        <p className="text-xs sm:text-sm font-medium whitespace-pre-wrap leading-relaxed break-words [overflow-wrap:anywhere]">
           {msg.content}
         </p>
 
         {/* Collapsible Job Description Container */}
         {jdText && (
-          <div className="rounded-xl bg-black/10 border border-black/10 p-2.5 text-xs text-black/80 space-y-1">
+          <div className="rounded-xl bg-black/10 border border-black/10 p-2.5 text-xs text-black/80 space-y-1 min-w-0 overflow-x-hidden break-words [overflow-wrap:anywhere]">
             <div className="flex items-center justify-between font-mono text-[10px] uppercase font-bold tracking-wider text-black/60">
               <span className="flex items-center gap-1">
                 <Target size={12} weight="bold" /> Attached Job Description
@@ -49,7 +49,7 @@ function UserMessageBubble({ msg }) {
             </div>
 
             <p
-              className={`font-mono text-[11px] leading-relaxed whitespace-pre-wrap ${
+              className={`font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
                 !isJdExpanded && isLongJd ? "line-clamp-3" : ""
               }`}
             >
@@ -62,6 +62,54 @@ function UserMessageBubble({ msg }) {
   );
 }
 
+const markdownRenderComponents = {
+  p: ({ children }) => (
+    <p className="mb-2 leading-relaxed break-words [overflow-wrap:anywhere]">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc list-inside space-y-1 mb-2 break-words [overflow-wrap:anywhere]">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal list-inside space-y-1 mb-2 break-words [overflow-wrap:anywhere]">{children}</ol>
+  ),
+  li: ({ children }) => (
+    <li className="leading-relaxed break-words [overflow-wrap:anywhere]">{children}</li>
+  ),
+  h3: ({ children }) => (
+    <h3 className="text-xs sm:text-sm font-bold text-white mt-3 mb-1.5 flex items-center gap-1.5 break-words [overflow-wrap:anywhere]">
+      {children}
+    </h3>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-white break-words [overflow-wrap:anywhere]">{children}</strong>
+  ),
+  code: ({ children }) => (
+    <code className="px-1.5 py-0.5 rounded-md bg-white/10 text-[#ffbd2e] font-mono text-[11px] break-all whitespace-pre-wrap">
+      {children}
+    </code>
+  ),
+  a: ({ children, href }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-[#ffbd2e] underline hover:text-[#ffbd2e]/80 break-all [overflow-wrap:anywhere]"
+    >
+      {children}
+    </a>
+  ),
+  table: ({ children }) => (
+    <div className="overflow-x-auto my-2 max-w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <table className="min-w-full divide-y divide-white/10 text-xs">{children}</table>
+    </div>
+  ),
+  pre: ({ children }) => (
+    <pre className="p-3 rounded-xl bg-black/40 border border-white/10 overflow-x-auto my-2 text-xs font-mono [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {children}
+    </pre>
+  ),
+};
+
 function AssistantMessageBubble({ msg }) {
   const [copied, setCopied] = useState(false);
 
@@ -73,17 +121,17 @@ function AssistantMessageBubble({ msg }) {
   };
 
   return (
-    <div className="flex items-start gap-3 group">
+    <div className="flex items-start gap-3 group min-w-0">
       <div className="w-8 h-8 rounded-xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center shrink-0 text-[#ffbd2e] shadow-inner mt-0.5">
         <BriefcaseMetal size={16} weight="duotone" />
       </div>
 
-      <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-[#141418] border border-white/10 p-4 shadow-md space-y-2">
+      <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-[#141418] border border-white/10 p-4 shadow-md space-y-2 overflow-x-hidden">
         <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-white/90">Resume Studio AI</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-semibold text-white/90 truncate">Resume Studio AI</span>
             {msg.mode && msg.mode !== "general" && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] border border-[#ffbd2e]/20 uppercase">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] border border-[#ffbd2e]/20 uppercase shrink-0">
                 {msg.mode}
               </span>
             )}
@@ -91,33 +139,17 @@ function AssistantMessageBubble({ msg }) {
           <button
             type="button"
             onClick={handleCopy}
-            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-white/40 hover:text-white hover:bg-white/5 transition-all"
+            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-white/40 hover:text-white hover:bg-white/5 transition-all shrink-0"
             title="Copy response"
           >
             {copied ? <Check size={13} className="text-[#ffbd2e]" /> : <Copy size={13} />}
           </button>
         </div>
 
-        <div className="prose prose-invert prose-xs max-w-none text-white/80 leading-relaxed space-y-2">
+        <div className="prose prose-invert prose-xs max-w-none text-white/80 leading-relaxed space-y-2 min-w-0 overflow-x-hidden break-words [overflow-wrap:anywhere]">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
-            components={{
-              p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-              ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
-              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-              h3: ({ children }) => (
-                <h3 className="text-xs sm:text-sm font-bold text-white mt-3 mb-1.5 flex items-center gap-1.5">
-                  {children}
-                </h3>
-              ),
-              strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-              code: ({ children }) => (
-                <code className="px-1.5 py-0.5 rounded-md bg-white/10 text-[#ffbd2e] font-mono text-[11px]">
-                  {children}
-                </code>
-              ),
-            }}
+            components={markdownRenderComponents}
           >
             {msg.content}
           </ReactMarkdown>
@@ -125,7 +157,7 @@ function AssistantMessageBubble({ msg }) {
 
         {/* Structured Suggestions if present */}
         {msg.suggestions && msg.suggestions.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-white/5">
+          <div className="space-y-2 pt-2 border-t border-white/5 min-w-0 overflow-x-hidden">
             {msg.suggestions.map((s, idx) => (
               <BeforeAfterDiffCard
                 key={idx}
@@ -228,9 +260,9 @@ export default function ResumeChatFeed({
       ref={scrollContainerRef}
       onScroll={handleScroll}
       data-lenis-prevent
-      className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-6"
+      className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden p-4 sm:p-6 select-text"
     >
-      <div className="w-full max-w-4xl mx-auto space-y-6 flex flex-col justify-start pb-4">
+      <div className="w-full max-w-4xl mx-auto space-y-6 flex flex-col justify-start pb-4 min-w-0 overflow-x-hidden">
         {chatMessages.length === 0 && !streamedText && !isStreaming && (
           <div className="py-10 text-center space-y-6 max-w-lg mx-auto">
             <div className="w-12 h-12 rounded-2xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center text-[#ffbd2e] mx-auto shadow-inner">
@@ -274,46 +306,30 @@ export default function ResumeChatFeed({
 
         {/* Streaming Assistant Response with identical Markdown typography */}
         {isStreaming && (
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center shrink-0 text-[#ffbd2e] shadow-inner mt-0.5">
               <CircleNotch size={16} className="animate-spin" />
             </div>
-            <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-[#141418] border border-white/10 p-4 shadow-md space-y-2">
+            <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-[#141418] border border-white/10 p-4 shadow-md space-y-2 overflow-x-hidden">
               <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-white/90">Resume Studio AI</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-semibold text-white/90 truncate">Resume Studio AI</span>
                   {streamingMode && streamingMode !== "general" && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] border border-[#ffbd2e]/20 uppercase">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] border border-[#ffbd2e]/20 uppercase shrink-0">
                       {streamingMode}
                     </span>
                   )}
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] animate-pulse">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] animate-pulse shrink-0">
                     generating...
                   </span>
                 </div>
               </div>
 
-              <div className="prose prose-invert prose-xs max-w-none text-white/80 leading-relaxed space-y-2">
+              <div className="prose prose-invert prose-xs max-w-none text-white/80 leading-relaxed space-y-2 min-w-0 overflow-x-hidden break-words [overflow-wrap:anywhere]">
                 {streamedText ? (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
-                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                      h3: ({ children }) => (
-                        <h3 className="text-xs sm:text-sm font-bold text-white mt-3 mb-1.5 flex items-center gap-1.5">
-                          {children}
-                        </h3>
-                      ),
-                      strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-                      code: ({ children }) => (
-                        <code className="px-1.5 py-0.5 rounded-md bg-white/10 text-[#ffbd2e] font-mono text-[11px]">
-                          {children}
-                        </code>
-                      ),
-                    }}
+                    components={markdownRenderComponents}
                   >
                     {streamedText}
                   </ReactMarkdown>

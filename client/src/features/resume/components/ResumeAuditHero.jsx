@@ -45,8 +45,8 @@ export default function ResumeAuditHero({
   };
 
   return (
-    <div className="p-5 sm:p-8 animate-fadeIn select-text">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="p-5 sm:p-8 animate-fadeIn select-text overflow-x-hidden min-w-0">
+      <div className="max-w-4xl mx-auto space-y-6 min-w-0 overflow-x-hidden">
         {/* ── Top Bar: Gauge & Headline ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/10 shadow-sm">
           <div className="flex items-center gap-4">

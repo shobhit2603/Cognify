@@ -133,7 +133,7 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
           )
         ) : (
           /* Parsed Structure Tab */
-          <div data-lenis-prevent className="h-full overflow-y-auto custom-scrollbar p-5 space-y-6 text-white text-xs leading-relaxed max-w-2xl mx-auto">
+          <div data-lenis-prevent className="h-full overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden p-5 space-y-6 text-white text-xs leading-relaxed max-w-2xl mx-auto">
             {/* Contact Information */}
             <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold text-[#ffbd2e]">

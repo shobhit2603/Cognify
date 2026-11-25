@@ -43,14 +43,14 @@ export default function BeforeAfterDiffCard({
         </button>
       </div>
 
-      <div className="p-3.5 space-y-2.5 text-xs">
+      <div className="p-3.5 space-y-2.5 text-xs min-w-0 overflow-x-hidden">
         {/* Original */}
         {original && (
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <span className="text-[10px] font-mono uppercase text-red-400 font-semibold flex items-center gap-1">
               <span>●</span> Original Bullet
             </span>
-            <p className="p-2.5 rounded-lg bg-red-500/[0.04] border border-red-500/15 text-white/60 line-through">
+            <p className="p-2.5 rounded-lg bg-red-500/[0.04] border border-red-500/15 text-white/60 line-through break-words [overflow-wrap:anywhere]">
               {original}
             </p>
           </div>
@@ -58,11 +58,11 @@ export default function BeforeAfterDiffCard({
 
         {/* Improved */}
         {improved && (
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <span className="text-[10px] font-mono uppercase text-[#ffbd2e] font-semibold flex items-center gap-1">
               <span>●</span> High-Impact Rewrite
             </span>
-            <p className="p-2.5 rounded-lg bg-[#ffbd2e]/[0.08] border border-[#ffbd2e]/25 text-white font-medium leading-relaxed">
+            <p className="p-2.5 rounded-lg bg-[#ffbd2e]/[0.08] border border-[#ffbd2e]/25 text-white font-medium leading-relaxed break-words [overflow-wrap:anywhere]">
               {improved}
             </p>
           </div>
@@ -70,7 +70,7 @@ export default function BeforeAfterDiffCard({
 
         {/* Reason */}
         {reason && (
-          <p className="text-[11px] text-white/50 italic leading-relaxed pt-1 border-t border-white/5">
+          <p className="text-[11px] text-white/50 italic leading-relaxed pt-1 border-t border-white/5 break-words [overflow-wrap:anywhere]">
             <span className="font-semibold text-white/70">Why it works:</span> {reason}
           </p>
         )}

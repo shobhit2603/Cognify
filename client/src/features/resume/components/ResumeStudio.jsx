@@ -440,7 +440,7 @@ export default function ResumeStudio() {
 
         {/* ── Studio Canvas / Split View ── */}
         {isUploadMode || !activeResume ? (
-          <div data-lenis-prevent className="flex-1 overflow-y-auto min-h-0 custom-scrollbar flex items-center justify-center">
+          <div data-lenis-prevent className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex items-center justify-center">
             <ResumeUploadZone onUpload={handleUpload} isUploading={isUploading} />
           </div>
         ) : (
@@ -451,7 +451,7 @@ export default function ResumeStudio() {
             {/* Center Column: ATS Audit + Resume Chat + Scoped Action Bar */}
             <div
               style={{ width: isPreviewOpen ? `${splitPercent}%` : "100%" }}
-              className={`h-full flex flex-col min-w-0 min-h-0 overflow-hidden ${
+              className={`h-full flex flex-col min-w-0 min-h-0 overflow-hidden overflow-x-hidden ${
                 isDragging ? "" : "transition-[width] duration-300 ease-in-out"
               }`}
             >
@@ -515,7 +515,7 @@ export default function ResumeStudio() {
               {centerTab === "audit" && (
                 <div
                   data-lenis-prevent
-                  className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+                  className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   <ResumeAuditHero
                     audit={activeResume?.latestAudit}

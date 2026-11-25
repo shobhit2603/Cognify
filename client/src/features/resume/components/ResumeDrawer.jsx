@@ -123,7 +123,7 @@ export default function ResumeDrawer({
         </div>
 
         {/* ── Chronological Resume List ── */}
-        <div data-lenis-prevent className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 space-y-1">
+        <div data-lenis-prevent className="flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-2 py-2 space-y-1">
           {filteredResumes.length === 0 ? (
             <div className="px-3 py-8 text-center text-xs text-white/40 space-y-2">
               {searchQuery ? (
