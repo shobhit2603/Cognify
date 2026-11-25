@@ -4,9 +4,7 @@ import {
   UploadSimple,
   FilePdf,
   CheckCircle,
-  WarningCircle,
   Sparkle,
-  BriefcaseMetal,
   Target,
   ChartBar,
   CircleNotch,
@@ -63,24 +61,19 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-8 space-y-8 animate-fadeIn">
+    <div className="w-full max-w-2xl mx-auto px-4 py-12 sm:py-16 space-y-8 animate-fadeIn">
       {/* ── Header ── */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 text-[#ffbd2e] text-xs font-medium">
-          <Sparkle size={14} weight="fill" />
-          <span>Module 03 · ATS Resume Studio</span>
-        </div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
           Recruiter-Ready Resume Intelligence
         </h1>
         <p className="text-sm text-white/60 max-w-lg mx-auto leading-relaxed">
-          Upload your PDF resume for an algorithmic 4-dimensional ATS diagnostic, section-level
-          scoring, and conversational bullet rewrites.
+          Upload a PDF resume for instant ATS scoring, keyword gap analysis, and bullet rewrites.
         </p>
       </div>
 
       {/* ── Upload Card ── */}
-      <div className="rounded-2xl border border-white/10 bg-[#121215] p-6 shadow-xl space-y-6">
+      <div className="rounded-2xl border border-white/10 bg-[#121215] p-6 sm:p-8 shadow-xl space-y-6">
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -89,7 +82,7 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-xl p-8 sm:p-10 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+          className={`relative border-2 border-dashed rounded-xl p-10 sm:p-14 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
             dragOver
               ? "border-[#ffbd2e] bg-[#ffbd2e]/5 shadow-lg shadow-[#ffbd2e]/10"
               : selectedFile
@@ -184,36 +177,21 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
         </button>
       </div>
 
-      {/* ── Value Props Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-1.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-white">
-            <ChartBar size={16} className="text-[#ffbd2e]" weight="bold" />
-            <span>4-D ATS Scoring</span>
-          </div>
-          <p className="text-[11px] text-white/50 leading-relaxed">
-            Algorithmic evaluation across formatting, metrics, skills density, and section structure.
-          </p>
+      {/* ── Value Props Strip ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-xs text-white/70">
+          <ChartBar size={16} className="text-[#ffbd2e] shrink-0" weight="bold" />
+          <span className="font-medium text-white/85">4-D ATS Scoring</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-1.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-white">
-            <Target size={16} className="text-[#ffbd2e]" weight="bold" />
-            <span>JD Keyword Matching</span>
-          </div>
-          <p className="text-[11px] text-white/50 leading-relaxed">
-            Paste target job descriptions to identify missing skills and tailor alignment in real time.
-          </p>
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-xs text-white/70">
+          <Target size={16} className="text-[#ffbd2e] shrink-0" weight="bold" />
+          <span className="font-medium text-white/85">JD Gap Analysis</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-1.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-white">
-            <Sparkle size={16} className="text-[#ffbd2e]" weight="bold" />
-            <span>Google X-Y-Z Rewrites</span>
-          </div>
-          <p className="text-[11px] text-white/50 leading-relaxed">
-            Transform passive bullets into high-impact quantified achievements with 1-click copy.
-          </p>
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-xs text-white/70">
+          <Sparkle size={16} className="text-[#ffbd2e] shrink-0" weight="bold" />
+          <span className="font-medium text-white/85">X-Y-Z Rewrites</span>
         </div>
       </div>
     </div>

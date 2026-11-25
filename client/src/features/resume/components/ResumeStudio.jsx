@@ -8,6 +8,8 @@ import {
   ArrowLeft,
   ArrowClockwise,
   BriefcaseMetal,
+  ChartBar,
+  ChatCircleText,
 } from "@phosphor-icons/react";
 import Tooltip from "../../../components/ui/Tooltip";
 import ResumeDrawer from "./ResumeDrawer";
@@ -44,7 +46,7 @@ export default function ResumeStudio() {
   });
 
   const [isUploadMode, setIsUploadMode] = useState(!urlResumeId);
-  const [isAuditExpanded, setIsAuditExpanded] = useState(true);
+  const [centerTab, setCenterTab] = useState("audit"); // "audit" | "chat"
 
   // ── Split Divider Ratio ───────────────────────────────────────────────────
   const [splitPercent, setSplitPercent] = useState(() => {
@@ -158,7 +160,7 @@ export default function ResumeStudio() {
   const handleSelectResume = useCallback(
     (id) => {
       setIsUploadMode(false);
-      setIsAuditExpanded(true);
+      setCenterTab("audit");
       router.replace(`/resume?id=${id}`);
       if (!isPreviewOpen) {
         setIsPreviewOpen(true);
@@ -169,6 +171,7 @@ export default function ResumeStudio() {
 
   const handleStartUpload = () => {
     setIsUploadMode(true);
+    setCenterTab("audit");
     router.replace("/resume");
   };
 
@@ -211,7 +214,7 @@ export default function ResumeStudio() {
   // ── Re-audit Handler ──────────────────────────────────────────────────────
   const handleReAudit = async () => {
     if (!activeResumeId || isAuditing) return;
-    setIsAuditExpanded(true);
+    setCenterTab("audit");
     await runAudit({
       id: activeResumeId,
       targetRole: activeResume?.latestAudit?.targetRole || "",
@@ -223,8 +226,8 @@ export default function ResumeStudio() {
   const handleSendMessage = async ({ message, mode, jobDescription }) => {
     if (!activeResumeId || isStreaming) return;
 
-    // Smart auto-collapse audit report when chatting starts
-    setIsAuditExpanded(false);
+    // Smart auto-switch to chat tab when sending a message
+    setCenterTab("chat");
     setIsStreaming(true);
     setStreamedText("");
 
@@ -269,7 +272,14 @@ export default function ResumeStudio() {
   const handleSelectStarterPrompt = (promptText, mode) => {
     setPromptToInject(promptText);
     setModeToInject(mode);
+    setCenterTab("chat");
   };
+
+  const cleanChatCount = (activeResume?.messages || []).filter(
+    (m) =>
+      m.mode !== "audit" &&
+      !m.content?.toLowerCase().includes("ats optimization audit complete")
+  ).length;
 
   return (
     <div className="flex h-screen w-full bg-[#0d0d0f] text-white overflow-hidden font-sans">
@@ -341,42 +351,43 @@ export default function ResumeStudio() {
               </Tooltip>
             )}
 
+            {/* Right preview panel toggle, divider, and re-audit are ONLY rendered when viewing an active resume */}
             {!isUploadMode && activeResume && (
-              <Tooltip content="Re-run ATS Diagnostic" position="bottom">
-                <button
-                  type="button"
-                  onClick={handleReAudit}
-                  disabled={isAuditing}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 border border-white/10 transition-colors disabled:opacity-40"
+              <>
+                <Tooltip content="Re-run ATS Diagnostic" position="bottom">
+                  <button
+                    type="button"
+                    onClick={handleReAudit}
+                    disabled={isAuditing}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 border border-white/10 transition-colors disabled:opacity-40"
+                  >
+                    <ArrowClockwise size={13} className={isAuditing ? "animate-spin text-[#ffbd2e]" : ""} />
+                    <span className="hidden md:inline">Re-Audit</span>
+                  </button>
+                </Tooltip>
+
+                {/* Subtle Divider */}
+                <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+                {/* Right Preview Panel Toggle Button (Mirrored SidebarSimple) */}
+                <Tooltip
+                  content={isPreviewOpen ? "Hide Resume Preview" : "Show Resume Preview"}
+                  position="bottom"
                 >
-                  <ArrowClockwise size={13} className={isAuditing ? "animate-spin text-[#ffbd2e]" : ""} />
-                  <span className="hidden md:inline">Re-Audit</span>
-                </button>
-              </Tooltip>
+                  <button
+                    type="button"
+                    onClick={handleTogglePreview}
+                    className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    <SidebarSimple
+                      size={18}
+                      weight={isPreviewOpen ? "fill" : "regular"}
+                      className="rotate-180"
+                    />
+                  </button>
+                </Tooltip>
+              </>
             )}
-
-            {/* Subtle Divider */}
-            {(!isDrawerOpen || (!isUploadMode && activeResume)) && (
-              <div className="h-4 w-px bg-white/10 mx-0.5" />
-            )}
-
-            {/* Right Preview Panel Toggle Button (Mirrored SidebarSimple) */}
-            <Tooltip
-              content={isPreviewOpen ? "Hide Resume Preview" : "Show Resume Preview"}
-              position="bottom"
-            >
-              <button
-                type="button"
-                onClick={handleTogglePreview}
-                className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                <SidebarSimple
-                  size={18}
-                  weight={isPreviewOpen ? "fill" : "regular"}
-                  className="rotate-180"
-                />
-              </button>
-            </Tooltip>
           </div>
         </header>
 
@@ -397,31 +408,94 @@ export default function ResumeStudio() {
                 isDragging ? "" : "transition-[width] duration-300 ease-in-out"
               }`}
             >
-              {/* Unified Scrollable Center Workspace */}
-              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-                {/* Collapsible Top ATS Audit Card */}
-                {activeResume?.latestAudit && (
-                  <div className="shrink-0 border-b border-white/10">
-                    <ResumeAuditHero
-                      audit={activeResume.latestAudit}
-                      isExpanded={isAuditExpanded}
-                      onToggleExpand={() => setIsAuditExpanded((prev) => !prev)}
-                      onReAudit={handleReAudit}
-                      isAuditing={isAuditing}
-                    />
-                  </div>
-                )}
+              {/* Sleek Two-Tab Switcher Bar */}
+              <div className="shrink-0 h-11 px-4 border-b border-white/10 bg-[#0e0e11] flex items-center justify-between select-none">
+                <div className="flex items-center gap-2 h-full">
+                  <button
+                    type="button"
+                    onClick={() => setCenterTab("audit")}
+                    className={`flex items-center gap-2 h-full px-3 text-xs font-semibold border-b-2 transition-all ${
+                      centerTab === "audit"
+                        ? "border-[#ffbd2e] text-[#ffbd2e]"
+                        : "border-transparent text-white/50 hover:text-white/80"
+                    }`}
+                  >
+                    <ChartBar size={15} weight={centerTab === "audit" ? "fill" : "regular"} />
+                    <span>ATS Audit Report</span>
+                    {activeResume?.latestAudit?.overallScore !== undefined && (
+                      <span
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold ${
+                          activeResume.latestAudit.overallScore >= 80
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                            : activeResume.latestAudit.overallScore >= 60
+                            ? "bg-[#ffbd2e]/10 text-[#ffbd2e] border border-[#ffbd2e]/30"
+                            : "bg-red-500/10 text-red-400 border border-red-500/30"
+                        }`}
+                      >
+                        {activeResume.latestAudit.overallScore}/100
+                      </span>
+                    )}
+                  </button>
 
-                {/* Interactive Chat Stream */}
-                <div className="flex-1 flex flex-col min-h-0">
+                  <button
+                    type="button"
+                    onClick={() => setCenterTab("chat")}
+                    className={`flex items-center gap-2 h-full px-3 text-xs font-semibold border-b-2 transition-all ${
+                      centerTab === "chat"
+                        ? "border-[#ffbd2e] text-[#ffbd2e]"
+                        : "border-transparent text-white/50 hover:text-white/80"
+                    }`}
+                  >
+                    <ChatCircleText size={15} weight={centerTab === "chat" ? "fill" : "regular"} />
+                    <span>Resume Chat</span>
+                    {cleanChatCount > 0 && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-white/70">
+                        {cleanChatCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {centerTab === "audit" && (
+                  <button
+                    type="button"
+                    onClick={handleReAudit}
+                    disabled={isAuditing}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-white/60 hover:text-white hover:bg-white/5 border border-white/10 transition-colors disabled:opacity-40"
+                  >
+                    <ArrowClockwise size={12} className={isAuditing ? "animate-spin text-[#ffbd2e]" : ""} />
+                    <span>Re-Audit</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Tab 1: Full-Height Structured ATS Audit Report */}
+              {centerTab === "audit" && (
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <ResumeAuditHero
+                    audit={activeResume?.latestAudit}
+                    onReAudit={handleReAudit}
+                    isAuditing={isAuditing}
+                    onOptimizeIssue={(promptText, mode) => {
+                      setPromptToInject(promptText);
+                      setModeToInject(mode || "optimize-section");
+                      setCenterTab("chat");
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Tab 2: Full-Height Conversational Resume Chat */}
+              {centerTab === "chat" && (
+                <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
                   <ResumeChatFeed
-                    messages={activeResume.messages || []}
+                    messages={activeResume?.messages || []}
                     streamedText={streamedText}
                     isStreaming={isStreaming}
                     onSelectPrompt={handleSelectStarterPrompt}
                   />
                 </div>
-              </div>
+              )}
 
               {/* Scoped Bottom Action Bar */}
               <div className="shrink-0 border-t border-white/10 bg-[#0d0d0f]">

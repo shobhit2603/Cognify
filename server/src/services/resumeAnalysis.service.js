@@ -18,7 +18,9 @@ Score the resume across 4 core ATS dimensions on a strict 0-25 scale (total 0-10
 
 If a Job Description is provided, calculate alignment, extract missing critical keywords, and list matched keywords.
 
-CRITICAL: Return ONLY a valid, parseable JSON object matching this exact schema without markdown backticks or explanation:
+CRITICAL FORMATTING RULES:
+- DO NOT use decorative emojis (e.g. 🎯, 📐, ⚡, 🔑, 📋, etc.) anywhere in your output keys, recommendations, or section feedback. Maintain an executive, recruiter-grade, analytical tone with standard technical terminology.
+- Return ONLY a valid, parseable JSON object matching this exact schema without markdown backticks or explanation:
 {
   "overallScore": number, // Sum of subScores (0-100)
   "subScores": {
@@ -45,6 +47,7 @@ You have the complete raw text and parsed sections of the candidate's resume in 
 Assist the candidate with high-impact, professional resume guidance.
 
 RULES:
+- STRICT FORMATTING: DO NOT use decorative emojis (e.g., 🎯, 🚀, 📐, ⚡, 🔑, 📋, etc.) anywhere in headings, bullet points, or responses. Rely on clean Markdown hierarchy (bold headings, concise bullet points, code blocks, and quantified metrics) for a sharp, executive recruiter tone.
 - When the user asks to rewrite, optimize, or improve bullets:
   ALWAYS use the Google X-Y-Z formula: "Accomplished [X] as measured by [Y] by doing [Z]".
   Use strong past-tense action verbs (e.g., Engineered, Spearheaded, Optimized, Orchestrated) instead of passive verbs (Worked on, Assisted, Responsible for).
@@ -200,26 +203,24 @@ ${jobDescription || "No specific job description provided. Audit against modern 
   // Update resume in database
   const updatedResume = await resumeRepository.updateLatestAudit(resumeId, finalAudit);
 
-  // Append audit event message to chat stream
+  // Structured audit event message (clean and emoji-free)
   const auditMessage = {
     role: "assistant",
     mode: "audit",
-    content: `### 🎯 ATS Optimization Audit Complete (Score: ${finalAudit.overallScore}/100)
+    content: `### ATS Optimization Audit Complete (Score: ${finalAudit.overallScore}/100)
 
 **Diagnostic Breakdown:**
-- 📐 **Formatting & ATS Readability:** ${finalAudit.subScores.formatting}/25
-- ⚡ **Impact & Quantified Metrics:** ${finalAudit.subScores.impactAndMetrics}/25
-- 🔑 **Skills & Keyword Density:** ${finalAudit.subScores.skillsAndKeywords}/25
-- 🏗️ **Section Completeness:** ${finalAudit.subScores.sectionStructure}/25
+- Formatting & ATS Readability: ${finalAudit.subScores.formatting}/25
+- Impact & Quantified Metrics: ${finalAudit.subScores.impactAndMetrics}/25
+- Skills & Keyword Density: ${finalAudit.subScores.skillsAndKeywords}/25
+- Section Completeness: ${finalAudit.subScores.sectionStructure}/25
 
 **Top Recommendations:**
 ${finalAudit.actionableRecommendations.map((r, i) => `${i + 1}. ${r}`).join("\n")}
 
-*Ask me anytime to rewrite weak bullets, roast specific sections, or compare against target job descriptions!*`,
+*Ask anytime to rewrite weak bullets, roast specific sections, or compare against target job descriptions.*`,
     createdAt: new Date(),
   };
-
-  await resumeRepository.appendResumeMessage(resumeId, auditMessage);
 
   return {
     latestAudit: finalAudit,

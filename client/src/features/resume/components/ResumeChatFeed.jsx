@@ -148,14 +148,22 @@ export default function ResumeChatFeed({
   onSelectPrompt,
 }) {
   const feedBottomRef = useRef(null);
-  const prevMessagesCountRef = useRef(messages.length);
+
+  // Filter out any duplicate static audit summary messages so chat starts completely clean
+  const chatMessages = messages.filter(
+    (msg) =>
+      msg.mode !== "audit" &&
+      !msg.content?.toLowerCase().includes("ats optimization audit complete")
+  );
+
+  const prevMessagesCountRef = useRef(chatMessages.length);
 
   useEffect(() => {
-    if (isStreaming || messages.length > prevMessagesCountRef.current) {
+    if (isStreaming || chatMessages.length > prevMessagesCountRef.current) {
       feedBottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    prevMessagesCountRef.current = messages.length;
-  }, [messages.length, isStreaming, streamedText]);
+    prevMessagesCountRef.current = chatMessages.length;
+  }, [chatMessages.length, isStreaming, streamedText]);
 
   const starterPrompts = [
     {
@@ -182,7 +190,7 @@ export default function ResumeChatFeed({
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-6 flex-1 flex flex-col justify-start">
-      {messages.length === 0 && !streamedText && (
+      {chatMessages.length === 0 && !streamedText && (
         <div className="py-10 text-center space-y-6 max-w-lg mx-auto">
           <div className="w-12 h-12 rounded-2xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center text-[#ffbd2e] mx-auto shadow-inner">
             <Sparkle size={24} weight="duotone" />
@@ -215,7 +223,7 @@ export default function ResumeChatFeed({
       )}
 
       {/* Message History */}
-      {messages.map((msg, idx) =>
+      {chatMessages.map((msg, idx) =>
         msg.role === "user" ? (
           <UserMessageBubble key={msg._id || idx} msg={msg} />
         ) : (
