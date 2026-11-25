@@ -7,7 +7,7 @@ const resolveApiUrl = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (isProduction) {
     // In production, route via first-party relative proxy unless a custom relative endpoint is specified
-    if (!envUrl || envUrl.includes('onrender.com') || envUrl === '/api/v1') {
+    if (!envUrl || envUrl.includes('onrender.com') || envUrl.includes('sslip.io') || envUrl === '/api/v1') {
       return '/api/v1';
     }
     return envUrl;
