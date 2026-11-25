@@ -28,7 +28,7 @@ const app = express();
 // Enable trust proxy for reverse proxies (Render, Heroku, Vercel)
 app.set("trust proxy", 1);
 
-// Initialize Passport
+// Initialize Passport.js
 configurePassport();
 app.use(passport.initialize());
 
