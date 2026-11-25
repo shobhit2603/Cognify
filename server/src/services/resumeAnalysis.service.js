@@ -100,7 +100,7 @@ function extractJsonFromLlmOutput(text) {
 
 // ─── 3. Full ATS Diagnostic Audit ─────────────────────────────────────────────
 
-export const runResumeAudit = async ({ resumeId, userId, jobDescription = "", targetRole = "" }) => {
+export const runResumeAudit = async ({ resumeId, userId, jobDescription, targetRole }) => {
   const resume = await resumeRepository.findResumeById(resumeId);
   if (!resume) {
     throw ApiError(StatusCodes.NOT_FOUND, "Resume not found");
@@ -108,6 +108,9 @@ export const runResumeAudit = async ({ resumeId, userId, jobDescription = "", ta
   if (resume.userId.toString() !== userId.toString()) {
     throw ApiError(StatusCodes.FORBIDDEN, "Access denied: You do not own this resume");
   }
+
+  const resolvedTargetRole = targetRole !== undefined ? targetRole : (resume.latestAudit?.targetRole || "");
+  const resolvedJobDescription = jobDescription !== undefined ? jobDescription : (resume.latestAudit?.targetJobDescription || "");
 
   const promptContent = `
 --- CANDIDATE RESUME ---
@@ -117,9 +120,9 @@ Content:
 ${resume.rawText}
 
 --- TARGET CONTEXT ---
-Target Role: ${targetRole || "General Software/Tech Industry"}
+Target Role: ${resolvedTargetRole || "General Software/Tech Industry"}
 Job Description:
-${jobDescription || "No specific job description provided. Audit against modern industry standards."}
+${resolvedJobDescription || "No specific job description provided. Audit against modern industry standards."}
 `;
 
   let auditResult = null;
@@ -139,8 +142,19 @@ ${jobDescription || "No specific job description provided. Audit against modern 
     }
   }
 
-  // Fallback heuristic scoring if model is absent or parsing failed
-  if (!auditResult || !auditResult.subScores) {
+  // Validate auditResult structure before relying on it
+  const isValidAudit =
+    auditResult &&
+    auditResult.subScores &&
+    typeof auditResult.subScores.formatting === "number" &&
+    typeof auditResult.subScores.impactAndMetrics === "number" &&
+    typeof auditResult.subScores.skillsAndKeywords === "number" &&
+    typeof auditResult.subScores.sectionStructure === "number" &&
+    Array.isArray(auditResult.actionableRecommendations) &&
+    Array.isArray(auditResult.keyProblems);
+
+  // Fallback heuristic scoring if model is absent or parsing/validation failed
+  if (!isValidAudit) {
     const hasEmail = Boolean(resume.rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/));
     const hasPhone = Boolean(resume.rawText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/));
     const hasNumbers = Boolean(resume.rawText.match(/\d+%/g) || resume.rawText.match(/\$\d+/g));
@@ -152,6 +166,13 @@ ${jobDescription || "No specific job description provided. Audit against modern 
     const skillScore = (hasSkills ? 20 : 12);
     const structScore = 18;
     const overall = fmtScore + impactScore + skillScore + structScore;
+
+    const candidateTech = ["JavaScript", "TypeScript", "React", "Node.js", "Python", "Java", "C++", "SQL", "MongoDB", "AWS", "Docker", "Git", "REST APIs", "GraphQL"];
+    const textLower = resume.rawText.toLowerCase();
+    const dynamicMatched = candidateTech.filter((kw) => textLower.includes(kw.toLowerCase()));
+    const jdKeywords = resolvedJobDescription
+      ? ["System Design", "Cloud Infrastructure", "CI/CD", "Kubernetes", "Microservices"].filter((kw) => !textLower.includes(kw.toLowerCase()))
+      : [];
 
     auditResult = {
       overallScore: Math.min(100, Math.max(20, overall)),
@@ -183,20 +204,20 @@ ${jobDescription || "No specific job description provided. Audit against modern 
         { name: "Summary", score: 60, feedback: "Executive summary lacks targeted keywords and career focus." },
         { name: "Skills", score: 65, feedback: "Categorize skills into Languages, Frameworks, and Cloud Infrastructure." },
       ],
-      missingKeywords: jobDescription ? ["System Design", "Cloud Infrastructure", "CI/CD Pipelines"] : ["Docker", "Kubernetes", "Microservices"],
-      matchedKeywords: ["JavaScript", "TypeScript", "React", "Node.js", "MongoDB"],
+      missingKeywords: jdKeywords,
+      matchedKeywords: dynamicMatched.length > 0 ? dynamicMatched : ["Software Development", "Problem Solving"],
     };
   }
 
-  // Ensure overallScore is consistent
+  // Ensure overallScore is strictly consistent with the sum of subScores
   const sub = auditResult.subScores;
-  const computedOverall = Math.min(100, Math.max(0, sub.formatting + sub.impactAndMetrics + sub.skillsAndKeywords + sub.sectionStructure));
-  auditResult.overallScore = auditResult.overallScore || computedOverall;
+  const computedOverall = Math.min(100, Math.max(0, (sub.formatting || 0) + (sub.impactAndMetrics || 0) + (sub.skillsAndKeywords || 0) + (sub.sectionStructure || 0)));
+  auditResult.overallScore = computedOverall;
 
   const finalAudit = {
     ...auditResult,
-    targetRole: targetRole || resume.latestAudit?.targetRole || "",
-    targetJobDescription: jobDescription || resume.latestAudit?.targetJobDescription || "",
+    targetRole: resolvedTargetRole,
+    targetJobDescription: resolvedJobDescription,
     analyzedAt: new Date(),
   };
 
@@ -256,15 +277,20 @@ export async function* streamResumeChat({
   };
   await resumeRepository.appendResumeMessage(resumeId, userMsgRecord);
 
+  let activeAudit = resume.latestAudit;
+
   // If in jd-match mode with a provided job description, also trigger an audit update
   if (mode === "jd-match" && jobDescription && jobDescription.trim()) {
     try {
-      await runResumeAudit({
+      const auditRes = await runResumeAudit({
         resumeId,
         userId,
         jobDescription,
         targetRole: resume.latestAudit?.targetRole || "",
       });
+      if (auditRes?.latestAudit) {
+        activeAudit = auditRes.latestAudit;
+      }
     } catch (auditErr) {
       console.warn("[Resume Chat] JD match audit re-run warning:", auditErr.message);
     }
@@ -280,9 +306,9 @@ export async function* streamResumeChat({
 --- ACTIVE RESUME CONTEXT ---
 Title: ${resume.title}
 Candidate Name: ${resume.parsedSections?.contactInfo?.name || "Candidate"}
-Current Overall ATS Score: ${resume.latestAudit?.overallScore || 0}/100
-Weak Sections: ${(resume.latestAudit?.weakSections || []).map((w) => `${w.name} (${w.score}/100: ${w.feedback})`).join("; ") || "None"}
-Missing Keywords: ${(resume.latestAudit?.missingKeywords || []).join(", ") || "None"}
+Current Overall ATS Score: ${activeAudit?.overallScore || 0}/100
+Weak Sections: ${(activeAudit?.weakSections || []).map((w) => `${w.name} (${w.score}/100: ${w.feedback})`).join("; ") || "None"}
+Missing Keywords: ${(activeAudit?.missingKeywords || []).join(", ") || "None"}
 Resume Raw Text:
 ${resume.rawText}
 

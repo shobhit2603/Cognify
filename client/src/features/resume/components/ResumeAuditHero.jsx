@@ -318,7 +318,8 @@ export default function ResumeAuditHero({
         )}
 
         {/* ── Missing & Matched Keywords ── */}
-        {audit.missingKeywords && audit.missingKeywords.length > 0 && (
+        {((audit.missingKeywords && audit.missingKeywords.length > 0) ||
+          (audit.matchedKeywords && audit.matchedKeywords.length > 0)) && (
           <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-2.5 text-xs">
             <div className="flex items-center gap-1.5 text-white/70 font-semibold font-mono text-[11px] uppercase">
               <Target size={14} className="text-[#ffbd2e]" weight="bold" />

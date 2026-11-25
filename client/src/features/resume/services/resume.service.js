@@ -99,6 +99,7 @@ export const resumeService = {
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let buffer = "";
+      let terminalEventReceived = false;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -116,8 +117,10 @@ export const resumeService = {
               if (data.event === "chunk") {
                 onChunk?.(data.content);
               } else if (data.event === "done") {
+                terminalEventReceived = true;
                 onDone?.(data);
               } else if (data.event === "error") {
+                terminalEventReceived = true;
                 onError?.(new Error(data.error || "Chat streaming failed"));
               }
             } catch (err) {
@@ -125,6 +128,13 @@ export const resumeService = {
             }
           }
         }
+      }
+
+      // If the stream closed without an explicit terminal event, trigger error to exit generating state
+      if (!terminalEventReceived) {
+        const err = new Error("Stream connection closed before completion");
+        onError?.(err);
+        throw err;
       }
     } catch (err) {
       if (err.name === "AbortError") {

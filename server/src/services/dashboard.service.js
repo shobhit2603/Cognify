@@ -126,6 +126,6 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
 
   return {
     items: allItems.slice(0, safeLimit),
-    totalCount: (chatCount || 0) + (docCount || 0) + (noteCount || 0),
+    totalCount: (chatCount || 0) + (docCount || 0) + (noteCount || 0) + (resumeCount || 0),
   };
 };

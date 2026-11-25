@@ -113,11 +113,15 @@ const markdownRenderComponents = {
 function AssistantMessageBubble({ msg }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(msg.content);
-    setCopied(true);
-    toast.success("Response copied to clipboard");
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopied(true);
+      toast.success("Response copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
   };
 
   return (
@@ -186,12 +190,14 @@ export default function ResumeChatFeed({
   const isUserScrolledUpRef = useRef(false);
   const lastScrollTopRef = useRef(0);
 
-  // Filter out any duplicate static audit summary messages so chat starts completely clean
-  const baseChatMessages = messages.filter(
-    (msg) =>
-      msg.mode !== "audit" &&
-      !msg.content?.toLowerCase().includes("ats optimization audit complete")
-  );
+  // Filter out only the initial auto-generated diagnostic audit summaries so the chat stream starts clean
+  const isGeneratedAuditSummary = (msg) =>
+    msg.role === "assistant" &&
+    msg.mode === "audit" &&
+    typeof msg.content === "string" &&
+    msg.content.trim().startsWith("### ATS Optimization Audit Complete");
+
+  const baseChatMessages = messages.filter((msg) => !isGeneratedAuditSummary(msg));
 
   // Optimistically include outgoing user prompt so it renders instantly from frame 1
   const chatMessages = [...baseChatMessages];

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   FilePdf,
@@ -21,7 +21,7 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
   const resumeId = resume?._id;
 
   const {
-    data: blobUrl,
+    data: pdfBlob,
     isLoading: isLoadingPdf,
     isError: isPdfError,
     refetch: refetchPdf,
@@ -32,12 +32,24 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
       const response = await axiosInstance.get(`/resumes/${resumeId}/file`, {
         responseType: "blob",
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      return URL.createObjectURL(blob);
+      return new Blob([response.data], { type: "application/pdf" });
     },
     enabled: !!resumeId,
     staleTime: 1000 * 60 * 15,
   });
+
+  const blobUrl = useMemo(() => {
+    if (!pdfBlob) return null;
+    return URL.createObjectURL(pdfBlob);
+  }, [pdfBlob]);
+
+  useEffect(() => {
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [blobUrl]);
 
   if (!resume) {
     return (

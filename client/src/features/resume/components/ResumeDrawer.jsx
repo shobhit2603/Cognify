@@ -149,14 +149,17 @@ export default function ResumeDrawer({
               return (
                 <div
                   key={resume._id}
-                  onClick={() => onSelectResume(resume._id)}
-                  className={`group relative flex items-center justify-between p-2 rounded-xl text-left border cursor-pointer transition-all ${
+                  className={`group relative flex items-center justify-between p-2 rounded-xl text-left border transition-all ${
                     isActive
                       ? "bg-[#ffbd2e]/10 border-[#ffbd2e]/40 text-white shadow-sm"
                       : "bg-transparent border-transparent text-white/70 hover:bg-white/5 hover:text-white"
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0 pr-1 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => onSelectResume(resume._id)}
+                    className="flex items-center gap-2 min-w-0 pr-1 flex-1 text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-[#ffbd2e] rounded-lg"
+                  >
                     <FilePdf
                       size={18}
                       className={isActive ? "text-[#ffbd2e]" : "text-white/40 group-hover:text-white/70"}
@@ -170,9 +173,9 @@ export default function ResumeDrawer({
                         {formatDate(resume.updatedAt || resume.createdAt)}
                       </p>
                     </div>
-                  </div>
+                  </button>
 
-                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     {getScoreBadge(resume.latestAudit?.overallScore)}
 
                     <div className="relative">

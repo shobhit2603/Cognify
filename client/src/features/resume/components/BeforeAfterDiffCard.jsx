@@ -16,12 +16,16 @@ export default function BeforeAfterDiffCard({
 }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!improved) return;
-    navigator.clipboard.writeText(improved);
-    setCopied(true);
-    toast.success("Optimized bullet copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(improved);
+      setCopied(true);
+      toast.success("Optimized bullet copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
   };
 
   return (

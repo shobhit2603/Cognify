@@ -74,7 +74,8 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
 
       {/* ── Upload Card ── */}
       <div className="rounded-2xl border border-white/10 bg-[#121215] p-6 sm:p-8 shadow-xl space-y-6">
-        <div
+        <button
+          type="button"
           onDragOver={(e) => {
             e.preventDefault();
             setDragOver(true);
@@ -82,7 +83,7 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-xl p-10 sm:p-14 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+          className={`w-full relative border-2 border-dashed rounded-xl p-10 sm:p-14 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ffbd2e] ${
             dragOver
               ? "border-[#ffbd2e] bg-[#ffbd2e]/5 shadow-lg shadow-[#ffbd2e]/10"
               : selectedFile
@@ -126,7 +127,7 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
               </p>
             </div>
           )}
-        </div>
+        </button>
 
         {/* Inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

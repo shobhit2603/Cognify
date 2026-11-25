@@ -8,11 +8,13 @@ jest.setTimeout(180000);
 let mongoServer;
 
 beforeAll(async () => {
-  // Start the in-memory MongoDB instance (using lightweight MongoDB binary)
+  // Start the in-memory MongoDB instance
+  // Use locally cached 5.0.14 on Windows; use modern 7.0.14 on Linux/CI (Ubuntu 22.04+ requires OpenSSL 3.0 / libcrypto.so.3)
+  const isWindows = process.platform === "win32";
+  const binaryConfig = isWindows ? { version: "5.0.14" } : { version: "7.0.14" };
+
   mongoServer = await MongoMemoryServer.create({
-    binary: {
-      version: "5.0.14",
-    },
+    binary: binaryConfig,
   });
   const mongoUri = mongoServer.getUri();
   

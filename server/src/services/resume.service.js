@@ -38,15 +38,19 @@ export const extractTextFromPdfBuffer = async (buffer) => {
     const textResult = await parser.getText();
 
     let combinedText = "";
+    let extractedContentLength = 0;
     if (textResult.pages && textResult.pages.length > 0) {
+      const pageTexts = textResult.pages.map((page) => (page.text || "").trim());
+      extractedContentLength = pageTexts.join("").length;
       combinedText = textResult.pages
         .map((page, idx) => `--- Page ${page.num || idx + 1} ---\n${(page.text || "").trim()}`)
         .join("\n\n");
     } else if (textResult.text) {
       combinedText = textResult.text.trim();
+      extractedContentLength = combinedText.length;
     }
 
-    if (!combinedText || combinedText.length < 10) {
+    if (!combinedText || extractedContentLength < 10) {
       throw ApiError(
         StatusCodes.BAD_REQUEST,
         "Could not extract readable text from PDF. The document may be image-only or scanned without OCR."
@@ -71,7 +75,10 @@ export const parseResumeSections = (text) => {
   const linkedinMatch = text.match(/linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
   const githubMatch = text.match(/github\.com\/[a-zA-Z0-9_-]+/i);
 
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => Boolean(l) && !/^---\s*Page\s*\d+\s*---$/i.test(l));
   const candidateName = lines[0] && lines[0].length < 40 && !lines[0].includes("@") ? lines[0] : "";
 
   // Common section extractors
@@ -154,41 +161,46 @@ export const uploadAndExtractResume = async (
 
   // 5. Create Resume document
   const finalTitle = (title && title.trim()) || safeName.replace(/\.[^/.]+$/, "");
-  const resume = await resumeRepository.createResume({
-    userId,
-    title: finalTitle,
-    originalName: safeName,
-    fileUrl,
-    storageKey,
-    storageProvider,
-    fileSize: fileBuffer.length,
-    mimeType,
-    pageCount,
-    rawText,
-    parsedSections,
-    latestAudit: {
-      overallScore: 0,
-      subScores: {
-        formatting: 0,
-        impactAndMetrics: 0,
-        skillsAndKeywords: 0,
-        sectionStructure: 0,
+  try {
+    const resume = await resumeRepository.createResume({
+      userId,
+      title: finalTitle,
+      originalName: safeName,
+      fileUrl,
+      storageKey,
+      storageProvider,
+      fileSize: fileBuffer.length,
+      mimeType,
+      pageCount,
+      rawText,
+      parsedSections,
+      latestAudit: {
+        overallScore: 0,
+        subScores: {
+          formatting: 0,
+          impactAndMetrics: 0,
+          skillsAndKeywords: 0,
+          sectionStructure: 0,
+        },
+        keyProblems: [],
+        whyItMatters: [],
+        actionableRecommendations: [],
+        strongSections: [],
+        weakSections: [],
+        missingKeywords: [],
+        matchedKeywords: [],
+        targetRole: "",
+        targetJobDescription: "",
+        analyzedAt: null,
       },
-      keyProblems: [],
-      whyItMatters: [],
-      actionableRecommendations: [],
-      strongSections: [],
-      weakSections: [],
-      missingKeywords: [],
-      matchedKeywords: [],
-      targetRole: "",
-      targetJobDescription: "",
-      analyzedAt: null,
-    },
-    messages: [],
-  });
+      messages: [],
+    });
 
-  return resume;
+    return resume;
+  } catch (err) {
+    await s3Storage.deleteFile(storageKey).catch(() => {});
+    throw err;
+  }
 };
 
 /**

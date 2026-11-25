@@ -197,6 +197,13 @@ export default function ResumeStudio() {
   // Synchronize selection with URL
   const handleSelectResume = useCallback(
     (id) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+        setIsStreaming(false);
+        setOptimisticUserMessage(null);
+        setStreamedText("");
+      }
       setIsUploadMode(false);
       let targetTab = "audit";
       if (typeof window !== "undefined") {
@@ -271,6 +278,18 @@ export default function ResumeStudio() {
   const handleSendMessage = async ({ message, mode, jobDescription }) => {
     if (!activeResumeId || isStreaming) return;
 
+    if (mode === "audit") {
+      handleTabChange("audit");
+      await runAudit({
+        id: activeResumeId,
+        targetRole: activeResume?.latestAudit?.targetRole || "",
+        jobDescription: jobDescription || activeResume?.latestAudit?.targetJobDescription || "",
+      });
+      return;
+    }
+
+    const currentSendingId = activeResumeId;
+
     // Smart auto-switch to chat tab and persist
     handleTabChange("chat");
     setIsStreaming(true);
@@ -290,7 +309,7 @@ export default function ResumeStudio() {
     setOptimisticUserMessage(tempUserMsg);
 
     // 2. Also synchronously update TanStack Query cache
-    updateResumeCacheMessages(queryClient, activeResumeId, (prev) => [
+    updateResumeCacheMessages(queryClient, currentSendingId, (prev) => [
       ...prev,
       tempUserMsg,
     ]);
@@ -302,16 +321,18 @@ export default function ResumeStudio() {
 
     try {
       await resumeService.streamResumeChat({
-        resumeId: activeResumeId,
+        resumeId: currentSendingId,
         message,
         mode,
         jobDescription,
         signal: abortController.signal,
         onChunk: (chunk) => {
+          if (activeResumeId !== currentSendingId) return;
           accumulatedText += chunk;
           setStreamedText(accumulatedText);
         },
         onDone: (payload) => {
+          if (activeResumeId !== currentSendingId) return;
           const finalAssistantMsg = payload?.message || {
             _id: `temp-assistant-${Date.now()}`,
             role: "assistant",
@@ -321,7 +342,7 @@ export default function ResumeStudio() {
           };
 
           // 3. Synchronously commit both user message and assistant message to cache BEFORE clearing stream state
-          updateResumeCacheMessages(queryClient, activeResumeId, (prev) => {
+          updateResumeCacheMessages(queryClient, currentSendingId, (prev) => {
             const hasUser = prev.some(
               (m) =>
                 m._id === tempUserMsgId ||
@@ -338,21 +359,25 @@ export default function ResumeStudio() {
 
           // 5. Background sync with server
           queryClient.invalidateQueries({
-            queryKey: ["resume", activeResumeId],
+            queryKey: ["resume", currentSendingId],
           });
           queryClient.invalidateQueries({
             queryKey: ["resumes"],
           });
         },
         onError: (err) => {
-          setIsStreaming(false);
-          setOptimisticUserMessage(null);
+          if (activeResumeId === currentSendingId) {
+            setIsStreaming(false);
+            setOptimisticUserMessage(null);
+          }
           console.error("[Resume Studio Stream Error]:", err);
         },
       });
     } catch (err) {
-      setIsStreaming(false);
-      setOptimisticUserMessage(null);
+      if (activeResumeId === currentSendingId) {
+        setIsStreaming(false);
+        setOptimisticUserMessage(null);
+      }
     }
   };
 
@@ -489,12 +514,15 @@ export default function ResumeStudio() {
         ) : (
           <div
             ref={splitContainerRef}
+            style={{
+              "--center-split": isPreviewOpen ? `${splitPercent}%` : "100%",
+              "--preview-split": `${100 - splitPercent}%`,
+            }}
             className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative select-none md:select-text"
           >
             {/* Center Column: ATS Audit + Resume Chat + Scoped Action Bar */}
             <div
-              style={{ width: isPreviewOpen ? `${splitPercent}%` : "100%" }}
-              className={`h-full flex flex-col min-w-0 min-h-0 overflow-hidden overflow-x-hidden ${
+              className={`w-full md:w-[var(--center-split)] h-full flex flex-col min-w-0 min-h-0 overflow-hidden overflow-x-hidden ${
                 isDragging ? "" : "transition-[width] duration-300 ease-in-out"
               }`}
             >
@@ -614,8 +642,7 @@ export default function ResumeStudio() {
             {/* Right Column: Resume Preview Pane */}
             {isPreviewOpen && (
               <div
-                style={{ width: `${100 - splitPercent}%` }}
-                className={`h-full min-w-0 min-h-0 overflow-hidden ${
+                className={`w-full md:w-[var(--preview-split)] h-[400px] md:h-full shrink-0 md:shrink min-w-0 min-h-0 overflow-hidden ${
                   isDragging ? "" : "transition-[width] duration-300 ease-in-out"
                 }`}
               >
