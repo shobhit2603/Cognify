@@ -18,6 +18,7 @@ import documentRoutes from "./routes/document.routes.js";
 import noteRoutes from "./routes/note.routes.js";
 import noteFolderRoutes from "./routes/noteFolder.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import resumeRoutes from "./routes/resume.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.config.js";
 import { globalLimiter } from "./middlewares/rateLimiter.middleware.js";
@@ -60,7 +61,16 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "x-file-name",
+      "x-title",
+      "x-file-size",
+    ],
   }),
 );
 
@@ -123,6 +133,7 @@ app.use("/api/v1/documents", documentRoutes);
 app.use("/api/v1/notes", noteRoutes);
 app.use("/api/v1/note-folders", noteFolderRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/resumes", resumeRoutes);
 
 // ─── API Documentation ───────────────────────────────────
 
