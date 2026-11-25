@@ -107,3 +107,24 @@ export const useResumeMutations = () => {
     isAuditing: runAuditMutation.isPending,
   };
 };
+
+/**
+ * Synchronously update the messages array for a cached resume in TanStack Query
+ * handles both raw { data: { ... } } and direct { ... } structures so select(res => res.data) sees changes instantly.
+ */
+export const updateResumeCacheMessages = (queryClient, resumeId, updateFn) => {
+  if (!resumeId || typeof updateFn !== "function") return;
+  queryClient.setQueryData(["resume", resumeId], (old) => {
+    if (!old) return old;
+    const currentResume = old.data || old;
+    const currentMessages = currentResume.messages || [];
+    const updatedMessages = updateFn(currentMessages);
+
+    const updatedResume = {
+      ...currentResume,
+      messages: updatedMessages,
+    };
+
+    return old.data ? { ...old, data: updatedResume } : updatedResume;
+  });
+};

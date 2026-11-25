@@ -175,6 +175,7 @@ function AssistantMessageBubble({ msg }) {
 
 export default function ResumeChatFeed({
   messages = [],
+  optimisticUserMessage = null,
   streamedText = "",
   isStreaming = false,
   streamingMode = "general",
@@ -186,11 +187,24 @@ export default function ResumeChatFeed({
   const lastScrollTopRef = useRef(0);
 
   // Filter out any duplicate static audit summary messages so chat starts completely clean
-  const chatMessages = messages.filter(
+  const baseChatMessages = messages.filter(
     (msg) =>
       msg.mode !== "audit" &&
       !msg.content?.toLowerCase().includes("ats optimization audit complete")
   );
+
+  // Optimistically include outgoing user prompt so it renders instantly from frame 1
+  const chatMessages = [...baseChatMessages];
+  if (
+    optimisticUserMessage &&
+    !chatMessages.some(
+      (m) =>
+        m._id === optimisticUserMessage._id ||
+        (m.role === "user" && m.content === optimisticUserMessage.content)
+    )
+  ) {
+    chatMessages.push(optimisticUserMessage);
+  }
 
   const prevMessagesCountRef = useRef(chatMessages.length);
 

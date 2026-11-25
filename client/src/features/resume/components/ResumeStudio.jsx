@@ -18,7 +18,12 @@ import ResumeAuditHero from "./ResumeAuditHero";
 import ResumeChatFeed from "./ResumeChatFeed";
 import ResumeActionBar from "./ResumeActionBar";
 import ResumePreviewPane from "./ResumePreviewPane";
-import { useResumes, useResume, useResumeMutations } from "../hooks/useResumes";
+import {
+  useResumes,
+  useResume,
+  useResumeMutations,
+  updateResumeCacheMessages,
+} from "../hooks/useResumes";
 import { resumeService } from "../services/resume.service";
 
 export default function ResumeStudio() {
@@ -27,6 +32,7 @@ export default function ResumeStudio() {
   const queryClient = useQueryClient();
 
   const urlResumeId = searchParams.get("id");
+  const urlTab = searchParams.get("tab");
 
   // ── Drawer & Preview Panel States ─────────────────────────────────────────
   const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
@@ -46,7 +52,16 @@ export default function ResumeStudio() {
   });
 
   const [isUploadMode, setIsUploadMode] = useState(!urlResumeId);
-  const [centerTab, setCenterTab] = useState("audit"); // "audit" | "chat"
+  const [activeTabOverride, setActiveTabOverride] = useState(null);
+
+  // Derive active tab from URL query param first, then user override, then localStorage, defaulting to "audit"
+  const centerTab =
+    urlTab === "chat" || urlTab === "audit"
+      ? urlTab
+      : activeTabOverride ||
+        (typeof window !== "undefined" && urlResumeId
+          ? localStorage.getItem(`cognify_resume_tab_${urlResumeId}`) || "audit"
+          : "audit");
 
   // ── Split Divider Ratio ───────────────────────────────────────────────────
   const [splitPercent, setSplitPercent] = useState(() => {
@@ -151,17 +166,47 @@ export default function ResumeStudio() {
   // ── Streaming Chat State ──────────────────────────────────────────────────
   const [streamedText, setStreamedText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [optimisticUserMessage, setOptimisticUserMessage] = useState(null);
   const abortControllerRef = useRef(null);
 
   const [promptToInject, setPromptToInject] = useState("");
   const [modeToInject, setModeToInject] = useState("general");
 
+  // Tab switch handler with URL and localStorage persistence
+  const handleTabChange = useCallback(
+    (tab) => {
+      setActiveTabOverride(tab);
+      const targetId = activeResumeId;
+      if (targetId) {
+        try {
+          localStorage.setItem(`cognify_resume_tab_${targetId}`, tab);
+        } catch {
+          // ignore
+        }
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          params.set("id", targetId);
+          params.set("tab", tab);
+          router.replace(`/resume?${params.toString()}`, { scroll: false });
+        }
+      }
+    },
+    [activeResumeId, router]
+  );
+
   // Synchronize selection with URL
   const handleSelectResume = useCallback(
     (id) => {
       setIsUploadMode(false);
-      setCenterTab("audit");
-      router.replace(`/resume?id=${id}`);
+      let targetTab = "audit";
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(`cognify_resume_tab_${id}`);
+        if (saved === "chat" || saved === "audit") {
+          targetTab = saved;
+        }
+      }
+      setActiveTabOverride(targetTab);
+      router.replace(`/resume?id=${id}&tab=${targetTab}`);
       if (!isPreviewOpen) {
         setIsPreviewOpen(true);
       }
@@ -171,7 +216,7 @@ export default function ResumeStudio() {
 
   const handleStartUpload = () => {
     setIsUploadMode(true);
-    setCenterTab("audit");
+    setActiveTabOverride("audit");
     router.replace("/resume");
   };
 
@@ -214,7 +259,7 @@ export default function ResumeStudio() {
   // ── Re-audit Handler ──────────────────────────────────────────────────────
   const handleReAudit = async () => {
     if (!activeResumeId || isAuditing) return;
-    setCenterTab("audit");
+    handleTabChange("audit");
     await runAudit({
       id: activeResumeId,
       targetRole: activeResume?.latestAudit?.targetRole || "",
@@ -226,8 +271,8 @@ export default function ResumeStudio() {
   const handleSendMessage = async ({ message, mode, jobDescription }) => {
     if (!activeResumeId || isStreaming) return;
 
-    // Smart auto-switch to chat tab when sending a message
-    setCenterTab("chat");
+    // Smart auto-switch to chat tab and persist
+    handleTabChange("chat");
     setIsStreaming(true);
     setStreamedText("");
 
@@ -241,15 +286,14 @@ export default function ResumeStudio() {
       createdAt: new Date().toISOString(),
     };
 
-    // 1. Optimistically append user message immediately so it appears instantly
-    queryClient.setQueryData(["resume", activeResumeId], (old) => {
-      if (!old) return old;
-      const existing = old.messages || [];
-      return {
-        ...old,
-        messages: [...existing, tempUserMsg],
-      };
-    });
+    // 1. Immediately store in local optimistic state so it's guaranteed to render on frame 1
+    setOptimisticUserMessage(tempUserMsg);
+
+    // 2. Also synchronously update TanStack Query cache
+    updateResumeCacheMessages(queryClient, activeResumeId, (prev) => [
+      ...prev,
+      tempUserMsg,
+    ]);
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -276,41 +320,39 @@ export default function ResumeStudio() {
             createdAt: new Date().toISOString(),
           };
 
-          // 2. Seamlessly update cache with completed assistant message BEFORE clearing stream state
-          queryClient.setQueryData(["resume", activeResumeId], (old) => {
-            if (!old) return old;
-            const existing = old.messages || [];
-            const hasUser = existing.some(
-              (m) => m._id === tempUserMsgId || (m.role === "user" && m.content === message)
+          // 3. Synchronously commit both user message and assistant message to cache BEFORE clearing stream state
+          updateResumeCacheMessages(queryClient, activeResumeId, (prev) => {
+            const hasUser = prev.some(
+              (m) =>
+                m._id === tempUserMsgId ||
+                (m.role === "user" && m.content === message)
             );
-            const base = hasUser ? existing : [...existing, tempUserMsg];
-            return {
-              ...old,
-              messages: [...base, finalAssistantMsg],
-            };
+            const base = hasUser ? prev : [...prev, tempUserMsg];
+            return [...base, finalAssistantMsg];
           });
 
-          // 3. Clear streaming state now that cache is populated - zero unmount gap or flash!
+          // 4. Now safe to clear streaming state - zero layout shift, zero blank frame, and no empty-state fallback!
+          setOptimisticUserMessage(null);
           setIsStreaming(false);
           setStreamedText("");
 
-          // 4. Background quiet sync without dropping cache or unmounting
+          // 5. Background sync with server
           queryClient.invalidateQueries({
             queryKey: ["resume", activeResumeId],
-            refetchType: "none",
           });
           queryClient.invalidateQueries({
             queryKey: ["resumes"],
-            refetchType: "none",
           });
         },
         onError: (err) => {
           setIsStreaming(false);
+          setOptimisticUserMessage(null);
           console.error("[Resume Studio Stream Error]:", err);
         },
       });
     } catch (err) {
       setIsStreaming(false);
+      setOptimisticUserMessage(null);
     }
   };
 
@@ -319,13 +361,14 @@ export default function ResumeStudio() {
       abortControllerRef.current.abort();
       setIsStreaming(false);
       setStreamedText("");
+      setOptimisticUserMessage(null);
     }
   };
 
   const handleSelectStarterPrompt = (promptText, mode) => {
     setPromptToInject(promptText);
     setModeToInject(mode);
-    setCenterTab("chat");
+    handleTabChange("chat");
   };
 
   return (
@@ -460,7 +503,7 @@ export default function ResumeStudio() {
                 <div className="flex items-center gap-2 h-full">
                   <button
                     type="button"
-                    onClick={() => setCenterTab("audit")}
+                    onClick={() => handleTabChange("audit")}
                     className={`flex items-center gap-2 h-full px-3 text-xs font-semibold border-b-2 transition-all ${
                       centerTab === "audit"
                         ? "border-[#ffbd2e] text-[#ffbd2e]"
@@ -486,7 +529,7 @@ export default function ResumeStudio() {
 
                   <button
                     type="button"
-                    onClick={() => setCenterTab("chat")}
+                    onClick={() => handleTabChange("chat")}
                     className={`flex items-center gap-2 h-full px-3 text-xs font-semibold border-b-2 transition-all ${
                       centerTab === "chat"
                         ? "border-[#ffbd2e] text-[#ffbd2e]"
@@ -524,7 +567,7 @@ export default function ResumeStudio() {
                     onOptimizeIssue={(promptText, mode) => {
                       setPromptToInject(promptText);
                       setModeToInject(mode || "optimize-section");
-                      setCenterTab("chat");
+                      handleTabChange("chat");
                     }}
                   />
                 </div>
@@ -534,6 +577,7 @@ export default function ResumeStudio() {
               {centerTab === "chat" && (
                 <ResumeChatFeed
                   messages={activeResume?.messages || []}
+                  optimisticUserMessage={optimisticUserMessage}
                   streamedText={streamedText}
                   isStreaming={isStreaming}
                   streamingMode={modeToInject}
