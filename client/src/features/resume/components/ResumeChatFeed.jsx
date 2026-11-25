@@ -203,11 +203,7 @@ export default function ResumeChatFeed({
   const chatMessages = [...baseChatMessages];
   if (
     optimisticUserMessage &&
-    !chatMessages.some(
-      (m) =>
-        m._id === optimisticUserMessage._id ||
-        (m.role === "user" && m.content === optimisticUserMessage.content)
-    )
+    !chatMessages.some((m) => m._id === optimisticUserMessage._id)
   ) {
     chatMessages.push(optimisticUserMessage);
   }

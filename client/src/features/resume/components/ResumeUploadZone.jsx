@@ -74,6 +74,14 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
 
       {/* ── Upload Card ── */}
       <div className="rounded-2xl border border-white/10 bg-[#121215] p-6 sm:p-8 shadow-xl space-y-6">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          onChange={(e) => validateAndSetFile(e.target.files?.[0])}
+          className="hidden"
+        />
+
         <button
           type="button"
           onDragOver={(e) => {
@@ -91,41 +99,33 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
               : "border-white/15 bg-white/[0.01] hover:border-white/30 hover:bg-white/[0.03]"
           }`}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,application/pdf"
-            onChange={(e) => validateAndSetFile(e.target.files?.[0])}
-            className="hidden"
-          />
-
-          <div className="w-14 h-14 rounded-2xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center text-[#ffbd2e] shadow-inner">
+          <span className="w-14 h-14 rounded-2xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center text-[#ffbd2e] shadow-inner">
             {selectedFile ? (
               <FilePdf size={32} weight="duotone" />
             ) : (
               <UploadSimple size={30} weight="bold" />
             )}
-          </div>
+          </span>
 
           {selectedFile ? (
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-white flex items-center justify-center gap-2">
+            <span className="space-y-1 block">
+              <span className="text-sm font-semibold text-white flex items-center justify-center gap-2">
                 <span>{selectedFile.name}</span>
                 <CheckCircle size={16} weight="fill" className="text-[#ffbd2e]" />
-              </p>
-              <p className="text-xs text-white/40 font-mono">
+              </span>
+              <span className="text-xs text-white/40 font-mono block">
                 {(selectedFile.size / 1024).toFixed(1)} KB · Click to choose a different PDF
-              </p>
-            </div>
+              </span>
+            </span>
           ) : (
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-white">
+            <span className="space-y-1 block">
+              <span className="text-sm font-medium text-white block">
                 Click to browse or drag & drop resume PDF
-              </p>
-              <p className="text-xs text-white/40">
+              </span>
+              <span className="text-xs text-white/40 block">
                 Standard 1–3 page PDF document (up to 10MB)
-              </p>
-            </div>
+              </span>
+            </span>
           )}
         </button>
 

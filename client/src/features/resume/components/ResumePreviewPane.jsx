@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   FilePdf,
@@ -38,18 +38,21 @@ export default function ResumePreviewPane({ resume, isDragging = false }) {
     staleTime: 1000 * 60 * 15,
   });
 
-  const blobUrl = useMemo(() => {
-    if (!pdfBlob) return null;
-    return URL.createObjectURL(pdfBlob);
-  }, [pdfBlob]);
+  const [blobUrl, setBlobUrl] = useState(null);
 
   useEffect(() => {
+    if (!pdfBlob) return undefined;
+    const url = URL.createObjectURL(pdfBlob);
+    const frameId = requestAnimationFrame(() => {
+      setBlobUrl(url);
+    });
+
     return () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
+      cancelAnimationFrame(frameId);
+      URL.revokeObjectURL(url);
+      setBlobUrl(null);
     };
-  }, [blobUrl]);
+  }, [pdfBlob]);
 
   if (!resume) {
     return (

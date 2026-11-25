@@ -318,34 +318,38 @@ export default function ResumeAuditHero({
         )}
 
         {/* ── Missing & Matched Keywords ── */}
-        {((audit.missingKeywords && audit.missingKeywords.length > 0) ||
-          (audit.matchedKeywords && audit.matchedKeywords.length > 0)) && (
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-2.5 text-xs">
-            <div className="flex items-center gap-1.5 text-white/70 font-semibold font-mono text-[11px] uppercase">
-              <Target size={14} className="text-[#ffbd2e]" weight="bold" />
-              <span>Keyword Gap Audit</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {audit.missingKeywords.map((kw, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-300 text-[11px] font-medium"
-                >
-                  + Missing: {kw}
-                </span>
-              ))}
-              {audit.matchedKeywords &&
-                audit.matchedKeywords.map((kw, idx) => (
+        {(() => {
+          const missing = Array.isArray(audit?.missingKeywords) ? audit.missingKeywords : [];
+          const matched = Array.isArray(audit?.matchedKeywords) ? audit.matchedKeywords : [];
+          if (missing.length === 0 && matched.length === 0) return null;
+
+          return (
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-2.5 text-xs">
+              <div className="flex items-center gap-1.5 text-white/70 font-semibold font-mono text-[11px] uppercase">
+                <Target size={14} className="text-[#ffbd2e]" weight="bold" />
+                <span>Keyword Gap Audit</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {missing.map((kw, idx) => (
                   <span
-                    key={idx}
+                    key={`missing-${idx}`}
+                    className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-300 text-[11px] font-medium"
+                  >
+                    + Missing: {kw}
+                  </span>
+                ))}
+                {matched.map((kw, idx) => (
+                  <span
+                    key={`matched-${idx}`}
                     className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[11px] font-medium"
                   >
                     Matched: {kw}
                   </span>
                 ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

@@ -9,13 +9,12 @@ let mongoServer;
 
 beforeAll(async () => {
   // Start the in-memory MongoDB instance
-  // Use locally cached 5.0.14 on Windows; use modern 7.0.14 on Linux/CI (Ubuntu 22.04+ requires OpenSSL 3.0 / libcrypto.so.3)
-  const isWindows = process.platform === "win32";
-  const binaryConfig = isWindows ? { version: "5.0.14" } : { version: "7.0.14" };
+  // Default to mongodb-memory-server dependency default, with optional MONGOMS_VERSION override or local workstation fallback
+  const binaryVersion = process.env.MONGOMS_VERSION || (process.platform === "win32" ? "5.0.14" : undefined);
 
-  mongoServer = await MongoMemoryServer.create({
-    binary: binaryConfig,
-  });
+  mongoServer = await MongoMemoryServer.create(
+    binaryVersion ? { binary: { version: binaryVersion } } : {}
+  );
   const mongoUri = mongoServer.getUri();
   
   // Prevent Mongoose from using an existing connection if tests are run in parallel

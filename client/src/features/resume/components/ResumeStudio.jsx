@@ -60,7 +60,14 @@ export default function ResumeStudio() {
       ? urlTab
       : activeTabOverride ||
         (typeof window !== "undefined" && urlResumeId
-          ? localStorage.getItem(`cognify_resume_tab_${urlResumeId}`) || "audit"
+          ? (() => {
+              try {
+                const saved = localStorage.getItem(`cognify_resume_tab_${urlResumeId}`);
+                return saved === "chat" || saved === "audit" ? saved : "audit";
+              } catch {
+                return "audit";
+              }
+            })()
           : "audit");
 
   // ── Split Divider Ratio ───────────────────────────────────────────────────
@@ -168,6 +175,19 @@ export default function ResumeStudio() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [optimisticUserMessage, setOptimisticUserMessage] = useState(null);
   const abortControllerRef = useRef(null);
+  const activeResumeIdRef = useRef(activeResumeId);
+
+  // Centralized stream cleanup whenever active resume ID changes or unmounts
+  useEffect(() => {
+    activeResumeIdRef.current = activeResumeId;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsStreaming(false);
+      setOptimisticUserMessage(null);
+      setStreamedText("");
+    }
+  }, [activeResumeId]);
 
   const [promptToInject, setPromptToInject] = useState("");
   const [modeToInject, setModeToInject] = useState("general");
@@ -197,19 +217,16 @@ export default function ResumeStudio() {
   // Synchronize selection with URL
   const handleSelectResume = useCallback(
     (id) => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-        setIsStreaming(false);
-        setOptimisticUserMessage(null);
-        setStreamedText("");
-      }
       setIsUploadMode(false);
       let targetTab = "audit";
       if (typeof window !== "undefined") {
-        const saved = localStorage.getItem(`cognify_resume_tab_${id}`);
-        if (saved === "chat" || saved === "audit") {
-          targetTab = saved;
+        try {
+          const saved = localStorage.getItem(`cognify_resume_tab_${id}`);
+          if (saved === "chat" || saved === "audit") {
+            targetTab = saved;
+          }
+        } catch {
+          targetTab = "audit";
         }
       }
       setActiveTabOverride(targetTab);
@@ -327,12 +344,12 @@ export default function ResumeStudio() {
         jobDescription,
         signal: abortController.signal,
         onChunk: (chunk) => {
-          if (activeResumeId !== currentSendingId) return;
+          if (activeResumeIdRef.current !== currentSendingId) return;
           accumulatedText += chunk;
           setStreamedText(accumulatedText);
         },
         onDone: (payload) => {
-          if (activeResumeId !== currentSendingId) return;
+          if (activeResumeIdRef.current !== currentSendingId) return;
           const finalAssistantMsg = payload?.message || {
             _id: `temp-assistant-${Date.now()}`,
             role: "assistant",
@@ -342,12 +359,9 @@ export default function ResumeStudio() {
           };
 
           // 3. Synchronously commit both user message and assistant message to cache BEFORE clearing stream state
+          // Match strictly by temp ID so earlier messages with identical content are not falsely treated as current
           updateResumeCacheMessages(queryClient, currentSendingId, (prev) => {
-            const hasUser = prev.some(
-              (m) =>
-                m._id === tempUserMsgId ||
-                (m.role === "user" && m.content === message)
-            );
+            const hasUser = prev.some((m) => m._id === tempUserMsgId);
             const base = hasUser ? prev : [...prev, tempUserMsg];
             return [...base, finalAssistantMsg];
           });
@@ -366,17 +380,32 @@ export default function ResumeStudio() {
           });
         },
         onError: (err) => {
-          if (activeResumeId === currentSendingId) {
+          if (activeResumeIdRef.current === currentSendingId) {
             setIsStreaming(false);
             setOptimisticUserMessage(null);
+            setStreamedText("");
+            // Remove optimistic message on failure and sync with server
+            updateResumeCacheMessages(queryClient, currentSendingId, (prev) =>
+              prev.filter((m) => m._id !== tempUserMsgId)
+            );
+            queryClient.invalidateQueries({
+              queryKey: ["resume", currentSendingId],
+            });
           }
           console.error("[Resume Studio Stream Error]:", err);
         },
       });
     } catch (err) {
-      if (activeResumeId === currentSendingId) {
+      if (activeResumeIdRef.current === currentSendingId) {
         setIsStreaming(false);
         setOptimisticUserMessage(null);
+        setStreamedText("");
+        updateResumeCacheMessages(queryClient, currentSendingId, (prev) =>
+          prev.filter((m) => m._id !== tempUserMsgId)
+        );
+        queryClient.invalidateQueries({
+          queryKey: ["resume", currentSendingId],
+        });
       }
     }
   };
@@ -384,9 +413,15 @@ export default function ResumeStudio() {
   const handleStopStreaming = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
       setIsStreaming(false);
       setStreamedText("");
       setOptimisticUserMessage(null);
+      if (activeResumeIdRef.current) {
+        queryClient.invalidateQueries({
+          queryKey: ["resume", activeResumeIdRef.current],
+        });
+      }
     }
   };
 

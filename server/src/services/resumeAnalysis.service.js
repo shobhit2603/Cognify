@@ -142,14 +142,16 @@ ${resolvedJobDescription || "No specific job description provided. Audit against
     }
   }
 
-  // Validate auditResult structure before relying on it
+  // Validate auditResult structure and ensure each dimension is finite and within 0-25
+  const isValidDimension = (s) => typeof s === "number" && Number.isFinite(s) && s >= 0 && s <= 25;
+  const subScoreObj = auditResult?.subScores;
   const isValidAudit =
     auditResult &&
-    auditResult.subScores &&
-    typeof auditResult.subScores.formatting === "number" &&
-    typeof auditResult.subScores.impactAndMetrics === "number" &&
-    typeof auditResult.subScores.skillsAndKeywords === "number" &&
-    typeof auditResult.subScores.sectionStructure === "number" &&
+    subScoreObj &&
+    isValidDimension(subScoreObj.formatting) &&
+    isValidDimension(subScoreObj.impactAndMetrics) &&
+    isValidDimension(subScoreObj.skillsAndKeywords) &&
+    isValidDimension(subScoreObj.sectionStructure) &&
     Array.isArray(auditResult.actionableRecommendations) &&
     Array.isArray(auditResult.keyProblems);
 
@@ -167,11 +169,16 @@ ${resolvedJobDescription || "No specific job description provided. Audit against
     const structScore = 18;
     const overall = fmtScore + impactScore + skillScore + structScore;
 
+    const matchSkillName = (text, skill) => {
+      const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`(^|[^a-zA-Z0-9+#])${escaped}(?=[^a-zA-Z0-9+#]|$)`, "i");
+      return pattern.test(text);
+    };
+
     const candidateTech = ["JavaScript", "TypeScript", "React", "Node.js", "Python", "Java", "C++", "SQL", "MongoDB", "AWS", "Docker", "Git", "REST APIs", "GraphQL"];
-    const textLower = resume.rawText.toLowerCase();
-    const dynamicMatched = candidateTech.filter((kw) => textLower.includes(kw.toLowerCase()));
+    const dynamicMatched = candidateTech.filter((kw) => matchSkillName(resume.rawText, kw));
     const jdKeywords = resolvedJobDescription
-      ? ["System Design", "Cloud Infrastructure", "CI/CD", "Kubernetes", "Microservices"].filter((kw) => !textLower.includes(kw.toLowerCase()))
+      ? ["System Design", "Cloud Infrastructure", "CI/CD", "Kubernetes", "Microservices"].filter((kw) => !matchSkillName(resume.rawText, kw))
       : [];
 
     auditResult = {
@@ -307,8 +314,8 @@ export async function* streamResumeChat({
 Title: ${resume.title}
 Candidate Name: ${resume.parsedSections?.contactInfo?.name || "Candidate"}
 Current Overall ATS Score: ${activeAudit?.overallScore || 0}/100
-Weak Sections: ${(activeAudit?.weakSections || []).map((w) => `${w.name} (${w.score}/100: ${w.feedback})`).join("; ") || "None"}
-Missing Keywords: ${(activeAudit?.missingKeywords || []).join(", ") || "None"}
+Weak Sections: ${Array.isArray(activeAudit?.weakSections) && activeAudit.weakSections.length > 0 ? activeAudit.weakSections.map((w) => `${w.name} (${w.score}/100: ${w.feedback})`).join("; ") : "None"}
+Missing Keywords: ${Array.isArray(activeAudit?.missingKeywords) && activeAudit.missingKeywords.length > 0 ? activeAudit.missingKeywords.join(", ") : "None"}
 Resume Raw Text:
 ${resume.rawText}
 

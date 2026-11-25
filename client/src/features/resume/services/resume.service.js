@@ -130,11 +130,9 @@ export const resumeService = {
         }
       }
 
-      // If the stream closed without an explicit terminal event, trigger error to exit generating state
+      // If the stream closed without an explicit terminal event, throw failure so outer catch notifies caller once
       if (!terminalEventReceived) {
-        const err = new Error("Stream connection closed before completion");
-        onError?.(err);
-        throw err;
+        throw new Error("Stream connection closed before completion");
       }
     } catch (err) {
       if (err.name === "AbortError") {

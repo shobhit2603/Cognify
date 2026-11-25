@@ -198,7 +198,7 @@ export const uploadAndExtractResume = async (
 
     return resume;
   } catch (err) {
-    await s3Storage.deleteFile(storageKey).catch(() => {});
+    await s3Storage.deleteObjectFromS3(storageKey).catch(() => {});
     throw err;
   }
 };
