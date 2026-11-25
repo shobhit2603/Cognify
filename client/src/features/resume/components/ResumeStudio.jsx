@@ -146,6 +146,7 @@ export default function ResumeStudio() {
     isUploading,
     updateTitle,
     deleteResume,
+    isDeleting,
     runAudit,
     isAuditing,
   } = useResumeMutations();
@@ -191,6 +192,7 @@ export default function ResumeStudio() {
 
   const [promptToInject, setPromptToInject] = useState("");
   const [modeToInject, setModeToInject] = useState("general");
+  const [promptTrigger, setPromptTrigger] = useState(0);
 
   // Tab switch handler with URL and localStorage persistence
   const handleTabChange = useCallback(
@@ -428,6 +430,7 @@ export default function ResumeStudio() {
   const handleSelectStarterPrompt = (promptText, mode) => {
     setPromptToInject(promptText);
     setModeToInject(mode);
+    setPromptTrigger((n) => n + 1);
     handleTabChange("chat");
   };
 
@@ -445,6 +448,7 @@ export default function ResumeStudio() {
             handleStartUpload();
           }
         }}
+        isDeleting={isDeleting}
         onRenameResume={(id, newTitle) => updateTitle({ id, title: newTitle })}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -603,18 +607,6 @@ export default function ResumeStudio() {
                     <span>Resume Chat</span>
                   </button>
                 </div>
-
-                {centerTab === "audit" && (
-                  <button
-                    type="button"
-                    onClick={handleReAudit}
-                    disabled={isAuditing}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium text-white/60 hover:text-white hover:bg-white/5 border border-white/10 transition-colors disabled:opacity-40"
-                  >
-                    <ArrowClockwise size={12} className={isAuditing ? "animate-spin text-[#ffbd2e]" : ""} />
-                    <span>Re-Audit</span>
-                  </button>
-                )}
               </div>
 
               {/* Tab 1: Full-Height Structured ATS Audit Report */}
@@ -630,6 +622,7 @@ export default function ResumeStudio() {
                     onOptimizeIssue={(promptText, mode) => {
                       setPromptToInject(promptText);
                       setModeToInject(mode || "optimize-section");
+                      setPromptTrigger((n) => n + 1);
                       handleTabChange("chat");
                     }}
                   />
@@ -656,6 +649,7 @@ export default function ResumeStudio() {
                   onStopStreaming={handleStopStreaming}
                   initialPrompt={promptToInject}
                   initialMode={modeToInject}
+                  promptTrigger={promptTrigger}
                 />
               </div>
             </div>

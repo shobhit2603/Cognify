@@ -45,22 +45,47 @@ export default function ResumeActionBar({
   onStopStreaming,
   initialPrompt = "",
   initialMode = "general",
+  promptTrigger = 0,
 }) {
   const [input, setInput] = useState("");
   const [selectedMode, setSelectedMode] = useState("general");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [prevPrompt, setPrevPrompt] = useState(initialPrompt);
   const [prevMode, setPrevMode] = useState(initialMode);
+  const [prevTrigger, setPrevTrigger] = useState(promptTrigger);
   const dropdownRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Sync state during render when prompt/mode changes from external suggestions
-  if (initialPrompt !== prevPrompt || initialMode !== prevMode) {
+  // Sync state during render when prompt/mode/trigger changes from external suggestions
+  if (
+    promptTrigger !== prevTrigger ||
+    initialPrompt !== prevPrompt ||
+    initialMode !== prevMode
+  ) {
+    setPrevTrigger(promptTrigger);
     setPrevPrompt(initialPrompt);
     setPrevMode(initialMode);
     if (initialPrompt) setInput(initialPrompt);
     if (initialMode) setSelectedMode(initialMode);
   }
+
+  // Focus, highlight, position cursor, and auto-resize textarea when a preset prompt is selected
+  useEffect(() => {
+    if (!promptTrigger) return undefined;
+    const el = textareaRef.current;
+    if (!el) return undefined;
+
+    const frameId = requestAnimationFrame(() => {
+      el.focus();
+      const len = el.value.length;
+      el.setSelectionRange(len, len);
+      el.style.height = "40px";
+      el.style.height = `${Math.max(40, Math.min(el.scrollHeight, 120))}px`;
+      el.scrollTop = el.scrollHeight;
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [promptTrigger]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -171,12 +196,14 @@ export default function ResumeActionBar({
         <div className="flex-1 min-w-0 relative flex items-center">
           <textarea
             ref={textareaRef}
+            data-lenis-prevent
             rows={1}
             value={input}
             onChange={handleInputResize}
             onKeyDown={handleKeyDown}
             placeholder={activeModeConfig.placeholder}
-            className="w-full h-10 min-h-[40px] max-h-[120px] px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs sm:text-sm text-white placeholder-white/40 focus:outline-none focus:border-[#ffbd2e]/60 focus:bg-white/[0.08] transition-colors resize-none leading-normal overflow-y-auto block"
+            style={{ height: "40px" }}
+            className="w-full min-h-[40px] max-h-[120px] px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs sm:text-sm text-white placeholder-white/40 focus:outline-none focus:border-[#ffbd2e] focus:ring-2 focus:ring-[#ffbd2e]/25 focus:bg-white/[0.08] transition-all resize-none leading-normal overflow-y-auto overflow-x-hidden [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.2)_transparent] select-text block"
           />
         </div>
 
