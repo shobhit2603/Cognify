@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -145,9 +145,13 @@ export default function ResumeChatFeed({
   messages = [],
   streamedText = "",
   isStreaming = false,
+  streamingMode = "general",
   onSelectPrompt,
 }) {
+  const scrollContainerRef = useRef(null);
   const feedBottomRef = useRef(null);
+  const isUserScrolledUpRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
 
   // Filter out any duplicate static audit summary messages so chat starts completely clean
   const chatMessages = messages.filter(
@@ -158,12 +162,43 @@ export default function ResumeChatFeed({
 
   const prevMessagesCountRef = useRef(chatMessages.length);
 
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const isScrollingUp = scrollTop < lastScrollTopRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 80;
+
+    if (isScrollingUp && !isAtBottom) {
+      isUserScrolledUpRef.current = true;
+    } else if (isAtBottom) {
+      isUserScrolledUpRef.current = false;
+    }
+    lastScrollTopRef.current = scrollTop;
+  }, []);
+
+  const scrollToBottom = useCallback((force = false, smooth = true) => {
+    if (force || !isUserScrolledUpRef.current) {
+      feedBottomRef.current?.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+      });
+    }
+  }, []);
+
+  // When a new message is added, smooth scroll to bottom
   useEffect(() => {
-    if (isStreaming || chatMessages.length > prevMessagesCountRef.current) {
-      feedBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatMessages.length > prevMessagesCountRef.current) {
+      isUserScrolledUpRef.current = false;
+      scrollToBottom(true, true);
     }
     prevMessagesCountRef.current = chatMessages.length;
-  }, [chatMessages.length, isStreaming, streamedText]);
+  }, [chatMessages.length, scrollToBottom]);
+
+  // When streaming chunks arrive, pin instantly to bottom unless user scrolled up
+  useEffect(() => {
+    if (isStreaming && streamedText) {
+      scrollToBottom(false, false);
+    }
+  }, [isStreaming, streamedText, scrollToBottom]);
 
   const starterPrompts = [
     {
@@ -189,70 +224,110 @@ export default function ResumeChatFeed({
   ];
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-6 flex-1 flex flex-col justify-start">
-      {chatMessages.length === 0 && !streamedText && (
-        <div className="py-10 text-center space-y-6 max-w-lg mx-auto">
-          <div className="w-12 h-12 rounded-2xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center text-[#ffbd2e] mx-auto shadow-inner">
-            <Sparkle size={24} weight="duotone" />
-          </div>
-          <div className="space-y-1.5">
-            <h4 className="text-sm font-semibold text-white">Interactive Resume Copilot</h4>
-            <p className="text-xs text-white/50 leading-relaxed">
-              Ask anything about your resume, optimize weak bullets, or paste a job description to check alignment.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-            {starterPrompts.map((p, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => onSelectPrompt(p.prompt, p.mode)}
-                className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-[#ffbd2e]/40 text-left transition-all space-y-1 group"
-              >
-                <p className="text-xs font-semibold text-white/90 group-hover:text-[#ffbd2e] transition-colors">
-                  {p.label}
-                </p>
-                <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">
-                  {p.prompt}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Message History */}
-      {chatMessages.map((msg, idx) =>
-        msg.role === "user" ? (
-          <UserMessageBubble key={msg._id || idx} msg={msg} />
-        ) : (
-          <AssistantMessageBubble key={msg._id || idx} msg={msg} />
-        )
-      )}
-
-      {/* Streaming Assistant Response */}
-      {isStreaming && (
-        <div className="flex items-start gap-3 animate-fadeIn">
-          <div className="w-8 h-8 rounded-xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center shrink-0 text-[#ffbd2e] mt-0.5">
-            <CircleNotch size={16} className="animate-spin" />
-          </div>
-          <div className="flex-1 rounded-2xl rounded-tl-sm bg-[#141418] border border-white/10 p-4 shadow-md space-y-2">
-            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-              <span className="text-xs font-semibold text-white/90">Resume Studio AI</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e]">
-                generating...
-              </span>
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      data-lenis-prevent
+      className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-6"
+    >
+      <div className="w-full max-w-4xl mx-auto space-y-6 flex flex-col justify-start pb-4">
+        {chatMessages.length === 0 && !streamedText && !isStreaming && (
+          <div className="py-10 text-center space-y-6 max-w-lg mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center text-[#ffbd2e] mx-auto shadow-inner">
+              <Sparkle size={24} weight="duotone" />
             </div>
-            <div className="prose prose-invert prose-xs max-w-none text-white/80 leading-relaxed whitespace-pre-wrap">
-              {streamedText || "Thinking..."}
-              <span className="inline-block w-1.5 h-3.5 bg-[#ffbd2e] ml-1 animate-pulse" />
+            <div className="space-y-1.5">
+              <h4 className="text-sm font-semibold text-white">Interactive Resume Copilot</h4>
+              <p className="text-xs text-white/50 leading-relaxed">
+                Ask anything about your resume, optimize weak bullets, or paste a job description to check alignment.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+              {starterPrompts.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => onSelectPrompt(p.prompt, p.mode)}
+                  className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-[#ffbd2e]/40 text-left transition-all space-y-1 group"
+                >
+                  <p className="text-xs font-semibold text-white/90 group-hover:text-[#ffbd2e] transition-colors">
+                    {p.label}
+                  </p>
+                  <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">
+                    {p.prompt}
+                  </p>
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div ref={feedBottomRef} />
+        {/* Message History */}
+        {chatMessages.map((msg, idx) =>
+          msg.role === "user" ? (
+            <UserMessageBubble key={msg._id || idx} msg={msg} />
+          ) : (
+            <AssistantMessageBubble key={msg._id || idx} msg={msg} />
+          )
+        )}
+
+        {/* Streaming Assistant Response with identical Markdown typography */}
+        {isStreaming && (
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#ffbd2e]/10 border border-[#ffbd2e]/30 flex items-center justify-center shrink-0 text-[#ffbd2e] shadow-inner mt-0.5">
+              <CircleNotch size={16} className="animate-spin" />
+            </div>
+            <div className="flex-1 min-w-0 rounded-2xl rounded-tl-sm bg-[#141418] border border-white/10 p-4 shadow-md space-y-2">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-white/90">Resume Studio AI</span>
+                  {streamingMode && streamingMode !== "general" && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] border border-[#ffbd2e]/20 uppercase">
+                      {streamingMode}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ffbd2e]/10 text-[#ffbd2e] animate-pulse">
+                    generating...
+                  </span>
+                </div>
+              </div>
+
+              <div className="prose prose-invert prose-xs max-w-none text-white/80 leading-relaxed space-y-2">
+                {streamedText ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
+                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                      h3: ({ children }) => (
+                        <h3 className="text-xs sm:text-sm font-bold text-white mt-3 mb-1.5 flex items-center gap-1.5">
+                          {children}
+                        </h3>
+                      ),
+                      strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                      code: ({ children }) => (
+                        <code className="px-1.5 py-0.5 rounded-md bg-white/10 text-[#ffbd2e] font-mono text-[11px]">
+                          {children}
+                        </code>
+                      ),
+                    }}
+                  >
+                    {streamedText}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="text-xs text-white/50 italic">Thinking...</p>
+                )}
+                <span className="inline-block w-1.5 h-3.5 bg-[#ffbd2e] ml-1 animate-pulse align-middle" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div ref={feedBottomRef} />
+      </div>
     </div>
   );
 }

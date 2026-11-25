@@ -231,8 +231,30 @@ export default function ResumeStudio() {
     setIsStreaming(true);
     setStreamedText("");
 
+    const tempUserMsgId = `temp-user-${Date.now()}`;
+    const tempUserMsg = {
+      _id: tempUserMsgId,
+      role: "user",
+      content: message,
+      mode,
+      jobDescription,
+      createdAt: new Date().toISOString(),
+    };
+
+    // 1. Optimistically append user message immediately so it appears instantly
+    queryClient.setQueryData(["resume", activeResumeId], (old) => {
+      if (!old) return old;
+      const existing = old.messages || [];
+      return {
+        ...old,
+        messages: [...existing, tempUserMsg],
+      };
+    });
+
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+
+    let accumulatedText = "";
 
     try {
       await resumeService.streamResumeChat({
@@ -242,14 +264,45 @@ export default function ResumeStudio() {
         jobDescription,
         signal: abortController.signal,
         onChunk: (chunk) => {
-          setStreamedText((prev) => prev + chunk);
+          accumulatedText += chunk;
+          setStreamedText(accumulatedText);
         },
-        onDone: () => {
-          setStreamedText("");
+        onDone: (payload) => {
+          const finalAssistantMsg = payload?.message || {
+            _id: `temp-assistant-${Date.now()}`,
+            role: "assistant",
+            mode,
+            content: accumulatedText,
+            createdAt: new Date().toISOString(),
+          };
+
+          // 2. Seamlessly update cache with completed assistant message BEFORE clearing stream state
+          queryClient.setQueryData(["resume", activeResumeId], (old) => {
+            if (!old) return old;
+            const existing = old.messages || [];
+            const hasUser = existing.some(
+              (m) => m._id === tempUserMsgId || (m.role === "user" && m.content === message)
+            );
+            const base = hasUser ? existing : [...existing, tempUserMsg];
+            return {
+              ...old,
+              messages: [...base, finalAssistantMsg],
+            };
+          });
+
+          // 3. Clear streaming state now that cache is populated - zero unmount gap or flash!
           setIsStreaming(false);
-          // Invalidate resume to refresh conversation and updated audit
-          queryClient.invalidateQueries({ queryKey: ["resume", activeResumeId] });
-          queryClient.invalidateQueries({ queryKey: ["resumes"] });
+          setStreamedText("");
+
+          // 4. Background quiet sync without dropping cache or unmounting
+          queryClient.invalidateQueries({
+            queryKey: ["resume", activeResumeId],
+            refetchType: "none",
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["resumes"],
+            refetchType: "none",
+          });
         },
         onError: (err) => {
           setIsStreaming(false);
@@ -275,12 +328,6 @@ export default function ResumeStudio() {
     setCenterTab("chat");
   };
 
-  const cleanChatCount = (activeResume?.messages || []).filter(
-    (m) =>
-      m.mode !== "audit" &&
-      !m.content?.toLowerCase().includes("ats optimization audit complete")
-  ).length;
-
   return (
     <div className="flex h-screen w-full bg-[#0d0d0f] text-white overflow-hidden font-sans">
       {/* ── Left History Drawer (230px) ── */}
@@ -303,7 +350,7 @@ export default function ResumeStudio() {
       />
 
       {/* ── Main Workspace Area ── */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 min-h-0">
         {/* Workspace Top Bar */}
         <header className="h-12 border-b border-white/10 bg-[#0e0e11] px-4 flex items-center justify-between shrink-0 select-none">
           <div className="flex items-center gap-3 min-w-0">
@@ -393,7 +440,7 @@ export default function ResumeStudio() {
 
         {/* ── Studio Canvas / Split View ── */}
         {isUploadMode || !activeResume ? (
-          <div className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center">
+          <div data-lenis-prevent className="flex-1 overflow-y-auto min-h-0 custom-scrollbar flex items-center justify-center">
             <ResumeUploadZone onUpload={handleUpload} isUploading={isUploading} />
           </div>
         ) : (
@@ -448,11 +495,6 @@ export default function ResumeStudio() {
                   >
                     <ChatCircleText size={15} weight={centerTab === "chat" ? "fill" : "regular"} />
                     <span>Resume Chat</span>
-                    {cleanChatCount > 0 && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-white/70">
-                        {cleanChatCount}
-                      </span>
-                    )}
                   </button>
                 </div>
 
@@ -471,7 +513,10 @@ export default function ResumeStudio() {
 
               {/* Tab 1: Full-Height Structured ATS Audit Report */}
               {centerTab === "audit" && (
-                <div className="flex-1 min-h-0 overflow-y-auto">
+                <div
+                  data-lenis-prevent
+                  className="flex-1 min-h-0 overflow-y-auto custom-scrollbar"
+                >
                   <ResumeAuditHero
                     audit={activeResume?.latestAudit}
                     onReAudit={handleReAudit}
@@ -487,14 +532,13 @@ export default function ResumeStudio() {
 
               {/* Tab 2: Full-Height Conversational Resume Chat */}
               {centerTab === "chat" && (
-                <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-                  <ResumeChatFeed
-                    messages={activeResume?.messages || []}
-                    streamedText={streamedText}
-                    isStreaming={isStreaming}
-                    onSelectPrompt={handleSelectStarterPrompt}
-                  />
-                </div>
+                <ResumeChatFeed
+                  messages={activeResume?.messages || []}
+                  streamedText={streamedText}
+                  isStreaming={isStreaming}
+                  streamingMode={modeToInject}
+                  onSelectPrompt={handleSelectStarterPrompt}
+                />
               )}
 
               {/* Scoped Bottom Action Bar */}
