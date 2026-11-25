@@ -38,7 +38,7 @@ export const requestUploadUrl = async (userId, { fileName, mimeType, size }) => 
     mimeType,
     size,
     storageKey,
-    storageProvider: "s3",
+    storageProvider: s3Storage.isLocalMode?.() ? "local" : "s3",
     status: "UPLOADED",
     progress: 0,
   });

@@ -2,6 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import * as documentService from "../services/document.service.js";
 import * as documentRepository from "../repositories/document.repository.js";
 import * as s3Storage from "../services/storage/s3.storage.js";
+import envConfig from "../config/env.config.js";
 import ApiResponse from "../utils/apiResponse.util.js";
 import path from "path";
 
@@ -44,14 +45,14 @@ export const handleLocalStorageUpload = async (req, res, next) => {
         .json(ApiResponse(StatusCodes.BAD_REQUEST, "No file content received"));
     }
 
-    await s3Storage.saveLocalBuffer(storageKey, buffer);
+    const { storageProvider } = await s3Storage.uploadBufferWithDevFallback(
+      storageKey,
+      buffer,
+      "application/pdf"
+    );
 
-    if (!s3Storage.isLocalMode()) {
-      try {
-        await s3Storage.uploadBufferToS3(storageKey, buffer, "application/pdf");
-      } catch (s3SyncErr) {
-        console.warn("[Storage] S3 buffer sync notice (local copy available):", s3SyncErr.message);
-      }
+    if (doc.storageProvider !== storageProvider) {
+      await documentRepository.updateDocument(doc._id, { storageProvider });
     }
 
     res
@@ -64,6 +65,12 @@ export const handleLocalStorageUpload = async (req, res, next) => {
 
 export const handleLocalStorageDownload = async (req, res, next) => {
   try {
+    if ((process.env.NODE_ENV || envConfig.NODE_ENV) === "production") {
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse(StatusCodes.FORBIDDEN, "Local storage download is disabled in production"));
+    }
+
     const storageKey = req.query.key;
     if (!storageKey) {
       return res

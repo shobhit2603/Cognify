@@ -138,23 +138,17 @@ export const uploadAndExtractResume = async (
   // 2. Initial section segmentation
   const parsedSections = parseResumeSections(rawText);
 
-  // 3. Save buffer to storage
+  // 3. Save buffer to storage (S3 strictly in production; local fallback only in dev when S3 is unconfigured/failing)
   const resumeId = uuidv4();
   const safeName = originalName || "Resume.pdf";
   const ext = path.extname(safeName) || ".pdf";
   const storageKey = `resumes/${userId}/${resumeId}/original${ext}`;
 
-  await s3Storage.saveLocalBuffer(storageKey, fileBuffer);
-
-  let storageProvider = "local";
-  if (!s3Storage.isLocalMode()) {
-    try {
-      await s3Storage.uploadBufferToS3(storageKey, fileBuffer, "application/pdf");
-      storageProvider = "s3";
-    } catch (s3Err) {
-      console.warn("[Resume Storage] S3 upload warning, proceeding with local copy:", s3Err.message);
-    }
-  }
+  const { storageProvider } = await s3Storage.uploadBufferWithDevFallback(
+    storageKey,
+    fileBuffer,
+    "application/pdf"
+  );
 
   // 4. Generate download URL
   const fileUrl = await s3Storage.generatePresignedDownloadUrl(storageKey);

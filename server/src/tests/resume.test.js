@@ -11,6 +11,7 @@ jest.unstable_mockModule("../services/storage/s3.storage.js", () => ({
     .mockResolvedValue("https://mock-storage.cognify.ai/resumes/test.pdf"),
   deleteObjectFromS3: jest.fn().mockResolvedValue(true),
   uploadBufferToS3: jest.fn().mockResolvedValue(true),
+  uploadBufferWithDevFallback: jest.fn().mockResolvedValue({ storageProvider: "local" }),
   isLocalMode: jest.fn().mockReturnValue(true),
   resolveSafeLocalPath: jest.fn().mockReturnValue("/mock/uploads/resumes/test.pdf"),
 }));
