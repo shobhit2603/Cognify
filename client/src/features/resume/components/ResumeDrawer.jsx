@@ -8,6 +8,7 @@ import {
   PencilSimple,
   Trash,
   FilePdf,
+  CircleNotch,
 } from "@phosphor-icons/react";
 import RenameResumeModal from "./RenameResumeModal";
 
@@ -17,6 +18,7 @@ export default function ResumeDrawer({
   onSelectResume,
   onStartUpload,
   onDeleteResume,
+  isDeleting = false,
   onRenameResume,
   searchQuery = "",
   setSearchQuery,
@@ -26,7 +28,9 @@ export default function ResumeDrawer({
   const [activeMenuResumeId, setActiveMenuResumeId] = useState(null);
   const [resumeToRename, setResumeToRename] = useState(null);
   const [resumeToDelete, setResumeToDelete] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
   const menuRef = useRef(null);
+  const isConfirmingDeleteRef = useRef(false);
 
   // Close 3-dot menu on outside click
   useEffect(() => {
@@ -42,6 +46,43 @@ export default function ResumeDrawer({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [activeMenuResumeId]);
+
+  const closeDeleteModal = () => {
+    if (isDeleting || isConfirmingDeleteRef.current) return;
+    setDeleteError(null);
+    setResumeToDelete(null);
+  };
+
+  // Prevent Escape key from closing the delete modal while deletion is in flight
+  useEffect(() => {
+    if (!resumeToDelete) return;
+    function handleKeyDown(event) {
+      if (event.key === "Escape" && !isDeleting && !isConfirmingDeleteRef.current) {
+        setDeleteError(null);
+        setResumeToDelete(null);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [resumeToDelete, isDeleting]);
+
+  const handleConfirmDelete = async () => {
+    if (!resumeToDelete || isDeleting || isConfirmingDeleteRef.current) return;
+    isConfirmingDeleteRef.current = true;
+    setDeleteError(null);
+    try {
+      await onDeleteResume(resumeToDelete._id);
+      setResumeToDelete(null);
+    } catch (err) {
+      setDeleteError(
+        err?.response?.data?.message || err?.message || "Failed to delete resume"
+      );
+    } finally {
+      isConfirmingDeleteRef.current = false;
+    }
+  };
 
   const filteredResumes = resumes.filter((r) => {
     if (!searchQuery.trim()) return true;
@@ -211,6 +252,7 @@ export default function ResumeDrawer({
                             type="button"
                             onClick={() => {
                               setActiveMenuResumeId(null);
+                              setDeleteError(null);
                               setResumeToDelete(resume);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
@@ -241,34 +283,56 @@ export default function ResumeDrawer({
 
       {/* Delete Confirmation Modal */}
       {resumeToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+          onClick={closeDeleteModal}
+        >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-resume-modal-title"
             className="w-full max-w-sm bg-[#131316] border border-white/10 rounded-2xl shadow-2xl p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-semibold text-white mb-2">Delete Resume?</h3>
+            <h3 id="delete-resume-modal-title" className="text-sm font-semibold text-white mb-2">
+              Delete Resume?
+            </h3>
             <p className="text-xs text-white/60 mb-5 leading-relaxed">
               Are you sure you want to delete &ldquo;
               <span className="text-white font-medium">{resumeToDelete.title}</span>
               &rdquo;? This will permanently remove its audit data and conversation history.
             </p>
+            {deleteError && (
+              <p
+                role="alert"
+                className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-4"
+              >
+                {deleteError}
+              </p>
+            )}
             <div className="flex items-center justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => setResumeToDelete(null)}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 border border-white/10 transition-colors"
+                disabled={isDeleting}
+                onClick={closeDeleteModal}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 border border-white/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={async () => {
-                  await onDeleteResume(resumeToDelete._id);
-                  setResumeToDelete(null);
-                }}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Delete
+                {isDeleting ? (
+                  <>
+                    <CircleNotch size={14} className="animate-spin shrink-0" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  "Delete"
+                )}
               </button>
             </div>
           </div>

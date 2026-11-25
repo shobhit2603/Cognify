@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   UploadSimple,
   FilePdf,
@@ -17,6 +17,7 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
   const [customTitle, setCustomTitle] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const fileInputRef = useRef(null);
+  const submitButtonRef = useRef(null);
 
   const validateAndSetFile = (file) => {
     if (!file) return;
@@ -35,6 +36,11 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
     if (!customTitle) {
       setCustomTitle(file.name.replace(/\.[^/.]+$/, ""));
     }
+
+    // Move focus to the submit button so pressing Enter immediately launches Resume Studio
+    requestAnimationFrame(() => {
+      submitButtonRef.current?.focus();
+    });
   };
 
   const handleDrop = (e) => {
@@ -45,20 +51,40 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedFile || isUploading) return;
+  const handleSubmit = useCallback(
+    async (e) => {
+      e?.preventDefault();
+      if (!selectedFile || isUploading) return;
 
-    try {
-      await onUpload({
-        file: selectedFile,
-        title: customTitle.trim() || selectedFile.name.replace(/\.[^/.]+$/, ""),
-        targetRole: targetRole.trim(),
-      });
-    } catch {
-      // handled by mutation
-    }
-  };
+      try {
+        await onUpload({
+          file: selectedFile,
+          title: customTitle.trim() || selectedFile.name.replace(/\.[^/.]+$/, ""),
+          targetRole: targetRole.trim(),
+        });
+      } catch {
+        // handled by mutation
+      }
+    },
+    [selectedFile, isUploading, onUpload, customTitle, targetRole]
+  );
+
+  // Allow pressing Enter anywhere on the page (when not inside another button/link) once a PDF is selected
+  useEffect(() => {
+    if (!selectedFile || isUploading) return undefined;
+
+    const onWindowKeyDown = (e) => {
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      const active = document.activeElement;
+      if (!active || active === document.body) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+
+    window.addEventListener("keydown", onWindowKeyDown);
+    return () => window.removeEventListener("keydown", onWindowKeyDown);
+  }, [selectedFile, isUploading, handleSubmit]);
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-12 sm:py-16 space-y-8 animate-fadeIn">
@@ -73,7 +99,10 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
       </div>
 
       {/* ── Upload Card ── */}
-      <div className="rounded-2xl border border-white/10 bg-[#121215] p-6 sm:p-8 shadow-xl space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-white/10 bg-[#121215] p-6 sm:p-8 shadow-xl space-y-6"
+      >
         <input
           ref={fileInputRef}
           type="file"
@@ -159,10 +188,10 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
         </div>
 
         <button
-          type="button"
-          onClick={handleSubmit}
+          ref={submitButtonRef}
+          type="submit"
           disabled={!selectedFile || isUploading}
-          className="w-full py-3 rounded-xl bg-[#ffbd2e] text-black font-semibold text-xs sm:text-sm hover:bg-[#ffbd2e]/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-md shadow-[#ffbd2e]/10"
+          className="w-full py-3 rounded-xl bg-[#ffbd2e] text-black font-semibold text-xs sm:text-sm hover:bg-[#ffbd2e]/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-md shadow-[#ffbd2e]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ffbd2e] focus-visible:ring-offset-2 focus-visible:ring-offset-[#121215]"
         >
           {isUploading ? (
             <>
@@ -176,7 +205,7 @@ export default function ResumeUploadZone({ onUpload, isUploading = false }) {
             </>
           )}
         </button>
-      </div>
+      </form>
 
       {/* ── Value Props Strip ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">

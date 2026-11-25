@@ -63,7 +63,7 @@ export const useResumeMutations = () => {
       toast.success("Resume deleted");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "Failed to delete resume");
+      toast.error(err.response?.data?.message || err.message || "Failed to delete resume");
     },
   });
 
