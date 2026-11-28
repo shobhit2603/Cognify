@@ -20,7 +20,7 @@ import {
   useWritingMutations,
 } from "../hooks/useWriting";
 import { writingService } from "../services/writing.service";
-import { useResumes } from "../../resume/hooks/useResumes";
+import { useResumes, useResumeMutations } from "../../resume/hooks/useResumes";
 
 const DEFAULT_EMAIL_FORM = {
   purpose: "Follow-Up",
@@ -184,6 +184,18 @@ export default function WritingStudio() {
   const resumes = Array.isArray(resumesRaw)
     ? resumesRaw
     : resumesRaw?.resumes || [];
+  const { uploadResume, isUploading: isUploadingResume } = useResumeMutations();
+
+  const handleInlineResumeUpload = async (file) => {
+    const res = await uploadResume({ file });
+    const uploaded = res?.data || res;
+    if (uploaded?._id) {
+      setCoverLetterForm((prev) => ({
+        ...prev,
+        resumeId: String(uploaded._id),
+      }));
+    }
+  };
 
   const {
     updateWriting,
@@ -692,6 +704,8 @@ export default function WritingStudio() {
               setCoverLetterForm={setCoverLetterForm}
               resumes={resumes}
               isLoadingResumes={isLoadingResumes}
+              onUploadResume={handleInlineResumeUpload}
+              isUploadingResume={isUploadingResume}
               isStreaming={isStreaming}
               hasActiveDraft={Boolean(activeDraftId)}
               isCentered={!isOutputPanelOpen}

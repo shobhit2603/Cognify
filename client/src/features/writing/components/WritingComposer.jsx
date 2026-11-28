@@ -1,6 +1,5 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useRef } from "react";
 import {
   EnvelopeSimple,
   ReadCvLogo,
@@ -9,8 +8,9 @@ import {
   CaretDown,
   CaretUp,
   BriefcaseMetal,
-  ArrowSquareOut,
+  CircleNotch,
 } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import {
   WRITING_MODES,
   EMAIL_PURPOSES,
@@ -49,6 +49,8 @@ function PillSelector({ label, options, value, onChange, disabled }) {
   );
 }
 
+const UPLOAD_NEW_RESUME_OPTION = "__upload_new__";
+
 export default function WritingComposer({
   mode,
   onModeChange,
@@ -58,15 +60,45 @@ export default function WritingComposer({
   setCoverLetterForm,
   resumes = [],
   isLoadingResumes = false,
+  onUploadResume,
+  isUploadingResume = false,
   isStreaming = false,
   hasActiveDraft = false,
   isCentered = false,
   onGenerate,
   onStop,
 }) {
+  const resumeFileInputRef = useRef(null);
   const [showReplySection, setShowReplySection] = useState(
     Boolean(emailForm.replyToEmail?.trim() || emailForm.recipientContext?.trim())
   );
+
+  const handleResumeFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      toast.error("Please select a valid PDF resume.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Resume file size must not exceed 10MB.");
+      return;
+    }
+
+    if (onUploadResume) {
+      try {
+        await onUploadResume(file);
+      } catch {
+        // Error toast handled by useResumeMutations
+      }
+    }
+  };
 
   const isEmail = mode === "email";
 
@@ -339,33 +371,47 @@ export default function WritingComposer({
                     <BriefcaseMetal size={13} className="text-[#ffbd2e]" />
                     <span>Resume Studio Context</span>
                   </label>
-                  <Link
-                    href="/resume"
-                    className="inline-flex items-center gap-1 text-[11px] text-[#ffbd2e]/80 hover:text-[#ffbd2e] transition-colors"
-                  >
-                    <span>Manage Resumes</span>
-                    <ArrowSquareOut size={11} />
-                  </Link>
+                  {isUploadingResume && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#ffbd2e]">
+                      <CircleNotch size={12} className="animate-spin" />
+                      <span>Extracting PDF...</span>
+                    </span>
+                  )}
                 </div>
+
+                <input
+                  ref={resumeFileInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={handleResumeFileChange}
+                  className="hidden"
+                />
 
                 <select
                   id="writing-cover-resume"
                   value={coverLetterForm.resumeId || ""}
-                  disabled={isStreaming || isLoadingResumes}
-                  onChange={(e) =>
+                  disabled={isStreaming || isLoadingResumes || isUploadingResume}
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    if (nextVal === UPLOAD_NEW_RESUME_OPTION) {
+                      resumeFileInputRef.current?.click();
+                      return;
+                    }
                     setCoverLetterForm((prev) => ({
                       ...prev,
-                      resumeId: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 rounded-lg bg-[#16161a] border border-white/10 text-xs text-white focus:outline-none focus:border-[#ff5f56]/60"
+                      resumeId: nextVal,
+                    }));
+                  }}
+                  className="w-full px-3 py-2 rounded-lg bg-[#16161a] border border-white/10 text-xs text-white focus:outline-none focus:border-[#ff5f56]/60 disabled:opacity-60"
                 >
                   <option value="">
-                    {isLoadingResumes
-                      ? "Loading your resumes..."
-                      : resumes.length > 0
-                        ? "-- No resume selected (use manual background below) --"
-                        : "-- No uploaded resumes yet (enter background below) --"}
+                    {isUploadingResume
+                      ? "Uploading & extracting resume..."
+                      : isLoadingResumes
+                        ? "Loading your resumes..."
+                        : resumes.length > 0
+                          ? "-- No resume selected (use manual background below) --"
+                          : "-- No uploaded resumes yet (upload PDF or enter background below) --"}
                   </option>
                   {resumes.map((r) => (
                     <option key={r._id} value={r._id}>
@@ -375,6 +421,11 @@ export default function WritingComposer({
                         : ""}
                     </option>
                   ))}
+                  {onUploadResume && (
+                    <option value={UPLOAD_NEW_RESUME_OPTION}>
+                      + Upload New Resume (PDF)...
+                    </option>
+                  )}
                 </select>
               </div>
 
