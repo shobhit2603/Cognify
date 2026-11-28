@@ -13,7 +13,6 @@ import {
   Database,
   Trash,
   EnvelopeSimple,
-  ArrowLeft,
   CheckCircle,
   FileText,
   UserCircle,
@@ -98,14 +97,14 @@ export default function PrivacyContent() {
           clearProps: "transform",
         })
         .from(
-          ".privacy-hero-title",
-          { y: 24, duration: 0.55, clearProps: "transform" },
+          ".privacy-hero-line",
+          { y: 26, duration: 0.6, stagger: 0.08, clearProps: "transform" },
           "-=0.3"
         )
         .from(
           ".privacy-hero-sub",
-          { y: 14, duration: 0.45, clearProps: "transform" },
-          "-=0.3"
+          { y: 16, duration: 0.5, stagger: 0.06, clearProps: "transform" },
+          "-=0.35"
         );
 
       gsap.from(".privacy-section-card", {
@@ -127,46 +126,48 @@ export default function PrivacyContent() {
   return (
     <div
       ref={containerRef}
-      className="w-full pb-16 pt-2 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto"
+      className="relative w-full overflow-hidden pb-16"
     >
-      {/* Header */}
-      <div className="border-b border-black/10 pb-8 mb-8 space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-black/50 hover:text-osmo-purple transition-colors w-fit"
-        >
-          <ArrowLeft size={14} weight="bold" />
-          <span>Back to Home</span>
-        </Link>
-
-        <div className="privacy-hero-badge flex items-center gap-2 text-osmo-purple">
-          <ShieldCheck size={20} weight="bold" />
-          <span className="text-xs font-mono font-bold tracking-widest uppercase">
-            Trust, Security &amp; Transparency
-          </span>
+      {/* Centered Hero */}
+      <section className="relative w-full pt-2 pb-10 md:pt-4 md:pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex justify-center mb-5 privacy-hero-badge">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-mono font-bold uppercase tracking-widest text-osmo-dark">
+            <ShieldCheck size={14} weight="fill" className="text-osmo-purple" />
+            <span>COGNIFY ✻ TRUST, SECURITY &amp; TRANSPARENCY</span>
+          </div>
         </div>
 
-        <h1 className="privacy-hero-title text-4xl sm:text-6xl font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.95]">
-          Security &amp; Privacy<span className="text-osmo-purple">.</span>
-        </h1>
+        <div className="text-center max-w-5xl mx-auto space-y-4">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.94]">
+            <span className="block privacy-hero-line">Security &amp;</span>
+            <span className="block privacy-hero-line">
+              <span className="text-osmo-purple">Privacy</span>
+              <span className="text-osmo-dark">.</span>
+            </span>
+          </h1>
 
-        <div className="privacy-hero-sub flex flex-wrap items-center gap-3 text-xs text-black/50 font-mono">
-          <span>Last Updated: {lastUpdated}</span>
-          <span>•</span>
-          <span>Effective Date: November 2026</span>
-          <span>•</span>
-          <span className="px-2.5 py-0.5 rounded-full bg-osmo-dark text-osmo-lime font-bold">
-            Google OAuth Compliant
-          </span>
+          <p className="privacy-hero-sub font-caveat text-2xl sm:text-3xl text-red-500">
+            Zero leakage &amp; strict user isolation by design
+          </p>
+
+          <p className="privacy-hero-sub text-base sm:text-lg text-black/70 max-w-2xl mx-auto leading-relaxed font-medium">
+            Cognify (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is engineered for strict user-data isolation across all five AI workspaces. This policy details what data we collect, how your documents and drafts are isolated, and your deletion rights.
+          </p>
+
+          <div className="privacy-hero-sub pt-1 flex flex-wrap items-center justify-center gap-3 text-xs text-black/55 font-mono">
+            <span>Last Updated: {lastUpdated}</span>
+            <span>•</span>
+            <span>Effective Date: November 2026</span>
+            <span>•</span>
+            <span className="px-2.5 py-0.5 rounded-full bg-osmo-dark text-osmo-lime font-bold">
+              Google OAuth Compliant
+            </span>
+          </div>
         </div>
-
-        <p className="privacy-hero-sub text-sm sm:text-base text-black/70 leading-relaxed max-w-3xl font-medium">
-          Cognify (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is engineered for strict user-data isolation across all five AI workspaces. This policy details what data we collect, how your documents and drafts are isolated, and your deletion rights.
-        </p>
-      </div>
+      </section>
 
       {/* Sections Stack */}
-      <div className="privacy-sections-stack flex flex-col gap-6">
+      <div className="privacy-sections-stack flex flex-col gap-6 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
         {/* Section 1: Information We Collect */}
         <section className="privacy-section-card bg-[#151515] text-white border border-white/10 rounded-lg p-6 sm:p-8 flex flex-col gap-5">
           <div className="flex items-center gap-3">

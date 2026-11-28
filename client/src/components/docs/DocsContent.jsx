@@ -8,7 +8,6 @@ import { useLenis } from "lenis/react";
 import TextRoll from "../ui/TextRoll";
 import {
   BookOpen,
-  ArrowLeft,
   ArrowUpRight,
   ArrowRight,
   ChatTeardropDots,
@@ -143,8 +142,9 @@ export default function DocsContent() {
       const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
       heroTl
         .from(".docs-hero-badge", { y: -12, duration: 0.45, clearProps: "transform" })
-        .from(".docs-hero-title", { y: 24, duration: 0.55, clearProps: "transform" }, "-=0.3")
-        .from(".docs-hero-sub", { y: 14, duration: 0.45, clearProps: "transform" }, "-=0.3");
+        .from(".docs-hero-line", { y: 26, duration: 0.6, stagger: 0.08, clearProps: "transform" }, "-=0.3")
+        .from(".docs-hero-sub", { y: 16, duration: 0.5, stagger: 0.06, clearProps: "transform" }, "-=0.35")
+        .from(".docs-hero-cta", { y: 14, duration: 0.45, stagger: 0.06, clearProps: "transform" }, "-=0.3");
 
       gsap.from(".docs-arch-card", {
         y: 20,
@@ -183,60 +183,66 @@ export default function DocsContent() {
   return (
     <div
       ref={containerRef}
-      className="w-full pb-16 pt-2 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto"
+      className="relative w-full overflow-hidden pb-16"
     >
-      {/* Header */}
-      <div className="border-b border-black/10 pb-8 mb-8 space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-black/50 hover:text-osmo-purple transition-colors w-fit"
-        >
-          <ArrowLeft size={14} weight="bold" />
-          <span>Back to Home</span>
-        </Link>
-
-        <div className="docs-hero-badge flex items-center gap-2 text-osmo-purple">
-          <BookOpen size={20} weight="bold" />
-          <span className="text-xs font-mono font-bold tracking-widest uppercase">
-            Platform Documentation
-          </span>
+      {/* Centered Hero */}
+      <section className="relative w-full pt-2 pb-10 md:pt-4 md:pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex justify-center mb-5 docs-hero-badge">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-mono font-bold uppercase tracking-widest text-osmo-dark">
+            <BookOpen size={14} weight="fill" className="text-osmo-purple" />
+            <span>COGNIFY ✻ PLATFORM DOCUMENTATION</span>
+          </div>
         </div>
 
-        <h1 className="docs-hero-title text-4xl sm:text-6xl font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.95]">
-          Workspace Guides<span className="text-osmo-purple">.</span>
-        </h1>
+        <div className="text-center max-w-5xl mx-auto space-y-4">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.94]">
+            <span className="block docs-hero-line">Workspace</span>
+            <span className="block docs-hero-line">
+              <span className="text-osmo-purple">Guides</span>
+              <span className="text-osmo-dark">.</span>
+            </span>
+          </h1>
 
-        <p className="docs-hero-sub font-caveat text-2xl sm:text-3xl text-red-500">
-          Understand the pipelines behind every Cognify tool
-        </p>
+          <p className="docs-hero-sub font-caveat text-2xl sm:text-3xl text-red-500">
+            Understand the pipelines behind every Cognify tool
+          </p>
 
-        <p className="docs-hero-sub text-sm sm:text-base text-black/70 leading-relaxed max-w-3xl font-medium">
-          Explore step-by-step workflows for all five AI workspaces, our decoupled client/server architecture, and productivity tips to move faster across Cognify.
-        </p>
+          <p className="docs-hero-sub text-base sm:text-lg text-black/70 max-w-2xl mx-auto leading-relaxed font-medium">
+            Explore step-by-step workflows for all five AI workspaces, our decoupled client/server architecture, and productivity tips to move faster across Cognify.
+          </p>
 
-        <div className="pt-2 flex items-center gap-3 flex-wrap">
-          <Link
-            href="/api-docs"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-osmo-dark text-white text-xs font-bold uppercase tracking-wider hover:bg-osmo-purple transition-colors"
-          >
-            <TextRoll>API Reference</TextRoll>
-            <ArrowRight size={14} weight="bold" />
-          </Link>
-          <Link
-            href="https://github.com/shobhit2603/Cognify"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-black/5 hover:bg-black/10 border border-black/10 text-osmo-dark text-xs font-bold uppercase tracking-wider transition-colors"
-          >
-            <TextRoll>Markdown Docs on GitHub</TextRoll>
-            <ArrowUpRight size={14} weight="bold" />
-          </Link>
+          <div className="pt-3 flex items-center justify-center gap-4 flex-wrap">
+            <Link
+              href="/api-docs"
+              className="docs-hero-cta group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-lg bg-osmo-dark text-white font-bold text-sm uppercase tracking-wider hover:bg-osmo-purple transition-all duration-300 active:scale-95"
+            >
+              <TextRoll>API Reference</TextRoll>
+              <ArrowRight
+                size={16}
+                weight="bold"
+                className="transition-transform group-hover:translate-x-1"
+              />
+            </Link>
+            <Link
+              href="https://github.com/shobhit2603/Cognify"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="docs-hero-cta group inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-black/5 hover:bg-black/10 border border-black/10 text-osmo-dark font-bold text-sm uppercase tracking-wider transition-all duration-300"
+            >
+              <TextRoll>Markdown Docs on GitHub</TextRoll>
+              <ArrowUpRight
+                size={16}
+                weight="bold"
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* System Architecture Overview */}
-      <section className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
+      <section className="relative w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto mb-12">
+        <div className="flex items-center justify-center gap-2 mb-5">
           <FlowArrow size={18} weight="bold" className="text-osmo-purple" />
           <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-black/60">
             System Architecture Flow
@@ -283,13 +289,13 @@ export default function DocsContent() {
       </section>
 
       {/* Interactive Workspace Filter */}
-      <section className="space-y-5 mb-12">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-2xl sm:text-3xl font-display font-bold uppercase tracking-tight text-osmo-dark">
+      <section className="relative w-full px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-6 mb-12">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl sm:text-4xl font-display font-bold uppercase tracking-tight text-osmo-dark">
             5 Core Workspace Guides
           </h2>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
             <button
               type="button"
               onClick={() => setSelectedGuideId("all")}
@@ -381,8 +387,8 @@ export default function DocsContent() {
       </section>
 
       {/* Power-User Tips */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
+      <section className="relative w-full px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-5">
+        <div className="flex items-center justify-center gap-2">
           <Keyboard size={18} weight="bold" className="text-osmo-purple" />
           <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-black/60">
             Workflow Tips &amp; Productivity Shortcuts

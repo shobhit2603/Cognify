@@ -8,7 +8,7 @@ import { useLenis } from "lenis/react";
 import TextRoll from "../ui/TextRoll";
 import {
   Terminal,
-  ArrowLeft,
+  ArrowRight,
   ArrowUpRight,
   Copy,
   Check,
@@ -137,8 +137,9 @@ export default function ApiDocsContent() {
       const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
       heroTl
         .from(".api-hero-badge", { y: -12, duration: 0.45, clearProps: "transform" })
-        .from(".api-hero-title", { y: 24, duration: 0.55, clearProps: "transform" }, "-=0.3")
-        .from(".api-hero-sub", { y: 14, duration: 0.45, clearProps: "transform" }, "-=0.3");
+        .from(".api-hero-line", { y: 26, duration: 0.6, stagger: 0.08, clearProps: "transform" }, "-=0.3")
+        .from(".api-hero-sub", { y: 16, duration: 0.5, stagger: 0.06, clearProps: "transform" }, "-=0.35")
+        .from(".api-hero-cta", { y: 14, duration: 0.45, stagger: 0.06, clearProps: "transform" }, "-=0.3");
 
       gsap.from(".api-spec-card", {
         y: 20,
@@ -175,50 +176,66 @@ export default function ApiDocsContent() {
   return (
     <div
       ref={containerRef}
-      className="w-full pb-16 pt-2 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto"
+      className="relative w-full overflow-hidden pb-16"
     >
-      {/* Header */}
-      <div className="border-b border-black/10 pb-8 mb-8 space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-black/50 hover:text-osmo-purple transition-colors w-fit"
-        >
-          <ArrowLeft size={14} weight="bold" />
-          <span>Back to Home</span>
-        </Link>
-
-        <div className="api-hero-badge flex items-center gap-2 text-osmo-purple">
-          <Terminal size={20} weight="bold" />
-          <span className="text-xs font-mono font-bold tracking-widest uppercase">
-            REST &amp; SSE Specification • v1
-          </span>
+      {/* Centered Hero */}
+      <section className="relative w-full pt-2 pb-10 md:pt-4 md:pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex justify-center mb-5 api-hero-badge">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-mono font-bold uppercase tracking-widest text-osmo-dark">
+            <Terminal size={14} weight="fill" className="text-osmo-purple" />
+            <span>COGNIFY ✻ REST &amp; SSE SPECIFICATION • V1</span>
+          </div>
         </div>
 
-        <h1 className="api-hero-title text-4xl sm:text-6xl font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.95]">
-          API Reference<span className="text-osmo-purple">.</span>
-        </h1>
+        <div className="text-center max-w-5xl mx-auto space-y-4">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.94]">
+            <span className="block api-hero-line">Unified API</span>
+            <span className="block api-hero-line">
+              <span className="text-osmo-purple">Reference</span>
+              <span className="text-osmo-dark">.</span>
+            </span>
+          </h1>
 
-        <p className="api-hero-sub font-caveat text-2xl sm:text-3xl text-red-500">
-          Resource-oriented JSON &amp; real-time Server-Sent Events
-        </p>
+          <p className="api-hero-sub font-caveat text-2xl sm:text-3xl text-red-500">
+            Resource-oriented JSON &amp; real-time Server-Sent Events
+          </p>
 
-        <p className="api-hero-sub text-sm sm:text-base text-black/70 leading-relaxed max-w-3xl font-medium">
-          All endpoints are versioned under <code className="px-1.5 py-0.5 rounded bg-black/5 font-mono text-xs">/api/v1/*</code> and proxied first-party by Next.js to preserve strict HttpOnly cookie security across browsers.
-        </p>
+          <p className="api-hero-sub text-base sm:text-lg text-black/70 max-w-2xl mx-auto leading-relaxed font-medium">
+            All endpoints are versioned under <code className="px-1.5 py-0.5 rounded bg-black/5 font-mono text-xs">/api/v1/*</code> and proxied first-party by Next.js to preserve strict HttpOnly cookie security across browsers.
+          </p>
 
-        <div className="pt-2 flex items-center gap-3 flex-wrap">
-          <Link
-            href="/docs"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-osmo-dark text-white text-xs font-bold uppercase tracking-wider hover:bg-osmo-purple transition-colors"
-          >
-            <TextRoll>Read Workspace Docs</TextRoll>
-            <ArrowUpRight size={14} weight="bold" />
-          </Link>
+          <div className="pt-3 flex items-center justify-center gap-4 flex-wrap">
+            <Link
+              href="/docs"
+              className="api-hero-cta group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-lg bg-osmo-dark text-white font-bold text-sm uppercase tracking-wider hover:bg-osmo-purple transition-all duration-300 active:scale-95"
+            >
+              <TextRoll>Read Workspace Docs</TextRoll>
+              <ArrowRight
+                size={16}
+                weight="bold"
+                className="transition-transform group-hover:translate-x-1"
+              />
+            </Link>
+            <Link
+              href="https://github.com/shobhit2603/Cognify"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="api-hero-cta group inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-black/5 hover:bg-black/10 border border-black/10 text-osmo-dark font-bold text-sm uppercase tracking-wider transition-all duration-300"
+            >
+              <TextRoll>View Backend Source</TextRoll>
+              <ArrowUpRight
+                size={16}
+                weight="bold"
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Auth, Rate Limits & SSE Spec Cards */}
-      <div className="api-spec-grid grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+      <div className="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        {/* Auth, Rate Limits & SSE Spec Cards */}
+        <div className="api-spec-grid grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         <div className="api-spec-card bg-[#151515] text-white border border-white/10 rounded-lg p-5 space-y-2">
           <div className="flex items-center gap-2 text-osmo-lime text-xs font-mono font-bold uppercase">
             <LockKey size={15} weight="bold" />
@@ -251,7 +268,7 @@ export default function ApiDocsContent() {
       </div>
 
       {/* Group Filter Pills */}
-      <div className="flex items-center gap-1.5 flex-wrap mb-6">
+      <div className="flex items-center justify-center gap-1.5 flex-wrap mb-7">
         <button
           type="button"
           onClick={() => setSelectedGroup("all")}
@@ -344,6 +361,7 @@ export default function ApiDocsContent() {
             </div>
           </section>
         ))}
+      </div>
       </div>
     </div>
   );

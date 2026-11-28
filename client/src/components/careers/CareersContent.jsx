@@ -8,7 +8,6 @@ import { useLenis } from "lenis/react";
 import TextRoll from "../ui/TextRoll";
 import {
   UsersThree,
-  ArrowLeft,
   ArrowUpRight,
   GitBranch,
   Sparkle,
@@ -72,8 +71,9 @@ export default function CareersContent() {
       const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
       heroTl
         .from(".careers-hero-badge", { y: -12, duration: 0.45, clearProps: "transform" })
-        .from(".careers-hero-title", { y: 24, duration: 0.55, clearProps: "transform" }, "-=0.3")
-        .from(".careers-hero-sub", { y: 14, duration: 0.45, clearProps: "transform" }, "-=0.3");
+        .from(".careers-hero-line", { y: 26, duration: 0.6, stagger: 0.08, clearProps: "transform" }, "-=0.3")
+        .from(".careers-hero-sub", { y: 16, duration: 0.5, stagger: 0.06, clearProps: "transform" }, "-=0.35")
+        .from(".careers-hero-cta", { y: 14, duration: 0.45, stagger: 0.06, clearProps: "transform" }, "-=0.3");
 
       gsap.from(".careers-area-card", {
         y: 22,
@@ -108,77 +108,101 @@ export default function CareersContent() {
   return (
     <div
       ref={containerRef}
-      className="w-full pb-16 pt-2 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto"
+      className="relative w-full overflow-hidden pb-16"
     >
-      {/* Header */}
-      <div className="border-b border-black/10 pb-8 mb-8 space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-black/50 hover:text-osmo-purple transition-colors w-fit"
-        >
-          <ArrowLeft size={14} weight="bold" />
-          <span>Back to Home</span>
-        </Link>
-
-        <div className="careers-hero-badge flex items-center gap-2 text-osmo-purple">
-          <UsersThree size={20} weight="bold" />
-          <span className="text-xs font-mono font-bold tracking-widest uppercase">
-            Open Source &amp; Collaboration
-          </span>
-        </div>
-
-        <h1 className="careers-hero-title text-4xl sm:text-6xl font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.95]">
-          Build With Us<span className="text-osmo-purple">.</span>
-        </h1>
-
-        <p className="careers-hero-sub font-caveat text-2xl sm:text-3xl text-red-500">
-          Indie AI engineering, open to contributors &amp; collaborators
-        </p>
-
-        <p className="careers-hero-sub text-sm sm:text-base text-black/70 leading-relaxed max-w-3xl font-medium">
-          Cognify is an independent open-source AI workspace created by{" "}
-          <strong>Shashank Lakhera</strong> and{" "}
-          <strong>Shobhit Shrivastava</strong>. While we don&apos;t have salaried roles open right now, we actively welcome fellow engineers, designers, and AI builders to collaborate on Post-MVP features.
-        </p>
-      </div>
-
-      {/* Transparent Status Banner */}
-      <section className="bg-[#151515] text-white border border-white/10 rounded-lg p-6 sm:p-7 mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-osmo-lime animate-pulse" />
-            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-osmo-lime">
-              CURRENT TEAM STATUS
-            </span>
+      {/* Centered Hero */}
+      <section className="relative w-full pt-2 pb-10 md:pt-4 md:pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex justify-center mb-5 careers-hero-badge">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-mono font-bold uppercase tracking-widest text-osmo-dark">
+            <UsersThree size={14} weight="fill" className="text-osmo-purple" />
+            <span>COGNIFY ✻ OPEN SOURCE &amp; COLLABORATION</span>
           </div>
-          <h2 className="text-xl font-display font-bold uppercase tracking-tight">
-            Open-Source Contributors Welcome
-          </h2>
-          <p className="text-xs sm:text-sm text-white/65 max-w-2xl leading-relaxed">
-            Browse open issues, propose Post-MVP enhancements, or open a pull request on GitHub following our layered server and feature-modular client guidelines.
-          </p>
         </div>
 
-        <Link
-          href="https://github.com/shobhit2603/Cognify"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-osmo-lime text-black font-bold text-xs uppercase tracking-wider hover:bg-white transition-all shrink-0 w-fit"
-        >
-          <GitBranch size={15} weight="bold" />
-          <TextRoll>Open GitHub Repo</TextRoll>
-          <ArrowUpRight size={14} weight="bold" />
-        </Link>
+        <div className="text-center max-w-5xl mx-auto space-y-4">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.94]">
+            <span className="block careers-hero-line">Build With</span>
+            <span className="block careers-hero-line">
+              <span className="text-osmo-purple">Cognify</span>
+              <span className="text-osmo-dark">.</span>
+            </span>
+          </h1>
+
+          <p className="careers-hero-sub font-caveat text-2xl sm:text-3xl text-red-500">
+            Indie AI engineering, open to contributors &amp; collaborators
+          </p>
+
+          <p className="careers-hero-sub text-base sm:text-lg text-black/70 max-w-2xl mx-auto leading-relaxed font-medium">
+            Cognify is an independent open-source AI workspace created by{" "}
+            <strong>Shashank Lakhera</strong> and{" "}
+            <strong>Shobhit Shrivastava</strong>. While we don&apos;t have salaried roles open right now, we actively welcome fellow engineers, designers, and AI builders to collaborate on Post-MVP features.
+          </p>
+
+          <div className="pt-3 flex items-center justify-center gap-4 flex-wrap">
+            <Link
+              href="https://github.com/shobhit2603/Cognify"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="careers-hero-cta group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-lg bg-osmo-dark text-white font-bold text-sm uppercase tracking-wider hover:bg-osmo-purple transition-all duration-300 active:scale-95"
+            >
+              <GitBranch size={16} weight="bold" />
+              <TextRoll>Open GitHub Repo</TextRoll>
+              <ArrowUpRight
+                size={16}
+                weight="bold"
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </Link>
+
+            <a
+              href="mailto:lakherashashank70@gmail.com"
+              className="careers-hero-cta group inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-black/5 hover:bg-black/10 border border-black/10 text-osmo-dark font-bold text-sm uppercase tracking-wider transition-all duration-300"
+            >
+              <EnvelopeSimple size={16} weight="bold" />
+              <TextRoll>Reach Out Directly</TextRoll>
+            </a>
+          </div>
+        </div>
       </section>
 
-      {/* Post-MVP Contribution Areas */}
-      <section className="space-y-5 mb-12">
-        <div className="flex items-center gap-2">
-          <Sparkle size={18} weight="fill" className="text-osmo-purple" />
-          <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-black/60">
-            Roadmap Areas Looking for Collaborators
-          </h2>
-        </div>
+      <div className="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        {/* Transparent Status Banner */}
+        <section className="bg-[#151515] text-white border border-white/10 rounded-lg p-6 sm:p-7 mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-osmo-lime animate-pulse" />
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-osmo-lime">
+                CURRENT TEAM STATUS
+              </span>
+            </div>
+            <h2 className="text-xl font-display font-bold uppercase tracking-tight">
+              Open-Source Contributors Welcome
+            </h2>
+            <p className="text-xs sm:text-sm text-white/65 max-w-2xl leading-relaxed">
+              Browse open issues, propose Post-MVP enhancements, or open a pull request on GitHub following our layered server and feature-modular client guidelines.
+            </p>
+          </div>
+
+          <Link
+            href="https://github.com/shobhit2603/Cognify"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-osmo-lime text-black font-bold text-xs uppercase tracking-wider hover:bg-white transition-all shrink-0 w-fit"
+          >
+            <GitBranch size={15} weight="bold" />
+            <TextRoll>Contribute on GitHub</TextRoll>
+            <ArrowUpRight size={14} weight="bold" />
+          </Link>
+        </section>
+
+        {/* Post-MVP Contribution Areas */}
+        <section className="space-y-5 mb-12">
+          <div className="flex items-center justify-center gap-2">
+            <Sparkle size={18} weight="fill" className="text-osmo-purple" />
+            <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-black/60">
+              Roadmap Areas Looking for Collaborators
+            </h2>
+          </div>
 
         <div className="careers-areas-grid grid grid-cols-1 md:grid-cols-2 gap-4">
           {CONTRIBUTION_AREAS.map((area) => {
@@ -265,6 +289,7 @@ export default function CareersContent() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 }
