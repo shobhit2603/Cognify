@@ -35,8 +35,8 @@ const heroCapabilities = [
   },
   {
     id: "documents",
-    title: "PDF Synthesis",
-    sub: "Vector Extraction",
+    title: "Document Analysis",
+    sub: "PDF Synthesis",
     icon: <FilePdf size={22} weight="bold" />,
     color: "bg-[#1d1a1a] text-white border-white/10",
     badge: "RAG",
@@ -206,8 +206,9 @@ export default function HeroSection() {
             const yOff = yOffsets[idx] || 0;
 
             return (
-              <div
+              <Link
                 key={cap.id}
+                href={cap.href}
                 ref={(el) => (cardsRef.current[idx] = el)}
                 onMouseEnter={() => setHoveredCard(cap.id)}
                 onMouseLeave={() => setHoveredCard(null)}
@@ -259,7 +260,7 @@ export default function HeroSection() {
                     <ArrowUpRight size={13} weight="bold" />
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
