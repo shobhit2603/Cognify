@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -49,6 +49,7 @@ export default function WritingStudio() {
   const queryClient = useQueryClient();
 
   const urlDraftId = searchParams.get("id");
+  const urlTab = searchParams.get("tab");
 
   // ── Drawer & Right Output Panel Visibility ────────────────────────────────
   const drawerRef = useRef(null);
@@ -207,7 +208,27 @@ export default function WritingStudio() {
   } = useWritingMutations();
 
   // ── Composer Form State ───────────────────────────────────────────────────
-  const [newDraftMode, setNewDraftMode] = useState("email");
+  const [newDraftMode, setNewDraftMode] = useState(() => {
+    if (urlTab === "email" || urlTab === "cover-letter") return urlTab;
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("cognify_writing_active_tab");
+        if (saved === "email" || saved === "cover-letter") return saved;
+      } catch {
+        // ignore storage access errors
+      }
+    }
+    return "email";
+  });
+
+  const persistActiveTab = useCallback((nextMode) => {
+    setNewDraftMode(nextMode);
+    try {
+      localStorage.setItem("cognify_writing_active_tab", nextMode);
+    } catch {
+      // ignore
+    }
+  }, []);
   const [emailForm, setEmailForm] = useState(DEFAULT_EMAIL_FORM);
   const [coverLetterForm, setCoverLetterForm] = useState(
     DEFAULT_COVER_LETTER_FORM
@@ -216,11 +237,11 @@ export default function WritingStudio() {
   const mode =
     !isNewDraftMode && activeDraft?.type ? activeDraft.type : newDraftMode;
 
-  const hydrateFormsFromDraft = (draftDoc) => {
+  const hydrateFormsFromDraft = useCallback((draftDoc) => {
     if (!draftDoc) return;
     const inputs = draftDoc.inputs || {};
     if (draftDoc.type === "cover-letter") {
-      setNewDraftMode("cover-letter");
+      persistActiveTab("cover-letter");
       setCoverLetterForm({
         resumeId: inputs.resumeId ? String(inputs.resumeId) : "",
         userBackground: inputs.userBackground || "",
@@ -231,7 +252,7 @@ export default function WritingStudio() {
         length: inputs.length || "medium",
       });
     } else {
-      setNewDraftMode("email");
+      persistActiveTab("email");
       setEmailForm({
         purpose: inputs.purpose || "Follow-Up",
         intent: inputs.intent || "",
@@ -243,7 +264,7 @@ export default function WritingStudio() {
         length: inputs.length || "medium",
       });
     }
-  };
+  }, [persistActiveTab]);
 
   // Track deep-link hydration cleanly without calling setState synchronously on re-renders
   const urlHydratedRef = useRef(false);
@@ -257,7 +278,7 @@ export default function WritingStudio() {
       const t = setTimeout(() => hydrateFormsFromDraft(activeDraft), 0);
       return () => clearTimeout(t);
     }
-  }, [urlDraftId, activeDraft]);
+  }, [urlDraftId, activeDraft, hydrateFormsFromDraft]);
 
   // ── Streaming State ───────────────────────────────────────────────────────
   const [isStreaming, setIsStreaming] = useState(false);
@@ -314,7 +335,7 @@ export default function WritingStudio() {
     });
     setEmailForm(DEFAULT_EMAIL_FORM);
     setCoverLetterForm(DEFAULT_COVER_LETTER_FORM);
-    router.replace("/writing", { scroll: false });
+    router.replace(`/writing?tab=${newDraftMode}`, { scroll: false });
   };
 
   const handleSelectDraft = (id) => {
@@ -691,11 +712,13 @@ export default function WritingStudio() {
             <WritingComposer
               mode={mode}
               onModeChange={(nextMode) => {
-                setNewDraftMode(nextMode);
+                persistActiveTab(nextMode);
                 if (activeDraftId && activeDraft?.type !== nextMode) {
                   setIsNewDraftMode(true);
                   setSelectedDraftId(null);
-                  router.replace("/writing", { scroll: false });
+                  router.replace(`/writing?tab=${nextMode}`, { scroll: false });
+                } else if (!activeDraftId) {
+                  router.replace(`/writing?tab=${nextMode}`, { scroll: false });
                 }
               }}
               emailForm={emailForm}
