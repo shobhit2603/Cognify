@@ -31,7 +31,7 @@ const footerLinks = {
     { label: "About Cognify", href: "/about" },
     { label: "Careers", href: "/careers" },
     { label: "Twitter / X", href: "https://twitter.com" },
-    { label: "GitHub", href: "https://github.com" }
+    { label: "GitHub", href: "https://github.com/shobhit2603/Cognify" }
   ]
 };
 
@@ -130,14 +130,22 @@ export default function Footer() {
           <div className="p-6 space-y-6 flex flex-col">
             <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-white/30">Company</h4>
             <ul className="space-y-3 flex-1">
-              {footerLinks.company.map((link, i) => (
-                <li key={i}>
-                  <Link href={link.href} className="text-white/70 hover:text-osmo-lime transition-colors font-medium text-sm flex items-center gap-2 group">
-                    <span className="w-1.5 h-1.5 bg-transparent group-hover:bg-osmo-lime transition-colors block"></span>
-                    <TextRoll>{link.label}</TextRoll>
-                  </Link>
-                </li>
-              ))}
+              {footerLinks.company.map((link, i) => {
+                const isExternal = link.href.startsWith("http");
+                return (
+                  <li key={i}>
+                    <Link
+                      href={link.href}
+                      target={isExternal ? "_blank" : undefined}
+                      rel={isExternal ? "noopener noreferrer" : undefined}
+                      className="text-white/70 hover:text-osmo-lime transition-colors font-medium text-sm flex items-center gap-2 group"
+                    >
+                      <span className="w-1.5 h-1.5 bg-transparent group-hover:bg-osmo-lime transition-colors block"></span>
+                      <TextRoll>{link.label}</TextRoll>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
