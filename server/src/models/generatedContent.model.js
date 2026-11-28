@@ -93,6 +93,10 @@ const generatedContentSchema = new Schema(
       default: false,
       index: true,
     },
+    revision: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

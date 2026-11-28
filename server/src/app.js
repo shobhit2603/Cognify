@@ -110,8 +110,8 @@ app.use(
 // Apply global rate limiter
 app.use(globalLimiter);
 
-// Allow larger JSON payloads specifically for AI Writing (job descriptions & edited drafts)
-app.use("/api/v1/writing", express.json({ limit: "64kb" }));
+// Allow larger JSON payloads specifically for AI Writing (job descriptions & 25k-char UTF-8 drafts)
+app.use("/api/v1/writing", express.json({ limit: "128kb" }));
 
 // Parse JSON request bodies
 app.use(express.json({ limit: "16kb" }));

@@ -20,7 +20,6 @@ async function executeWritingStream({
   userId,
   type,
   draftId = null,
-  existingTitle = null,
   titleOverride = null,
   inputs = {},
   messages,
@@ -56,22 +55,28 @@ async function executeWritingStream({
       message: stageLabel,
     });
 
-    for await (const item of writingAI.streamWritingGeneration({
-      messages,
-      type,
-      signal: abortController.signal,
-    })) {
-      if (clientDisconnected) break;
+    try {
+      for await (const item of writingAI.streamWritingGeneration({
+        messages,
+        type,
+        signal: abortController.signal,
+      })) {
+        if (clientDisconnected) break;
 
-      if (item.event === "meta") {
-        modelName = item.model || modelName;
-        provider = item.provider || provider;
-      } else if (item.event === "subject") {
-        subject = item.subject || subject;
-        writeSse(res, { event: "subject", subject });
-      } else if (item.event === "chunk" && item.content) {
-        accumulatedBody += item.content;
-        writeSse(res, { event: "chunk", content: item.content });
+        if (item.event === "meta") {
+          modelName = item.model || modelName;
+          provider = item.provider || provider;
+        } else if (item.event === "subject") {
+          subject = item.subject || subject;
+          writeSse(res, { event: "subject", subject });
+        } else if (item.event === "chunk" && item.content) {
+          accumulatedBody += item.content;
+          writeSse(res, { event: "chunk", content: item.content });
+        }
+      }
+    } catch (streamError) {
+      if (!(abortController.signal.aborted && clientDisconnected)) {
+        throw streamError;
       }
     }
 
@@ -80,28 +85,31 @@ async function executeWritingStream({
 
     // Persist completed output OR non-empty partial output when user stops mid-stream
     if (hasUsableContent) {
-      let resolvedTitle = (titleOverride || existingTitle || "").trim();
-      if (!resolvedTitle || resolvedTitle === "Untitled Draft") {
-        resolvedTitle = clientDisconnected
-          ? (type === "cover-letter"
+      const explicitTitle = titleOverride?.trim() || null;
+      const resolveTitle = async () => {
+        if (clientDisconnected) {
+          return (
+            type === "cover-letter"
               ? [inputs.targetRole, inputs.targetCompany]
                   .filter(Boolean)
                   .join(" - ") || "Partial Cover Letter"
               : subject || inputs.purpose || "Partial Email Draft"
-            ).slice(0, 100)
-          : await writingAI.generateDraftTitle({
-              type,
-              inputs,
-              subject,
-              previewText: trimmedBody,
-            });
-      }
+          ).slice(0, 100);
+        }
+        return await writingAI.generateDraftTitle({
+          type,
+          inputs,
+          subject,
+          previewText: trimmedBody,
+        });
+      };
 
       const savedDraft = await writingService.saveGeneratedDraft({
         userId,
         draftId,
         type,
-        title: resolvedTitle,
+        title: explicitTitle,
+        resolveTitle,
         subject: type === "email" ? subject : "",
         inputs,
         content: trimmedBody,
@@ -140,10 +148,6 @@ async function executeWritingStream({
       res.end();
     }
   } catch (error) {
-    if (abortController.signal.aborted && clientDisconnected) {
-      return;
-    }
-
     console.error("[AI Writing Stream Error]:", error);
     await writingAI.recordWritingUsage({
       userId,
@@ -151,12 +155,16 @@ async function executeWritingStream({
       status: "failed",
     });
 
+    if (clientDisconnected || res.writableFinished) {
+      return;
+    }
+
     if (res.headersSent) {
       writeSse(res, {
         event: "error",
         error: "Failed to generate writing draft. Please try again.",
       });
-      if (!res.writableFinished) res.end();
+      res.end();
     } else {
       next(error);
     }
@@ -179,7 +187,6 @@ export const generateEmail = async (req, res, next) => {
       draftId,
     } = req.body;
 
-    let existingTitle = null;
     if (draftId) {
       const existing = await writingService.getWritingById(draftId, userId);
       if (existing.type !== "email") {
@@ -188,7 +195,6 @@ export const generateEmail = async (req, res, next) => {
           "Draft type mismatch for email regeneration"
         );
       }
-      existingTitle = existing.title;
     }
 
     const messages = writingAI.buildEmailPrompt({
@@ -208,7 +214,6 @@ export const generateEmail = async (req, res, next) => {
       userId,
       type: "email",
       draftId,
-      existingTitle,
       titleOverride: title,
       inputs: {
         purpose,
@@ -243,7 +248,6 @@ export const generateCoverLetter = async (req, res, next) => {
       draftId,
     } = req.body;
 
-    let existingTitle = null;
     if (draftId) {
       const existing = await writingService.getWritingById(draftId, userId);
       if (existing.type !== "cover-letter") {
@@ -252,7 +256,6 @@ export const generateCoverLetter = async (req, res, next) => {
           "Draft type mismatch for cover letter regeneration"
         );
       }
-      existingTitle = existing.title;
     }
 
     // Strict server-side ownership validation for attached Resume Studio document
@@ -277,7 +280,6 @@ export const generateCoverLetter = async (req, res, next) => {
       userId,
       type: "cover-letter",
       draftId,
-      existingTitle,
       titleOverride: title,
       inputs: {
         resumeId: resolvedContext.resumeId,
@@ -326,7 +328,6 @@ export const refineWriting = async (req, res, next) => {
       userId,
       type: existing.type,
       draftId: existing._id.toString(),
-      existingTitle: existing.title,
       inputs: existing.inputs?.toObject
         ? existing.inputs.toObject()
         : existing.inputs || {},

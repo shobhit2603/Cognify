@@ -4,7 +4,7 @@ import getMistralModel from "../providers/mistral.provider.js";
 import envConfig from "../config/env.config.js";
 import { Usage } from "../models/usage.model.js";
 
-const HEADER_BUFFER_CAP = 150;
+const HEADER_BUFFER_CAP = 240;
 
 const EMAIL_LENGTH_GUIDE = {
   concise: "Keep it brief and direct (around 80-140 words, 2-3 short paragraphs).",

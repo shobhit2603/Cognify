@@ -40,7 +40,7 @@ export const findPaginatedByUserId = async (
 
   return await GeneratedContent.find(query)
     .select(
-      "_id userId type title subject content previousContent previousSubject inputs metadata isPinned createdAt updatedAt"
+      "_id userId type title subject content previousContent previousSubject inputs metadata isPinned revision createdAt updatedAt"
     )
     .sort({ isPinned: -1, updatedAt: -1 })
     .skip(skip)
@@ -59,7 +59,7 @@ export const countByUserId = async (
 export const update = async (id, userId, updateData, extraConditions = {}) => {
   return await GeneratedContent.findOneAndUpdate(
     { _id: id, userId, ...extraConditions },
-    { $set: updateData },
+    { $set: updateData, $inc: { revision: 1 } },
     { returnDocument: "after", runValidators: true }
   );
 };

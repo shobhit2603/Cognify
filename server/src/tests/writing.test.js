@@ -458,5 +458,39 @@ describe("AI Writing Studio Endpoints", () => {
         .set("Cookie", cookiesA);
       expect(delRes.status).toBe(200);
     });
+
+    it("should buffer long 195-char SUBJECT lines without spilling into body and increment revision on PATCH", async () => {
+      const longSubject = "A".repeat(195);
+      mockStreamChunks = [
+        `SUBJECT: ${longSubject.slice(0, 100)}`,
+        `${longSubject.slice(100)}\n\n`,
+        "Body starts cleanly here.",
+      ];
+
+      const genRes = await request(app)
+        .post("/api/v1/writing/email")
+        .set("Cookie", cookiesA)
+        .send({
+          purpose: "Long Subject Check",
+          intent: "Verify 240-char header buffer",
+          context: "Testing header buffer capacity for 200-char subjects.",
+        });
+
+      expect(genRes.status).toBe(200);
+      const events = parseSseEvents(genRes.text);
+      const subjectEvt = events.find((e) => e.event === "subject");
+      const doneEvt = events.find((e) => e.event === "done");
+
+      expect(subjectEvt?.subject).toBe(longSubject);
+      expect(doneEvt?.draft?.content).toBe("Body starts cleanly here.");
+      expect(doneEvt?.draft?.revision).toBe(0);
+
+      const patch1 = await request(app)
+        .patch(`/api/v1/writing/${doneEvt.draft._id}`)
+        .set("Cookie", cookiesA)
+        .send({ content: "Edited once" });
+      expect(patch1.status).toBe(200);
+      expect(patch1.body.data.revision).toBe(1);
+    });
   });
 });
