@@ -5,6 +5,7 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { useLenis } from "lenis/react";
 import TextRoll from "../ui/TextRoll";
 import {
   Sparkle,
@@ -165,91 +166,119 @@ const TECH_STACK = [
 export default function AboutContent() {
   const containerRef = useRef(null);
 
+  useLenis(() => {
+    ScrollTrigger.update();
+  });
+
   useGSAP(
     () => {
-      // Hero entrance timeline (matches HeroSection.jsx motion grammar)
+      // Hero entrance timeline (fast & crisp, clears inline props)
       const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
       heroTl
-        .from(".about-hero-badge", { y: -18, opacity: 0, duration: 0.65, delay: 0.08 })
+        .from(".about-hero-badge", {
+          y: -12,
+          duration: 0.45,
+          clearProps: "transform",
+        })
         .from(
           ".about-hero-line",
-          { y: 40, opacity: 0, duration: 0.85, stagger: 0.1 },
+          {
+            y: 26,
+            duration: 0.6,
+            stagger: 0.08,
+            clearProps: "transform",
+          },
+          "-=0.3"
+        )
+        .from(
+          ".about-hero-sub",
+          {
+            y: 16,
+            duration: 0.5,
+            stagger: 0.06,
+            clearProps: "transform",
+          },
           "-=0.35"
         )
-        .from(".about-hero-sub", { y: 20, opacity: 0, duration: 0.7 }, "-=0.45")
         .from(
           ".about-hero-cta",
-          { y: 20, opacity: 0, duration: 0.65, stagger: 0.08 },
-          "-=0.4"
+          {
+            y: 14,
+            duration: 0.45,
+            stagger: 0.06,
+            clearProps: "transform",
+          },
+          "-=0.3"
         );
 
-      // Philosophy 4-step strip
+      // Philosophy 4-step strip (transform-only so cards never get stuck hidden)
       gsap.from(".about-philosophy-card", {
-        y: 36,
-        opacity: 0,
-        duration: 0.75,
-        stagger: 0.1,
+        y: 24,
+        scale: 0.98,
+        duration: 0.6,
+        stagger: 0.08,
         ease: "power3.out",
+        clearProps: "transform",
         scrollTrigger: {
           trigger: ".about-philosophy-grid",
-          start: "top 82%",
+          start: "top 92%",
           once: true,
         },
       });
 
       // Workspaces grid
       gsap.from(".about-workspace-card", {
-        y: 44,
-        opacity: 0,
-        scale: 0.97,
-        duration: 0.7,
-        stagger: 0.08,
+        y: 28,
+        scale: 0.98,
+        duration: 0.6,
+        stagger: 0.06,
         ease: "power3.out",
+        clearProps: "transform",
         scrollTrigger: {
           trigger: ".about-workspaces-grid",
-          start: "top 82%",
+          start: "top 92%",
           once: true,
         },
       });
 
       // Engineering manifesto rows
       gsap.from(".about-pillar-row", {
-        x: 24,
-        opacity: 0,
-        duration: 0.7,
-        stagger: 0.12,
+        x: 18,
+        duration: 0.55,
+        stagger: 0.09,
         ease: "power2.out",
+        clearProps: "transform",
         scrollTrigger: {
           trigger: ".about-pillars-list",
-          start: "top 82%",
+          start: "top 92%",
           once: true,
         },
       });
 
       // Tech stack tiles
       gsap.from(".about-stack-tile", {
-        y: 22,
-        opacity: 0,
-        duration: 0.55,
-        stagger: 0.06,
+        y: 16,
+        duration: 0.45,
+        stagger: 0.05,
         ease: "power2.out",
+        clearProps: "transform",
         scrollTrigger: {
           trigger: ".about-stack-grid",
-          start: "top 88%",
+          start: "top 94%",
           once: true,
         },
       });
 
       // Bottom CTA capsules
       gsap.from(".about-cta-card", {
-        y: 32,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.12,
+        y: 24,
+        duration: 0.65,
+        stagger: 0.1,
         ease: "power3.out",
+        clearProps: "transform",
         scrollTrigger: {
           trigger: ".about-cta-section",
-          start: "top 85%",
+          start: "top 92%",
           once: true,
         },
       });
@@ -260,16 +289,16 @@ export default function AboutContent() {
   return (
     <div ref={containerRef} className="relative w-full overflow-hidden">
       {/* 1. Hero Section */}
-      <section className="relative w-full pt-8 pb-16 md:pt-12 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="flex justify-center mb-6 about-hero-badge">
+      <section className="relative w-full pt-2 pb-10 md:pt-4 md:pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex justify-center mb-5 about-hero-badge">
           <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-mono font-bold uppercase tracking-widest text-osmo-dark">
             <Sparkle size={14} weight="fill" className="text-osmo-purple" />
             <span>COGNIFY ✻ ABOUT THE WORKSPACE</span>
           </div>
         </div>
 
-        <div className="text-center max-w-5xl mx-auto space-y-6">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5.25rem] font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.94]">
+        <div className="text-center max-w-5xl mx-auto space-y-4">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-display font-bold uppercase tracking-tighter text-osmo-dark leading-[0.94]">
             <span className="block about-hero-line">One Unified</span>
             <span className="block about-hero-line">
               Cognitive{" "}
@@ -286,7 +315,7 @@ export default function AboutContent() {
             Cognify was built so students, job seekers, engineers, and knowledge workers never have to juggle fragmented AI tabs. Every tool shares one secure foundation, turning raw documents, resumes, and ideas into finished work.
           </p>
 
-          <div className="pt-4 flex items-center justify-center gap-4 flex-wrap">
+          <div className="pt-3 flex items-center justify-center gap-4 flex-wrap">
             <Link
               href="/dashboard"
               className="about-hero-cta group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-lg bg-osmo-dark text-white font-bold text-sm uppercase tracking-wider hover:bg-osmo-purple transition-all duration-300 active:scale-95"
@@ -317,12 +346,12 @@ export default function AboutContent() {
       </section>
 
       {/* 2. Product Philosophy Strip */}
-      <section className="relative w-full py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="relative w-full py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="about-philosophy-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {PHILOSOPHY_STEPS.map((item) => (
             <div
               key={item.step}
-              className={`about-philosophy-card bg-[#151515] text-white rounded-sm hover:rounded-3xl border p-6 flex flex-col justify-between min-h-48 transition-all duration-300 ${item.border}`}
+              className={`about-philosophy-card bg-[#151515] text-white rounded-sm hover:rounded-3xl border p-5 flex flex-col justify-between min-h-40 transition-all duration-300 ${item.border}`}
             >
               <div className="flex items-center justify-between">
                 <span className={`text-xs font-mono font-bold tracking-widest ${item.accent}`}>
@@ -331,11 +360,11 @@ export default function AboutContent() {
                 <span className="w-2 h-2 rounded-full bg-white/20" />
               </div>
 
-              <div className="my-auto py-3">
+              <div className="my-auto py-2">
                 <h2 className="text-2xl font-display font-bold uppercase tracking-tight text-white">
                   {item.name}
                 </h2>
-                <p className="text-xs text-white/65 leading-relaxed mt-2">
+                <p className="text-xs text-white/65 leading-relaxed mt-1.5">
                   {item.detail}
                 </p>
               </div>
@@ -345,9 +374,9 @@ export default function AboutContent() {
       </section>
 
       {/* 3. Five Specialized Workspaces + Core Platform */}
-      <section className="relative w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div className="space-y-3">
+      <section className="relative w-full py-10 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div className="space-y-2">
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-osmo-purple">
               THE COGNIFY SUITE
             </span>
@@ -361,14 +390,14 @@ export default function AboutContent() {
           </p>
         </div>
 
-        <div className="about-workspaces-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="about-workspaces-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {WORKSPACES.map((ws) => {
             const Icon = ws.icon;
             return (
               <Link
                 key={ws.number}
                 href={ws.href}
-                className={`about-workspace-card group bg-[#151414] text-white rounded-sm hover:rounded-3xl border border-white/[0.08] p-6 sm:p-7 flex flex-col justify-between min-h-64 transition-all duration-300 ${ws.hoverBorder}`}
+                className={`about-workspace-card group bg-[#151414] text-white rounded-sm hover:rounded-3xl border border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between min-h-56 transition-all duration-300 ${ws.hoverBorder}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -386,7 +415,7 @@ export default function AboutContent() {
                   </span>
                 </div>
 
-                <div className="my-5 space-y-2">
+                <div className="my-4 space-y-1.5">
                   <h3 className="text-2xl font-display font-bold uppercase tracking-tight text-white">
                     {ws.title}
                   </h3>
@@ -415,13 +444,13 @@ export default function AboutContent() {
       </section>
 
       {/* 4. Engineering Manifesto & Tech Stack (Mirrors WhyCognifySection) */}
-      <section className="relative w-full py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="w-full h-px bg-black/10 mb-16" />
+      <section className="relative w-full py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="w-full h-px bg-black/10 mb-10" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column */}
-          <div className="lg:col-span-4 flex flex-col justify-between space-y-8">
-            <div className="space-y-4">
+          <div className="lg:col-span-4 flex flex-col justify-between space-y-6">
+            <div className="space-y-3">
               <div className="p-4 rounded-sm bg-black/5 border border-black/10 inline-block">
                 <div className="flex items-center gap-3">
                   <div className="relative w-8 h-8">
@@ -444,7 +473,7 @@ export default function AboutContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-red-500 font-caveat text-3xl pt-2">
+              <div className="flex items-center gap-2 text-red-500 font-caveat text-3xl pt-1">
                 <span>Built to Last</span>
                 <svg
                   className="w-9 h-9 rotate-12 stroke-red-500 fill-none"
@@ -474,7 +503,7 @@ export default function AboutContent() {
           </div>
 
           {/* Right Column */}
-          <div className="lg:col-span-8 space-y-12">
+          <div className="lg:col-span-8 space-y-8">
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-osmo-dark font-display leading-[1.06]">
               Designed as a real SaaS architecture, never a patchwork of prompts.
             </h2>
@@ -483,7 +512,7 @@ export default function AboutContent() {
               {ENGINEERING_PILLARS.map((pillar, idx) => (
                 <div
                   key={idx}
-                  className="about-pillar-row py-7 sm:py-9 grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-8 group hover:bg-black/[0.02] transition-colors px-2"
+                  className="about-pillar-row py-6 sm:py-7 grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-8 group hover:bg-black/[0.02] transition-colors px-2"
                 >
                   <div className="sm:col-span-5">
                     <h3 className="text-xl sm:text-2xl font-bold text-osmo-dark font-display group-hover:text-osmo-purple transition-colors">
@@ -499,8 +528,8 @@ export default function AboutContent() {
               ))}
             </div>
 
-            <div className="pt-2">
-              <div className="text-xs font-bold uppercase tracking-widest text-black/40 mb-5">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest text-black/40 mb-4">
                 Core Technology Stack
               </div>
               <div className="about-stack-grid grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -509,7 +538,7 @@ export default function AboutContent() {
                   return (
                     <div
                       key={tech.name}
-                      className="about-stack-tile p-4 rounded-lg bg-black/5 border border-black/10 hover:border-osmo-purple/40 transition-all flex items-start gap-3"
+                      className="about-stack-tile p-3.5 rounded-lg bg-black/5 border border-black/10 hover:border-osmo-purple/40 transition-all flex items-start gap-3"
                     >
                       <Icon
                         size={18}
@@ -534,10 +563,10 @@ export default function AboutContent() {
       </section>
 
       {/* 5. Builders & CTA Capsules (Mirrors CtaSection) */}
-      <section className="about-cta-section relative w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="about-cta-section relative w-full py-10 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 max-w-6xl mx-auto items-stretch">
           {/* Left Dark Capsule */}
-          <div className="about-cta-card md:col-span-5 bg-[#151515] text-white rounded-lg p-8 sm:p-10 flex flex-col justify-between items-center text-center border border-white/10 relative overflow-hidden min-h-85">
+          <div className="about-cta-card md:col-span-5 bg-[#151515] text-white rounded-lg p-7 sm:p-9 flex flex-col justify-between items-center text-center border border-white/10 relative overflow-hidden min-h-72">
             <div className="absolute inset-0 bg-radial from-white/10 to-transparent opacity-30 pointer-events-none" />
 
             <div className="relative z-10 pt-2">
@@ -546,7 +575,7 @@ export default function AboutContent() {
               </span>
             </div>
 
-            <div className="relative z-10 my-auto space-y-3">
+            <div className="relative z-10 my-auto space-y-2.5">
               <h3 className="text-2xl sm:text-3xl uppercase tracking-tight text-white font-display leading-tight">
                 Shashank Lakhera<br />&amp; Shobhit Shrivastava
               </h3>
@@ -563,11 +592,11 @@ export default function AboutContent() {
           </div>
 
           {/* Right Electric Purple Capsule */}
-          <div className="about-cta-card md:col-span-7 bg-osmo-purple text-white rounded-lg p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden border border-osmo-purple/50 min-h-85">
+          <div className="about-cta-card md:col-span-7 bg-osmo-purple text-white rounded-lg p-7 sm:p-10 flex flex-col justify-between relative overflow-hidden border border-osmo-purple/50 min-h-72">
             <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-lg bg-white/10 pointer-events-none" />
 
             <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-osmo-lime animate-pulse" />
                 <span className="text-xs font-mono font-bold uppercase tracking-widest text-white/90">
                   EXPLORE THE PLATFORM
@@ -583,10 +612,10 @@ export default function AboutContent() {
               </p>
             </div>
 
-            <div className="relative z-10 pt-8 mt-6 border-t border-white/20 flex items-center gap-4 flex-wrap">
+            <div className="relative z-10 pt-6 mt-5 border-t border-white/20 flex items-center gap-4 flex-wrap">
               <Link
                 href="/auth"
-                className="group/btn flex items-center gap-2.5 px-7 py-4 rounded-lg bg-osmo-lime text-black font-bold text-sm uppercase tracking-wider hover:bg-white transition-all duration-300 active:scale-95"
+                className="group/btn flex items-center gap-2.5 px-7 py-3.5 rounded-lg bg-osmo-lime text-black font-bold text-sm uppercase tracking-wider hover:bg-white transition-all duration-300 active:scale-95"
               >
                 <TextRoll>Open Workspace</TextRoll>
                 <ArrowRight
@@ -600,7 +629,7 @@ export default function AboutContent() {
                 href="https://github.com/shobhit2603/Cognify"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-4 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-sm uppercase tracking-wider transition-all duration-300 border border-white/10"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-sm uppercase tracking-wider transition-all duration-300 border border-white/10"
               >
                 <TextRoll>GitHub Repo</TextRoll>
                 <ArrowUpRight size={16} weight="bold" />
