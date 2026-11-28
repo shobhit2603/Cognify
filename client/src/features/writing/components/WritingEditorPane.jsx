@@ -31,45 +31,42 @@ export default function WritingEditorPane({
   const activeType = draft?.type || mode;
   const isEmail = activeType === "email";
 
-  const displayedSubject = isStreaming
-    ? streamedSubject || draft?.subject || ""
-    : draft?.subject || "";
-  const displayedContent = isStreaming
-    ? streamedContent
-    : draft?.content || "";
-
   const [isEditing, setIsEditing] = useState(false);
-  const [localSubject, setLocalSubject] = useState(displayedSubject);
-  const [localContent, setLocalContent] = useState(displayedContent);
+  const [editBuffer, setEditBuffer] = useState(null);
   const [copiedKey, setCopiedKey] = useState(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
+  // Derived active subject/content: streaming props directly while streaming; user editBuffer when editing; else saved draft
+  const hasMatchingEditBuffer =
+    !isStreaming && editBuffer && editBuffer.draftId === (draft?._id || null);
+
+  const localSubject = isStreaming
+    ? streamedSubject || draft?.subject || ""
+    : hasMatchingEditBuffer
+      ? editBuffer.subject
+      : draft?.subject || "";
+
+  const localContent = isStreaming
+    ? streamedContent
+    : hasMatchingEditBuffer
+      ? editBuffer.content
+      : draft?.content || "";
+
   // Guard: only true when the user actually types into Subject/Content inputs
   const userDirtyRef = useRef(false);
-  const latestEditRef = useRef({ subject: displayedSubject, content: displayedContent });
+  const latestEditRef = useRef({
+    subject: localSubject,
+    content: localContent,
+  });
   const markdownContainerRef = useRef(null);
-
-  const syncedDraftIdRef = useRef(draft?._id || null);
-
-  // Sync incoming draft / SSE state without marking dirty or clobbering active typing
-  useEffect(() => {
-    const draftChanged = syncedDraftIdRef.current !== (draft?._id || null);
-    if (draftChanged || isStreaming || !userDirtyRef.current) {
-      syncedDraftIdRef.current = draft?._id || null;
-      userDirtyRef.current = false;
-      setLocalSubject(displayedSubject);
-      setLocalContent(displayedContent);
-      latestEditRef.current = {
-        subject: displayedSubject,
-        content: displayedContent,
-      };
-    }
-  }, [draft?._id, isStreaming, displayedSubject, displayedContent]);
 
   // 800ms debounced auto-save strictly guarded by userDirtyRef
   useEffect(() => {
-    if (!userDirtyRef.current || isStreaming || !draft?._id) return;
+    if (!userDirtyRef.current || isStreaming || !draft?._id || !editBuffer) {
+      return;
+    }
 
+    const targetDraftId = draft._id;
     const timer = setTimeout(async () => {
       if (!userDirtyRef.current) return;
       const payload = { content: latestEditRef.current.content };
@@ -78,14 +75,17 @@ export default function WritingEditorPane({
       }
       userDirtyRef.current = false;
       try {
-        await onSaveEdits(draft._id, payload);
+        await onSaveEdits(targetDraftId, payload);
+        if (!userDirtyRef.current) {
+          setEditBuffer(null);
+        }
       } catch {
         // Toast handled in mutation hook
       }
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [localSubject, localContent, draft?._id, isEmail, isStreaming, onSaveEdits]);
+  }, [editBuffer, draft?._id, isEmail, isStreaming, onSaveEdits]);
 
   const flushPendingEdits = async () => {
     if (!userDirtyRef.current || !draft?._id || isStreaming) return;
@@ -95,20 +95,31 @@ export default function WritingEditorPane({
     }
     userDirtyRef.current = false;
     await onSaveEdits(draft._id, payload);
+    if (!userDirtyRef.current) {
+      setEditBuffer(null);
+    }
   };
 
   const handleSubjectChange = (e) => {
     const nextVal = e.target.value;
     userDirtyRef.current = true;
-    latestEditRef.current.subject = nextVal;
-    setLocalSubject(nextVal);
+    latestEditRef.current = { subject: nextVal, content: localContent };
+    setEditBuffer({
+      draftId: draft?._id || null,
+      subject: nextVal,
+      content: localContent,
+    });
   };
 
   const handleContentChange = (e) => {
     const nextVal = e.target.value;
     userDirtyRef.current = true;
-    latestEditRef.current.content = nextVal;
-    setLocalContent(nextVal);
+    latestEditRef.current = { subject: localSubject, content: nextVal };
+    setEditBuffer({
+      draftId: draft?._id || null,
+      subject: localSubject,
+      content: nextVal,
+    });
   };
 
   const handleToggleEdit = async () => {

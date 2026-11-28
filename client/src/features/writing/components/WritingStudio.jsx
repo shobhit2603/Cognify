@@ -226,9 +226,18 @@ export default function WritingStudio() {
   const [streamedSubject, setStreamedSubject] = useState("");
   const [streamedContent, setStreamedContent] = useState("");
   const accumulatedBodyRef = useRef("");
+  const streamRafRef = useRef(null);
   const abortControllerRef = useRef(null);
 
+  const cancelPendingStreamRaf = () => {
+    if (streamRafRef.current !== null) {
+      cancelAnimationFrame(streamRafRef.current);
+      streamRafRef.current = null;
+    }
+  };
+
   const abortActiveStream = () => {
+    cancelPendingStreamRaf();
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -349,9 +358,15 @@ export default function WritingStudio() {
         },
         onChunk: (chunk) => {
           accumulatedBodyRef.current += chunk;
-          setStreamedContent(accumulatedBodyRef.current);
+          if (streamRafRef.current === null) {
+            streamRafRef.current = requestAnimationFrame(() => {
+              streamRafRef.current = null;
+              setStreamedContent(accumulatedBodyRef.current);
+            });
+          }
         },
         onDone: (data) => {
+          cancelPendingStreamRaf();
           if (data?.draft) {
             syncCacheOnDone(data.draft);
           } else {
@@ -360,6 +375,7 @@ export default function WritingStudio() {
           }
         },
         onError: (err) => {
+          cancelPendingStreamRaf();
           setIsStreaming(false);
           setStreamingStage(null);
           toast.error(err.message || "Generation failed. Please try again.");
