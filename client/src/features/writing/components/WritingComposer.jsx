@@ -141,7 +141,10 @@ export default function WritingComposer({
             <>
               {/* Purpose */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-mono uppercase tracking-wider text-white/50">
+                <label
+                  htmlFor="writing-email-purpose"
+                  className="block text-[11px] font-mono uppercase tracking-wider text-white/50"
+                >
                   Purpose *
                 </label>
                 <div className="flex flex-wrap gap-1.5 mb-1.5">
@@ -170,7 +173,9 @@ export default function WritingComposer({
                   })}
                 </div>
                 <input
+                  id="writing-email-purpose"
                   type="text"
+                  required
                   value={emailForm.purpose}
                   disabled={isStreaming}
                   onChange={(e) =>
@@ -183,11 +188,16 @@ export default function WritingComposer({
 
               {/* Intent */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-mono uppercase tracking-wider text-white/50">
+                <label
+                  htmlFor="writing-email-intent"
+                  className="block text-[11px] font-mono uppercase tracking-wider text-white/50"
+                >
                   Intent / Goal *
                 </label>
                 <input
+                  id="writing-email-intent"
                   type="text"
+                  required
                   value={emailForm.intent}
                   disabled={isStreaming}
                   onChange={(e) =>
@@ -200,11 +210,16 @@ export default function WritingComposer({
 
               {/* Context */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-mono uppercase tracking-wider text-white/50">
+                <label
+                  htmlFor="writing-email-context"
+                  className="block text-[11px] font-mono uppercase tracking-wider text-white/50"
+                >
                   Context & Key Points *
                 </label>
                 <textarea
+                  id="writing-email-context"
                   rows={5}
+                  required
                   value={emailForm.context}
                   disabled={isStreaming}
                   onChange={(e) =>
@@ -235,10 +250,14 @@ export default function WritingComposer({
                 {showReplySection && (
                   <div className="p-3 pt-1 space-y-3 border-t border-white/[0.06]">
                     <div className="space-y-1">
-                      <label className="block text-[11px] text-white/45">
+                      <label
+                        htmlFor="writing-email-recipient"
+                        className="block text-[11px] text-white/45"
+                      >
                         Recipient Context
                       </label>
                       <input
+                        id="writing-email-recipient"
                         type="text"
                         value={emailForm.recipientContext}
                         disabled={isStreaming}
@@ -253,10 +272,14 @@ export default function WritingComposer({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] text-white/45">
+                      <label
+                        htmlFor="writing-email-reply-to"
+                        className="block text-[11px] text-white/45"
+                      >
                         Email Being Replied To
                       </label>
                       <textarea
+                        id="writing-email-reply-to"
                         rows={3}
                         value={emailForm.replyToEmail}
                         disabled={isStreaming}
@@ -307,7 +330,10 @@ export default function WritingComposer({
               {/* Resume Studio Picker */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/50">
+                  <label
+                    htmlFor="writing-cover-resume"
+                    className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/50"
+                  >
                     <BriefcaseMetal size={13} className="text-[#ffbd2e]" />
                     <span>Resume Studio Context</span>
                   </label>
@@ -321,6 +347,7 @@ export default function WritingComposer({
                 </div>
 
                 <select
+                  id="writing-cover-resume"
                   value={coverLetterForm.resumeId || ""}
                   disabled={isStreaming || isLoadingResumes}
                   onChange={(e) =>
@@ -351,13 +378,18 @@ export default function WritingComposer({
 
               {/* Manual Background Fallback / Supplemental Info */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-mono uppercase tracking-wider text-white/50">
+                <label
+                  htmlFor="writing-cover-background"
+                  className="block text-[11px] font-mono uppercase tracking-wider text-white/50"
+                >
                   {coverLetterForm.resumeId
                     ? "Additional Highlights / Notes (Optional)"
                     : "Your Experience & Background *"}
                 </label>
                 <textarea
+                  id="writing-cover-background"
                   rows={4}
+                  required={!coverLetterForm.resumeId}
                   value={coverLetterForm.userBackground}
                   disabled={isStreaming}
                   onChange={(e) =>
@@ -378,10 +410,14 @@ export default function WritingComposer({
               {/* Target Company & Role */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-[11px] font-mono uppercase tracking-wider text-white/50">
+                  <label
+                    htmlFor="writing-cover-role"
+                    className="block text-[11px] font-mono uppercase tracking-wider text-white/50"
+                  >
                     Target Role
                   </label>
                   <input
+                    id="writing-cover-role"
                     type="text"
                     value={coverLetterForm.targetRole}
                     disabled={isStreaming}
@@ -396,10 +432,14 @@ export default function WritingComposer({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[11px] font-mono uppercase tracking-wider text-white/50">
+                  <label
+                    htmlFor="writing-cover-company"
+                    className="block text-[11px] font-mono uppercase tracking-wider text-white/50"
+                  >
                     Target Company
                   </label>
                   <input
+                    id="writing-cover-company"
                     type="text"
                     value={coverLetterForm.targetCompany}
                     disabled={isStreaming}
@@ -417,11 +457,16 @@ export default function WritingComposer({
 
               {/* Job Description */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-mono uppercase tracking-wider text-white/50">
+                <label
+                  htmlFor="writing-cover-jd"
+                  className="block text-[11px] font-mono uppercase tracking-wider text-white/50"
+                >
                   Job Description *
                 </label>
                 <textarea
+                  id="writing-cover-jd"
                   rows={6}
+                  required
                   value={coverLetterForm.jobDescription}
                   disabled={isStreaming}
                   onChange={(e) =>

@@ -51,10 +51,17 @@ export default function WritingStudio() {
   const urlDraftId = searchParams.get("id");
 
   // ── Drawer & Right Output Panel Visibility ────────────────────────────────
+  const drawerRef = useRef(null);
+  const drawerToggleRef = useRef(null);
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cognify_writing_drawer_open");
-      if (saved !== null) return saved === "true";
+      try {
+        const saved = localStorage.getItem("cognify_writing_drawer_open");
+        if (saved !== null) return saved === "true";
+      } catch {
+        // ignore storage access errors
+      }
     }
     return true;
   });
@@ -64,6 +71,13 @@ export default function WritingStudio() {
   const handleToggleDrawer = () => {
     setIsDrawerOpen((prev) => {
       const next = !prev;
+      if (
+        !next &&
+        typeof document !== "undefined" &&
+        drawerRef.current?.contains(document.activeElement)
+      ) {
+        drawerToggleRef.current?.focus();
+      }
       try {
         localStorage.setItem("cognify_writing_drawer_open", String(next));
       } catch {
@@ -76,10 +90,14 @@ export default function WritingStudio() {
   // ── Resizable Split Ratio (25%-65%, default 45%) ──────────────────────────
   const [splitPercent, setSplitPercent] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cognify_writing_split_ratio");
-      if (saved) {
-        const parsed = parseFloat(saved);
-        if (!isNaN(parsed) && parsed >= 25 && parsed <= 65) return parsed;
+      try {
+        const saved = localStorage.getItem("cognify_writing_split_ratio");
+        if (saved) {
+          const parsed = parseFloat(saved);
+          if (!isNaN(parsed) && parsed >= 25 && parsed <= 65) return parsed;
+        }
+      } catch {
+        // ignore storage access errors
       }
     }
     return 45;
@@ -141,7 +159,12 @@ export default function WritingStudio() {
   }, [searchQuery]);
 
   // ── Data Queries & Mutations ──────────────────────────────────────────────
-  const { data: drafts = [], isLoading: isLoadingDrafts } = useWritings({
+  const {
+    data: drafts = [],
+    isLoading: isLoadingDrafts,
+    isError: isDraftsError,
+    refetch: refetchDrafts,
+  } = useWritings({
     type: typeFilter,
     search: debouncedSearch,
   });
@@ -149,6 +172,10 @@ export default function WritingStudio() {
   const activeDraftId = isNewDraftMode
     ? null
     : selectedDraftId || urlDraftId || null;
+  const activeDraftIdRef = useRef(activeDraftId);
+  useEffect(() => {
+    activeDraftIdRef.current = activeDraftId;
+  }, [activeDraftId]);
   const { data: activeDraft } = useWritingDraft(activeDraftId);
 
   const { data: resumesRaw, isLoading: isLoadingResumes } = useResumes({
@@ -275,7 +302,7 @@ export default function WritingStudio() {
   const handleDeleteDraft = async (id) => {
     try {
       await deleteWriting(id);
-      if (activeDraftId === id) {
+      if (activeDraftIdRef.current === id) {
         const remaining = drafts.filter((d) => d._id !== id);
         if (remaining.length > 0) {
           handleSelectDraft(remaining[0]._id);
@@ -292,45 +319,63 @@ export default function WritingStudio() {
     if (!savedDraft?._id) return;
     const savedId = savedDraft._id;
 
-    // 1. Synchronously populate single + list caches BEFORE clearing streaming state
+    // 1. Synchronously populate active detail cache BEFORE clearing streaming state
     queryClient.setQueryData(["writing", savedId], {
       success: true,
       data: savedDraft,
-    });
-
-    queryClient.setQueriesData({ queryKey: ["writings"] }, (old) => {
-      if (!old?.data?.items) return old;
-      const exists = old.data.items.some((item) => item._id === savedId);
-      const nextItems = exists
-        ? old.data.items.map((item) =>
-            item._id === savedId ? { ...item, ...savedDraft } : item
-          )
-        : [savedDraft, ...old.data.items];
-      return {
-        ...old,
-        data: {
-          ...old.data,
-          items: nextItems,
-        },
-      };
     });
 
     setIsNewDraftMode(false);
     setSelectedDraftId(savedId);
     router.replace(`/writing?id=${savedId}`, { scroll: false });
 
-    // 2. Clear streaming state only after cache is populated (zero flicker)
+    // 2. Clear streaming state only after detail cache is populated (zero flicker)
     setIsStreaming(false);
     setStreamingStage(null);
     setStreamedSubject("");
     setStreamedContent("");
 
-    // 3. Mark stale in background without unmounting
-    queryClient.invalidateQueries({ queryKey: ["writings"], refetchType: "none" });
+    // 3. Refetch active history queries so server filtering & ordering stay exact
+    queryClient.invalidateQueries({ queryKey: ["writings"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
   };
 
+  const confirmPartialSave = async (targetDraftId, streamStartedAtMs) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 250 : 400));
+
+      if (targetDraftId) {
+        await queryClient.refetchQueries({ queryKey: ["writing", targetDraftId] });
+        const detail = queryClient.getQueryData(["writing", targetDraftId]);
+        const doc = detail?.data || detail;
+        if (doc?.updatedAt && new Date(doc.updatedAt).getTime() >= streamStartedAtMs - 1000) {
+          await queryClient.invalidateQueries({ queryKey: ["writings"] });
+          await queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
+          return true;
+        }
+      } else {
+        await queryClient.refetchQueries({ queryKey: ["writings"] });
+        const matchingQueries = queryClient.getQueriesData({ queryKey: ["writings"] });
+        const found = matchingQueries.some(([, cached]) =>
+          (cached?.data?.items || []).some(
+            (item) =>
+              item?.metadata?.isPartial &&
+              item?.updatedAt &&
+              new Date(item.updatedAt).getTime() >= streamStartedAtMs - 1000
+          )
+        );
+        if (found) {
+          await queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const runStream = async (streamFn) => {
+    const streamTargetDraftId = activeDraftId;
+    const streamStartedAtMs = Date.now();
     setIsOutputPanelOpen(true);
     setIsStreaming(true);
     setStreamingStage({ stage: "preparing", message: "Preparing prompt..." });
@@ -347,8 +392,8 @@ export default function WritingStudio() {
         onStage: (data) => setStreamingStage(data),
         onSubject: (subj) => setStreamedSubject(subj),
         onTitle: (generatedTitle) => {
-          if (generatedTitle && activeDraftId) {
-            queryClient.setQueryData(["writing", activeDraftId], (old) => {
+          if (generatedTitle && streamTargetDraftId) {
+            queryClient.setQueryData(["writing", streamTargetDraftId], (old) => {
               if (!old) return old;
               if (old.data)
                 return { ...old, data: { ...old.data, title: generatedTitle } };
@@ -382,16 +427,22 @@ export default function WritingStudio() {
         },
       });
 
-      // If stopped mid-stream, refresh list so saved partial draft surfaces cleanly
+      // If stopped mid-stream, verify partial persistence on the server before notifying
       if (result?.aborted) {
         setIsStreaming(false);
         setStreamingStage(null);
         if (accumulatedBodyRef.current.trim()) {
-          toast.info("Generation stopped — partial draft saved.");
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ["writings"] });
-            queryClient.invalidateQueries({ queryKey: ["dashboard-activity"] });
-          }, 450);
+          const confirmed = await confirmPartialSave(
+            streamTargetDraftId,
+            streamStartedAtMs
+          );
+          if (confirmed) {
+            toast.info("Generation stopped — partial draft saved.");
+          } else {
+            toast.warning(
+              "Generation stopped. Could not confirm partial draft save."
+            );
+          }
         }
       }
     } catch {
@@ -454,6 +505,7 @@ export default function WritingStudio() {
     <div className="flex h-screen w-full bg-[#0d0d0f] text-white overflow-hidden font-sans">
       {/* Left History Drawer */}
       <WritingDrawer
+        drawerRef={drawerRef}
         drafts={drafts}
         activeDraftId={activeDraftId}
         onSelectDraft={handleSelectDraft}
@@ -466,6 +518,8 @@ export default function WritingStudio() {
         setSearchQuery={setSearchQuery}
         isOpen={isDrawerOpen}
         isLoading={isLoadingDrafts}
+        isError={isDraftsError}
+        onRetry={refetchDrafts}
       />
 
       {/* Main Workspace */}
@@ -474,6 +528,7 @@ export default function WritingStudio() {
         <header className="h-12 border-b border-white/10 bg-[#0e0e11] px-4 flex items-center justify-between shrink-0 select-none">
           <div className="flex items-center gap-3 min-w-0">
             <button
+              ref={drawerToggleRef}
               type="button"
               onClick={handleToggleDrawer}
               title={isDrawerOpen ? "Collapse Drawer" : "Expand Drawer"}
@@ -582,12 +637,16 @@ export default function WritingStudio() {
         {/* Resizable Split-View Studio */}
         <div
           ref={splitContainerRef}
+          style={{ "--split-pct": `${splitPercent}%` }}
           className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 relative select-none md:select-text"
         >
           {/* Left Pane: Input Composer */}
           <div
-            style={{ width: isOutputPanelOpen ? `${splitPercent}%` : "100%" }}
             className={`h-full flex flex-col min-w-0 min-h-0 overflow-hidden ${
+              isOutputPanelOpen
+                ? "w-full md:w-[var(--split-pct)]"
+                : "w-full"
+            } ${
               isDragging ? "" : "transition-[width] duration-300 ease-in-out"
             }`}
           >
@@ -633,12 +692,11 @@ export default function WritingStudio() {
 
           {/* Right Pane: Editable Output Canvas */}
           <div
-            style={{
-              width: isOutputPanelOpen ? `${100 - splitPercent}%` : "0%",
-            }}
+            inert={!isOutputPanelOpen}
+            aria-hidden={!isOutputPanelOpen}
             className={`h-full flex flex-col min-h-0 overflow-hidden ${
               isOutputPanelOpen
-                ? "border-l border-white/10 opacity-100 min-w-0"
+                ? "w-full md:w-[calc(100%-var(--split-pct))] border-l border-white/10 opacity-100 min-w-0"
                 : "w-0 min-w-0 border-none opacity-0 pointer-events-none max-md:hidden max-md:h-0"
             } ${isDragging ? "" : "transition-all duration-300 ease-in-out"}`}
           >

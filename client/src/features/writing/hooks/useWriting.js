@@ -89,8 +89,10 @@ export const useWritingMutations = () => {
   return {
     updateWriting: updateWritingMutation.mutateAsync,
     isSaving: updateWritingMutation.isPending,
-    togglePin: togglePinMutation.mutateAsync,
-    restorePreviousVersion: restoreMutation.mutateAsync,
+    togglePin: togglePinMutation.mutate,
+    togglePinAsync: togglePinMutation.mutateAsync,
+    restorePreviousVersion: restoreMutation.mutate,
+    restorePreviousVersionAsync: restoreMutation.mutateAsync,
     isRestoring: restoreMutation.isPending,
     deleteWriting: deleteWritingMutation.mutateAsync,
   };

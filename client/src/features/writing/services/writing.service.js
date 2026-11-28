@@ -1,11 +1,42 @@
 import { axiosInstance } from "../../../lib/axios";
 import { API_URL } from "../../../config/env";
 
-async function consumeSseResponse(response, callbacks = {}) {
+async function consumeSseResponse(response, callbacks = {}, signal = null) {
   const { onStage, onSubject, onTitle, onChunk, onDone, onError } = callbacks;
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
   let buffer = "";
+  let receivedTerminalEvent = false;
+
+  const processEventBlock = (rawEvent) => {
+    const trimmed = rawEvent.trim();
+    if (!trimmed.startsWith("data: ")) return;
+    const jsonStr = trimmed.slice(6).trim();
+    if (!jsonStr) return;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      return;
+    }
+
+    if (parsed.event === "stage" && onStage) {
+      onStage(parsed);
+    } else if (parsed.event === "subject" && onSubject) {
+      onSubject(parsed.subject);
+    } else if (parsed.event === "title" && onTitle) {
+      onTitle(parsed.title);
+    } else if (parsed.event === "chunk" && onChunk) {
+      onChunk(parsed.content);
+    } else if (parsed.event === "done") {
+      receivedTerminalEvent = true;
+      if (onDone) onDone(parsed);
+    } else if (parsed.event === "error") {
+      receivedTerminalEvent = true;
+      if (onError) onError(new Error(parsed.error || "Stream generation failed"));
+    }
+  };
 
   while (true) {
     const { value, done } = await reader.read();
@@ -16,32 +47,16 @@ async function consumeSseResponse(response, callbacks = {}) {
     buffer = events.pop() || "";
 
     for (const rawEvent of events) {
-      const trimmed = rawEvent.trim();
-      if (!trimmed.startsWith("data: ")) continue;
-      const jsonStr = trimmed.slice(6).trim();
-      if (!jsonStr) continue;
-
-      let parsed;
-      try {
-        parsed = JSON.parse(jsonStr);
-      } catch {
-        continue;
-      }
-
-      if (parsed.event === "stage" && onStage) {
-        onStage(parsed);
-      } else if (parsed.event === "subject" && onSubject) {
-        onSubject(parsed.subject);
-      } else if (parsed.event === "title" && onTitle) {
-        onTitle(parsed.title);
-      } else if (parsed.event === "chunk" && onChunk) {
-        onChunk(parsed.content);
-      } else if (parsed.event === "done" && onDone) {
-        onDone(parsed);
-      } else if (parsed.event === "error" && onError) {
-        onError(new Error(parsed.error || "Stream generation failed"));
-      }
+      processEventBlock(rawEvent);
     }
+  }
+
+  if (buffer.trim()) {
+    processEventBlock(buffer);
+  }
+
+  if (!receivedTerminalEvent && !signal?.aborted) {
+    throw new Error("Stream ended unexpectedly before completion.");
   }
 }
 
@@ -72,7 +87,7 @@ async function openWritingStream(endpoint, payload, callbacks = {}) {
       throw new Error(errorData.message || "Failed to generate writing draft");
     }
 
-    await consumeSseResponse(response, callbacks);
+    await consumeSseResponse(response, callbacks, signal);
   } catch (err) {
     if (err.name === "AbortError") {
       return { aborted: true };

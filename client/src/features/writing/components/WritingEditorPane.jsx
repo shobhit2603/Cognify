@@ -33,6 +33,7 @@ export default function WritingEditorPane({
 
   const [isEditing, setIsEditing] = useState(false);
   const [editBuffer, setEditBuffer] = useState(null);
+  const [saveState, setSaveState] = useState("saved"); // "saved" | "unsaved" | "saving" | "error"
   const [copiedKey, setCopiedKey] = useState(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
 
@@ -54,11 +55,62 @@ export default function WritingEditorPane({
 
   // Guard: only true when the user actually types into Subject/Content inputs
   const userDirtyRef = useRef(false);
+  const editVersionRef = useRef(0);
+  const pendingSaveRef = useRef(null);
+  const onSaveEditsRef = useRef(onSaveEdits);
   const latestEditRef = useRef({
+    draftId: draft?._id || null,
+    isEmail,
     subject: localSubject,
     content: localContent,
   });
   const markdownContainerRef = useRef(null);
+
+  useEffect(() => {
+    onSaveEditsRef.current = onSaveEdits;
+  }, [onSaveEdits]);
+
+  const executeAckedSave = async (targetDraftId, payload, sentVersion) => {
+    setSaveState("saving");
+    const savePromise = onSaveEditsRef.current(targetDraftId, payload);
+    pendingSaveRef.current = savePromise;
+
+    try {
+      await savePromise;
+      if (pendingSaveRef.current === savePromise) {
+        pendingSaveRef.current = null;
+      }
+      if (editVersionRef.current === sentVersion) {
+        userDirtyRef.current = false;
+        setEditBuffer(null);
+        setSaveState("saved");
+      } else {
+        setSaveState("unsaved");
+      }
+      return true;
+    } catch {
+      if (pendingSaveRef.current === savePromise) {
+        pendingSaveRef.current = null;
+      }
+      setSaveState("error");
+      return false;
+    }
+  };
+
+  // Flush any unacknowledged edits to their original draftId if user switches drafts
+  useEffect(() => {
+    return () => {
+      if (userDirtyRef.current && latestEditRef.current.draftId) {
+        const { draftId: targetId, isEmail: wasEmail, subject, content } =
+          latestEditRef.current;
+        const payload = { content };
+        if (wasEmail) {
+          payload.subject = subject;
+        }
+        onSaveEditsRef.current(targetId, payload).catch(() => {});
+      }
+    };
+  }, []);
 
   // 800ms debounced auto-save strictly guarded by userDirtyRef
   useEffect(() => {
@@ -67,43 +119,44 @@ export default function WritingEditorPane({
     }
 
     const targetDraftId = draft._id;
-    const timer = setTimeout(async () => {
-      if (!userDirtyRef.current) return;
-      const payload = { content: latestEditRef.current.content };
-      if (isEmail) {
-        payload.subject = latestEditRef.current.subject;
-      }
-      userDirtyRef.current = false;
-      try {
-        await onSaveEdits(targetDraftId, payload);
-        if (!userDirtyRef.current) {
-          setEditBuffer(null);
-        }
-      } catch {
-        // Toast handled in mutation hook
-      }
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [editBuffer, draft?._id, isEmail, isStreaming, onSaveEdits]);
-
-  const flushPendingEdits = async () => {
-    if (!userDirtyRef.current || !draft?._id || isStreaming) return;
+    const sentVersion = editVersionRef.current;
     const payload = { content: latestEditRef.current.content };
     if (isEmail) {
       payload.subject = latestEditRef.current.subject;
     }
-    userDirtyRef.current = false;
-    await onSaveEdits(draft._id, payload);
-    if (!userDirtyRef.current) {
-      setEditBuffer(null);
+
+    const timer = setTimeout(() => {
+      if (!userDirtyRef.current) return;
+      executeAckedSave(targetDraftId, payload, sentVersion);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [editBuffer, draft?._id, isEmail, isStreaming]);
+
+  const flushPendingEdits = async () => {
+    if (pendingSaveRef.current) {
+      await pendingSaveRef.current.catch(() => {});
     }
+    if (!userDirtyRef.current || !draft?._id || isStreaming) return true;
+    const sentVersion = editVersionRef.current;
+    const payload = { content: latestEditRef.current.content };
+    if (isEmail) {
+      payload.subject = latestEditRef.current.subject;
+    }
+    return await executeAckedSave(draft._id, payload, sentVersion);
   };
 
   const handleSubjectChange = (e) => {
     const nextVal = e.target.value;
     userDirtyRef.current = true;
-    latestEditRef.current = { subject: nextVal, content: localContent };
+    editVersionRef.current += 1;
+    setSaveState("unsaved");
+    latestEditRef.current = {
+      draftId: draft?._id || null,
+      isEmail,
+      subject: nextVal,
+      content: localContent,
+    };
     setEditBuffer({
       draftId: draft?._id || null,
       subject: nextVal,
@@ -114,7 +167,14 @@ export default function WritingEditorPane({
   const handleContentChange = (e) => {
     const nextVal = e.target.value;
     userDirtyRef.current = true;
-    latestEditRef.current = { subject: localSubject, content: nextVal };
+    editVersionRef.current += 1;
+    setSaveState("unsaved");
+    latestEditRef.current = {
+      draftId: draft?._id || null,
+      isEmail,
+      subject: localSubject,
+      content: nextVal,
+    };
     setEditBuffer({
       draftId: draft?._id || null,
       subject: localSubject,
@@ -123,7 +183,7 @@ export default function WritingEditorPane({
   };
 
   const handleToggleEdit = async () => {
-    if (isEditing && userDirtyRef.current) {
+    if (isEditing) {
       await flushPendingEdits();
     }
     setIsEditing((prev) => !prev);
@@ -134,18 +194,26 @@ export default function WritingEditorPane({
     setTimeout(() => setCopiedKey(null), 1600);
   };
 
-  const handleCopySubject = () => {
+  const handleCopySubject = async () => {
     if (!localSubject?.trim()) return;
-    navigator.clipboard.writeText(localSubject);
-    triggerCopyFeedback("subject");
-    toast.success("Subject copied to clipboard");
+    try {
+      await navigator.clipboard.writeText(localSubject);
+      triggerCopyFeedback("subject");
+      toast.success("Subject copied to clipboard");
+    } catch {
+      toast.error("Failed to copy subject. Please copy manually.");
+    }
   };
 
-  const handleCopyBody = () => {
+  const handleCopyBody = async () => {
     if (!localContent?.trim()) return;
-    navigator.clipboard.writeText(localContent);
-    triggerCopyFeedback("body");
-    toast.success("Draft body copied to clipboard");
+    try {
+      await navigator.clipboard.writeText(localContent);
+      triggerCopyFeedback("body");
+      toast.success("Draft body copied to clipboard");
+    } catch {
+      toast.error("Failed to copy draft body. Please copy manually.");
+    }
   };
 
   const escapeHtml = (str) =>
@@ -239,7 +307,9 @@ export default function WritingEditorPane({
     printWindow.document.close();
   };
 
-  const hasContent = Boolean(localContent?.trim() || isStreaming);
+  const hasContent = Boolean(
+    localContent?.trim() || isStreaming || (isEditing && draft?._id)
+  );
 
   return (
     <div className="h-full flex flex-col bg-[#0b0b0d] min-h-0">
@@ -258,9 +328,30 @@ export default function WritingEditorPane({
           )}
 
           {!isStreaming && draft?._id && (
-            <span className="text-[10px] font-mono text-white/40">
-              {isSaving ? "Saving..." : "Saved"}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`text-[10px] font-mono ${
+                  saveState === "error" ? "text-[#ff5f56]" : "text-white/40"
+                }`}
+              >
+                {saveState === "saving" || isSaving
+                  ? "Saving..."
+                  : saveState === "error"
+                    ? "Save failed"
+                    : saveState === "unsaved"
+                      ? "Unsaved"
+                      : "Saved"}
+              </span>
+              {saveState === "error" && (
+                <button
+                  type="button"
+                  onClick={() => flushPendingEdits()}
+                  className="text-[10px] font-mono underline text-[#ff5f56] hover:text-white cursor-pointer"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -416,7 +507,8 @@ export default function WritingEditorPane({
           {draft?._id && !isStreaming && (
             <RefineActionBar
               onRefine={async (action, customInstruction) => {
-                await flushPendingEdits();
+                const savedOk = await flushPendingEdits();
+                if (!savedOk) return;
                 onRefine(action, customInstruction);
               }}
               isStreaming={isStreaming}

@@ -17,6 +17,7 @@ const FILTER_TABS = [
 ];
 
 export default function WritingDrawer({
+  drawerRef = null,
   drafts = [],
   activeDraftId = null,
   onSelectDraft,
@@ -29,6 +30,8 @@ export default function WritingDrawer({
   setSearchQuery,
   isOpen = true,
   isLoading = false,
+  isError = false,
+  onRetry,
 }) {
   const pinnedDrafts = drafts.filter((d) => d.isPinned);
   const regularDrafts = drafts.filter((d) => !d.isPinned);
@@ -52,53 +55,56 @@ export default function WritingDrawer({
     return (
       <div
         key={draft._id}
-        onClick={() => onSelectDraft(draft._id)}
-        className={`group relative flex items-start gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-all border ${
+        className={`group relative flex items-start gap-1.5 px-2 py-1.5 rounded-lg transition-all border ${
           isActive
             ? "bg-[#ff5f56]/12 border-[#ff5f56]/35 text-white"
             : "bg-transparent border-transparent text-white/70 hover:bg-white/[0.04] hover:text-white"
         }`}
       >
-        <div className="mt-0.5 shrink-0">
-          {isEmail ? (
-            <EnvelopeSimple
-              size={15}
-              weight={isActive ? "fill" : "regular"}
-              className={isActive ? "text-[#ff5f56]" : "text-white/40"}
-            />
-          ) : (
-            <ReadCvLogo
-              size={15}
-              weight={isActive ? "fill" : "regular"}
-              className={isActive ? "text-[#ff5f56]" : "text-white/40"}
-            />
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium truncate leading-snug">
-            {draft.title || draft.subject || "Untitled Draft"}
-          </p>
-          <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-white/40 font-mono">
-            <span>{isEmail ? "Email" : "Cover Letter"}</span>
-            {draft.updatedAt && (
-              <>
-                <span>•</span>
-                <span>{formatShortDate(draft.updatedAt)}</span>
-              </>
+        <button
+          type="button"
+          onClick={() => onSelectDraft(draft._id)}
+          className="flex items-start gap-2.5 min-w-0 flex-1 text-left py-0.5 px-0.5 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-[#ff5f56]/70 cursor-pointer"
+        >
+          <div className="mt-0.5 shrink-0">
+            {isEmail ? (
+              <EnvelopeSimple
+                size={15}
+                weight={isActive ? "fill" : "regular"}
+                className={isActive ? "text-[#ff5f56]" : "text-white/40"}
+              />
+            ) : (
+              <ReadCvLogo
+                size={15}
+                weight={isActive ? "fill" : "regular"}
+                className={isActive ? "text-[#ff5f56]" : "text-white/40"}
+              />
             )}
           </div>
-        </div>
 
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium truncate leading-snug">
+              {draft.title || draft.subject || "Untitled Draft"}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-white/40 font-mono">
+              <span>{isEmail ? "Email" : "Cover Letter"}</span>
+              {draft.updatedAt && (
+                <>
+                  <span>•</span>
+                  <span>{formatShortDate(draft.updatedAt)}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </button>
+
+        <div className="flex items-center gap-0.5 shrink-0 pt-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button
             type="button"
+            aria-label={draft.isPinned ? "Unpin draft" : "Pin draft"}
             title={draft.isPinned ? "Unpin draft" : "Pin draft"}
-            onClick={(e) => {
-              e.stopPropagation();
-              onTogglePin(draft._id);
-            }}
-            className={`p-1 rounded hover:bg-white/10 transition-colors ${
+            onClick={() => onTogglePin(draft._id)}
+            className={`p-1 rounded hover:bg-white/10 transition-colors cursor-pointer ${
               draft.isPinned ? "text-[#ff5f56]" : "text-white/40 hover:text-white"
             }`}
           >
@@ -106,12 +112,10 @@ export default function WritingDrawer({
           </button>
           <button
             type="button"
+            aria-label="Delete draft"
             title="Delete draft"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteDraft(draft._id);
-            }}
-            className="p-1 rounded text-white/40 hover:text-[#ff5f56] hover:bg-[#ff5f56]/10 transition-colors"
+            onClick={() => onDeleteDraft(draft._id)}
+            className="p-1 rounded text-white/40 hover:text-[#ff5f56] hover:bg-[#ff5f56]/10 transition-colors cursor-pointer"
           >
             <Trash size={12} />
           </button>
@@ -122,6 +126,9 @@ export default function WritingDrawer({
 
   return (
     <aside
+      ref={drawerRef}
+      inert={!isOpen}
+      aria-hidden={!isOpen}
       className={`h-full border-r border-white/10 bg-[#0e0e11] flex flex-col transition-all duration-200 select-none ${
         isOpen
           ? "w-[250px] min-w-[250px]"
@@ -205,7 +212,24 @@ export default function WritingDrawer({
           </div>
         )}
 
-        {!isLoading && drafts.length === 0 && (
+        {!isLoading && isError && (
+          <div className="py-8 px-3 text-center space-y-2.5 border border-dashed border-[#ff5f56]/25 bg-[#ff5f56]/5 rounded-xl">
+            <p className="text-xs text-[#ff5f56] font-medium">
+              Failed to load writing drafts
+            </p>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={() => onRetry()}
+                className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/15 text-xs text-white transition-colors cursor-pointer"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        )}
+
+        {!isLoading && !isError && drafts.length === 0 && (
           <div className="py-10 px-3 text-center space-y-2">
             <PenNib size={24} className="mx-auto text-white/20" />
             <p className="text-xs text-white/45">
