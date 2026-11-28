@@ -151,10 +151,12 @@ export default function WritingStudio() {
     : selectedDraftId || urlDraftId || null;
   const { data: activeDraft } = useWritingDraft(activeDraftId);
 
-  const { data: resumesData, isLoading: isLoadingResumes } = useResumes({
+  const { data: resumesRaw, isLoading: isLoadingResumes } = useResumes({
     limit: 50,
   });
-  const resumes = resumesData?.resumes || [];
+  const resumes = Array.isArray(resumesRaw)
+    ? resumesRaw
+    : resumesRaw?.resumes || [];
 
   const {
     updateWriting,
