@@ -19,6 +19,7 @@ import noteRoutes from "./routes/note.routes.js";
 import noteFolderRoutes from "./routes/noteFolder.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import resumeRoutes from "./routes/resume.routes.js";
+import writingRoutes from "./routes/writing.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.config.js";
 import { globalLimiter } from "./middlewares/rateLimiter.middleware.js";
@@ -109,6 +110,9 @@ app.use(
 // Apply global rate limiter
 app.use(globalLimiter);
 
+// Allow larger JSON payloads specifically for AI Writing (job descriptions & 25k-char UTF-8 drafts)
+app.use("/api/v1/writing", express.json({ limit: "128kb" }));
+
 // Parse JSON request bodies
 app.use(express.json({ limit: "16kb" }));
 
@@ -134,6 +138,7 @@ app.use("/api/v1/notes", noteRoutes);
 app.use("/api/v1/note-folders", noteFolderRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/resumes", resumeRoutes);
+app.use("/api/v1/writing", writingRoutes);
 
 // ─── API Documentation ───────────────────────────────────
 

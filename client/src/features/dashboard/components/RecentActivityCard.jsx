@@ -192,7 +192,7 @@ export default function RecentActivityCard() {
       case "04":
         return {
           icon: <PenNib size={22} className="text-[#ff5f56]/50 mb-2" />,
-          title: "AI Writing coming soon",
+          title: "No writing drafts yet",
           ctaText: "Draft Copy",
           ctaHref: "/writing",
         };

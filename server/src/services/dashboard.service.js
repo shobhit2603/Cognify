@@ -2,6 +2,7 @@ import * as chatRepository from "../repositories/chat.repository.js";
 import * as documentRepository from "../repositories/document.repository.js";
 import * as noteRepository from "../repositories/note.repository.js";
 import * as resumeRepository from "../repositories/resume.repository.js";
+import * as writingRepository from "../repositories/writing.repository.js";
 
 const normalizeChat = (chat) => ({
   id: chat._id.toString(),
@@ -31,6 +32,16 @@ const normalizeResume = (resume) => ({
   title: resume.title || resume.originalName || "Untitled Resume",
   updatedAt: resume.updatedAt || resume.createdAt,
   href: `/resume?id=${resume._id}`,
+});
+
+const normalizeWriting = (draft) => ({
+  id: draft._id.toString(),
+  categoryCode: "04",
+  categoryLabel: "AI Writing",
+  subLabel: draft.type === "cover-letter" ? "Cover Letter" : "Email",
+  title: draft.title || draft.subject || "Untitled Draft",
+  updatedAt: draft.updatedAt || draft.createdAt,
+  href: `/writing?id=${draft._id}`,
 });
 
 const normalizeNote = (note) => ({
@@ -82,11 +93,15 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
     };
   }
 
-  // 04: AI Writing (Not yet persisted, return clean empty array)
+  // 04: AI Writing
   if (category === "04") {
+    const [writings, totalCount] = await Promise.all([
+      writingRepository.findRecentWritings(userId, safeLimit),
+      writingRepository.countWritingsByUserId(userId),
+    ]);
     return {
-      items: [],
-      totalCount: 0,
+      items: writings.map(normalizeWriting),
+      totalCount,
     };
   }
 
@@ -103,7 +118,7 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
   }
 
   // category === "all": Query all implemented repositories in parallel
-  const [chats, chatCount, docs, docCount, notes, noteCount, resumes, resumeCount] = await Promise.all([
+  const [chats, chatCount, docs, docCount, notes, noteCount, resumes, resumeCount, writings, writingCount] = await Promise.all([
     chatRepository.findRecentChats(userId, safeLimit),
     chatRepository.countChatsByUserId(userId),
     documentRepository.findRecentDocuments(userId, safeLimit),
@@ -112,6 +127,8 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
     noteRepository.countNotesByUserId(userId),
     resumeRepository.findRecentResumes(userId, safeLimit),
     resumeRepository.countResumesByUserId(userId),
+    writingRepository.findRecentWritings(userId, safeLimit),
+    writingRepository.countWritingsByUserId(userId),
   ]);
 
   const allItems = [
@@ -119,6 +136,7 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
     ...docs.map(normalizeDocument),
     ...notes.map(normalizeNote),
     ...resumes.map(normalizeResume),
+    ...writings.map(normalizeWriting),
   ];
 
   // Sort descending by latest timestamp
@@ -126,6 +144,6 @@ export const getRecentActivity = async (userId, category = "all", limit = 8) => 
 
   return {
     items: allItems.slice(0, safeLimit),
-    totalCount: (chatCount || 0) + (docCount || 0) + (noteCount || 0) + (resumeCount || 0),
+    totalCount: (chatCount || 0) + (docCount || 0) + (noteCount || 0) + (resumeCount || 0) + (writingCount || 0),
   };
 };

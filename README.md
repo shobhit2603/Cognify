@@ -82,7 +82,8 @@ Cognify combines five specialized AI productivity modules into one seamless plat
 - Target role comparison with skills gap identification.
 
 ### 6. AI Writing (`/writing`)
-- Intelligent Email Writer and Cover Letter generator tailored for tone, length, intent, and recipient context.
+- Split-screen studio featuring an **Email Writer** (Subject + Body streaming, optional Reply-to-Email context, tone/formality/length controls) and **Cover Letter Generator** (direct **Resume Studio** attachment or manual background fallback + job description alignment).
+- Fully editable output canvas with 800ms debounced auto-save, Quick AI Refine chips, 1-level version restore, pinning, and `.txt`/`.md`/PDF export.
 
 ---
 
@@ -125,6 +126,7 @@ npm test
 ## 📚 Documentation
 - [Notes Enhancer Documentation](docs/notes-enhancer.md)
 - [Document Analysis Documentation](docs/document-analysis.md)
+- [AI Writing Studio Documentation](docs/ai-writing.md)
 - [Project Showcase Documentation](Project_Showcase_Documentation.md)
 
 ---
