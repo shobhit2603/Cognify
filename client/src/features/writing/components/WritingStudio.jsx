@@ -66,7 +66,7 @@ export default function WritingStudio() {
     return true;
   });
 
-  const [isOutputPanelOpen, setIsOutputPanelOpen] = useState(true);
+  const [panelToggleMap, setPanelToggleMap] = useState({});
 
   const handleToggleDrawer = () => {
     setIsDrawerOpen((prev) => {
@@ -87,7 +87,7 @@ export default function WritingStudio() {
     });
   };
 
-  // ── Resizable Split Ratio (25%-65%, default 45%) ──────────────────────────
+  // ── Resizable Split Ratio (25%-65%, default 50%) ──────────────────────────
   const [splitPercent, setSplitPercent] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -100,7 +100,7 @@ export default function WritingStudio() {
         // ignore storage access errors
       }
     }
-    return 45;
+    return 50;
   });
 
   const splitContainerRef = useRef(null);
@@ -256,6 +256,21 @@ export default function WritingStudio() {
   const streamRafRef = useRef(null);
   const abortControllerRef = useRef(null);
 
+  // Smart default: closed when new draft or empty output; open (50% split) when content exists or streaming
+  const outputPanelKey = activeDraftId || "new-draft";
+  const isOutputPanelOpen = isStreaming
+    ? true
+    : outputPanelKey in panelToggleMap
+      ? panelToggleMap[outputPanelKey]
+      : Boolean(activeDraft?.content?.trim());
+
+  const handleToggleOutputPanel = () => {
+    setPanelToggleMap((prev) => ({
+      ...prev,
+      [outputPanelKey]: !isOutputPanelOpen,
+    }));
+  };
+
   const cancelPendingStreamRaf = () => {
     if (streamRafRef.current !== null) {
       cancelAnimationFrame(streamRafRef.current);
@@ -279,7 +294,12 @@ export default function WritingStudio() {
     setStreamedContent("");
     setIsNewDraftMode(true);
     setSelectedDraftId(null);
-    setIsOutputPanelOpen(true);
+    setPanelToggleMap((prev) => {
+      if (!("new-draft" in prev)) return prev;
+      const next = { ...prev };
+      delete next["new-draft"];
+      return next;
+    });
     setEmailForm(DEFAULT_EMAIL_FORM);
     setCoverLetterForm(DEFAULT_COVER_LETTER_FORM);
     router.replace("/writing", { scroll: false });
@@ -293,7 +313,6 @@ export default function WritingStudio() {
     setStreamedContent("");
     setIsNewDraftMode(false);
     setSelectedDraftId(id);
-    setIsOutputPanelOpen(true);
     const matched = drafts.find((d) => d._id === id);
     if (matched) hydrateFormsFromDraft(matched);
     router.replace(`/writing?id=${id}`, { scroll: false });
@@ -325,6 +344,10 @@ export default function WritingStudio() {
       data: savedDraft,
     });
 
+    setPanelToggleMap((prev) => ({
+      ...prev,
+      [savedId]: Boolean(savedDraft.content?.trim()),
+    }));
     setIsNewDraftMode(false);
     setSelectedDraftId(savedId);
     router.replace(`/writing?id=${savedId}`, { scroll: false });
@@ -376,7 +399,10 @@ export default function WritingStudio() {
   const runStream = async (streamFn) => {
     const streamTargetDraftId = activeDraftId;
     const streamStartedAtMs = Date.now();
-    setIsOutputPanelOpen(true);
+    setPanelToggleMap((prev) => ({
+      ...prev,
+      [streamTargetDraftId || "new-draft"]: true,
+    }));
     setIsStreaming(true);
     setStreamingStage({ stage: "preparing", message: "Preparing prompt..." });
     setStreamedSubject("");
@@ -621,7 +647,7 @@ export default function WritingStudio() {
             >
               <button
                 type="button"
-                onClick={() => setIsOutputPanelOpen((prev) => !prev)}
+                onClick={handleToggleOutputPanel}
                 className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
               >
                 <SidebarSimple

@@ -183,7 +183,9 @@ export default function WritingDrawer({
                 key={tab.id}
                 type="button"
                 onClick={() => setTypeFilter(tab.id)}
-                className={`flex-1 py-1 px-1.5 rounded-md text-[10px] font-mono font-semibold transition-colors cursor-pointer ${
+                className={`py-1 px-2 rounded-md text-[10px] font-mono font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  tab.id === "cover-letter" ? "shrink-0" : "flex-1"
+                } ${
                   active
                     ? "bg-[#ff5f56]/20 text-[#ff5f56] border border-[#ff5f56]/40"
                     : "bg-white/[0.03] text-white/50 border border-white/[0.06] hover:text-white/80 hover:bg-white/[0.06]"

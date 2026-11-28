@@ -101,7 +101,7 @@ export default function WritingComposer({
       <div className="px-4 py-3 border-b border-white/10 bg-[#0e0e11] shrink-0">
         <div
           className={`flex items-center gap-2 p-1 rounded-xl bg-white/[0.04] border border-white/10 ${
-            isCentered ? "max-w-2xl mx-auto" : ""
+            isCentered ? "max-w-3xl mx-auto" : ""
           }`}
         >
           {WRITING_MODES.map((m) => {
@@ -130,12 +130,14 @@ export default function WritingComposer({
       {/* Scrollable Input Area */}
       <div
         data-lenis-prevent
-        className="flex-1 min-h-0 overflow-y-auto px-4 py-4 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.12)_transparent]"
+        className={`flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          isCentered ? "px-6 py-6 sm:px-8" : "px-4 py-4"
+        }`}
       >
         <div
-          className={`space-y-4 ${
-            isCentered ? "max-w-2xl mx-auto" : ""
-          }`}
+          className={
+            isCentered ? "max-w-3xl mx-auto space-y-5" : "space-y-4"
+          }
         >
           {isEmail ? (
             <>
@@ -505,8 +507,12 @@ export default function WritingComposer({
       </div>
 
       {/* Bottom Sticky Action Footer */}
-      <div className="p-3.5 border-t border-white/10 bg-[#0e0e11] shrink-0">
-        <div className={isCentered ? "max-w-2xl mx-auto" : ""}>
+      <div
+        className={`border-t border-white/10 bg-[#0e0e11] shrink-0 ${
+          isCentered ? "px-6 py-3.5 sm:px-8" : "p-3.5"
+        }`}
+      >
+        <div className={isCentered ? "max-w-3xl mx-auto" : ""}>
           {isStreaming ? (
             <button
               type="submit"
